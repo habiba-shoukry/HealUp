@@ -1,0 +1,27 @@
+app pages:
+  • wecome page 
+  • log in
+  • Sign up
+  • Dash bord with
+  • Profile into
+     - Heart rate
+     - Steps
+     - sleep time
+  • view conected devices
+  • Avatar custimization
+  • chalanges page (daily / weekly)
+  • goals and progress (rewards)
+  • take input from user about activates (log page)
+  • display reports and give notifications
+  • AI assistant
+
+
+main Features we need to implement:
+  • sign up and log in to an acount
+  • customize an avitar
+  • view metrics with graphs (Hart rate, steps, sleep)
+  • conect device?
+  • produce reports
+  • Set challenges
+  • view rewards and progress
+  • Al assistant
