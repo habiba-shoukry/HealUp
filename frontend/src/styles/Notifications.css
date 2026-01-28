@@ -1,0 +1,150 @@
+/* Notifications Page Styles */
+
+.notifications-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.notifications-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.notifications-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
+}
+
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex: 1;
+}
+
+.notification-item {
+  background-color: #475f73;
+  padding: 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  color: white;
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: white;
+}
+
+.notification-description {
+  font-size: 0.95rem;
+  color: #e8eef2;
+  margin: 0;
+}
+
+.notification-time {
+  font-size: 0.9rem;
+  color: #c5d5db;
+  white-space: nowrap;
+  margin-left: 1rem;
+}
+
+.track-more-button,
+.track-report-button {
+  width: 100%;
+  padding: 1.25rem 2rem;
+  background-color: #475f73;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.track-more-button:hover,
+.track-report-button:hover {
+  background-color: #3a4f61;
+  transform: translateY(-2px);
+}
+
+.reports-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.report-card-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.report-card-small {
+  padding: 1.5rem;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.report-card-detail {
+  padding: 1.5rem;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.report-title {
+  font-size: 1.2rem;
+  color: #1e3a52;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.report-text {
+  font-size: 0.95rem;
+  color: #2c3e50;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.heart-rate-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.heart-rate-display,
+.sleep-display,
+.stress-display {
+  width: 100%;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive */
+@media screen and (max-width: 1024px) {
+  .notifications-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-card-wrapper {
+    grid-template-columns: 1fr;
+  }
+}

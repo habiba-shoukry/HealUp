@@ -1,0 +1,146 @@
+/* Goals and Progress Page Styles */
+
+.goals-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.rewards-card {
+  background: white;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.rewards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex: 1;
+}
+
+.reward-item {
+  background-color: #475f73;
+  padding: 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+}
+
+.reward-title {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.reward-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status-indicator {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.status-indicator.complete {
+  background-color: #2ECC71;
+}
+
+.status-indicator.incomplete {
+  background-color: #E74C3C;
+}
+
+.reward-text {
+  font-size: 0.9rem;
+}
+
+.track-button,
+.view-goals-button {
+  width: 100%;
+  padding: 1rem 2rem;
+  background-color: #475f73;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.track-button:hover,
+.view-goals-button:hover {
+  background-color: #3a4f61;
+  transform: translateY(-2px);
+}
+
+.stats-right-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.stats-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.stat-card h3 {
+  font-size: 1.1rem;
+  color: #1e3a52;
+  margin-bottom: 1rem;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-value.blue {
+  color: #4A90E2;
+}
+
+.stat-value.green {
+  color: #2ECC71;
+}
+
+.stat-value.red {
+  color: #E74C3C;
+}
+
+/* Responsive */
+@media screen and (max-width: 1024px) {
+  .goals-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid-compact {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .stats-grid-compact {
+    grid-template-columns: 1fr;
+  }
+}
