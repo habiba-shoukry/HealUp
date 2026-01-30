@@ -24,39 +24,59 @@ A responsive web application for tracking health metrics, activities, food intak
 - **Axios** 1.8.4
 
 ### Backend
-- **FastAPI** 0.110.1
-- **MongoDB** (via Motor & PyMongo)
-- **Python** 3.x
+- **Node.js** with Express.js
+- **MongoDB** (via Mongoose)
+- **Mongoose** (ODM for MongoDB)
+- **Dotenv** for environment variables
+- **CORS** for cross-origin requests
 
 ---
 
 ## 📂 Project Structure
 
 ```
-/app/
-├── frontend/                 # React frontend application
+HealUp/
+├── frontend/                        # React frontend application
 │   ├── src/
-│   │   ├── App.js           # Main app with routes
-│   │   ├── index.js         # Entry point
-│   │   ├── styles.css       # All CSS styles (external)
+│   │   ├── App.js                  # Main app with routes
+│   │   ├── index.js                # Entry point
+│   │   ├── styles.css              # Global CSS
 │   │   ├── components/
-│   │   │   └── Layout.js    # Sidebar navigation
-│   │   └── pages/           # All page components
-│   │       ├── Dashboard.js
-│   │       ├── ProgramAvatar.js
-│   │       ├── Challenges.js
-│   │       ├── GoalsProgress.js
-│   │       ├── ActivityFoodLog.js
-│   │       ├── Notifications.js
-│   │       └── Chatbot.js
-│   ├── public/              # Static assets
-│   ├── package.json         # Frontend dependencies
-│   └── .env                 # Frontend environment variables
+│   │   │   ├── Layout.js           # Sidebar navigation
+│   │   │   ├── ChatboxButton.js    # Chat button
+│   │   │   └── ui/                 # Shadcn UI components
+│   │   ├── hooks/                  # React hooks
+│   │   ├── lib/                    # Utility functions
+│   │   ├── pages/                  # Page components
+│   │   │   ├── Dashboard.js
+│   │   │   ├── ProgramAvatar.js
+│   │   │   ├── Challenges.js
+│   │   │   ├── GoalsProgress.js
+│   │   │   ├── ActivityFoodLog.js
+│   │   │   ├── Notifications.js
+│   │   │   └── Chatbot.js
+│   │   └── styles/                 # Component-specific CSS
+│   ├── public/                      # Static assets
+│   ├── package.json                # Frontend dependencies
+│   └── .env                        # Frontend environment variables
 │
-└── backend/                 # FastAPI backend
-    ├── server.py            # Main FastAPI application
-    ├── requirements.txt     # Python dependencies
-    └── .env                 # Backend environment variables
+└── backend/                        # Node.js/Express backend
+    ├── server.js                   # Main Express application
+    ├── package.json                # Node.js dependencies
+    ├── .env                        # Backend environment variables
+    ├── config/
+    │   └── database.js             # MongoDB connection setup
+    ├── models/                     # Mongoose data models
+    │   ├── User.js                 # User model
+    │   ├── UserStats.js            # User statistics model
+    │   ├── Quest.js                # Quest model
+    │   ├── Reward.js               # Reward model
+    │   └── HealthLog.js            # Health metrics logging model
+    ├── controllers/                # Request handlers
+    │   └── userController.js       # User-related handlers
+    ├── routes/                     # API route definitions
+    ├── middleware/                 # Custom middleware
+    └── utils/                      # Utility functions
 ```
 
 ---
@@ -66,10 +86,9 @@ A responsive web application for tracking health metrics, activities, food intak
 Before running the application, ensure you have:
 
 - **Node.js** (v16 or higher)
-- **Yarn** (v1.22 or higher)
-- **Python** (v3.8 or higher)
-- **pip** (Python package manager)
-- **MongoDB** (running locally or remote connection)
+- **npm** (v7 or higher) - comes with Node.js
+- **MongoDB** (running locally or remote Atlas connection)
+- **Git** for version control
 
 ---
 
@@ -78,21 +97,21 @@ Before running the application, ensure you have:
 ### 1. Clone/Access the Project
 
 ```bash
-cd /app
+cd HealUp
 ```
 
 ### 2. Install Frontend Dependencies
 
 ```bash
-cd /app/frontend
-yarn install
+cd frontend
+npm install
 ```
 
 ### 3. Install Backend Dependencies
 
 ```bash
-cd /app/backend
-pip install -r requirements.txt
+cd ../backend
+npm install
 ```
 
 ---
@@ -104,65 +123,74 @@ pip install -r requirements.txt
 #### Start Backend Server
 
 ```bash
-cd /app/backend
-python -m uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+cd backend
+npm start
 ```
 
 The backend will be available at: `http://localhost:8001`
 
+**Note:** Make sure MongoDB is running and `.env` file is configured with `MONGO_URL`
+
 #### Start Frontend Development Server
 
 ```bash
-cd /app/frontend
-yarn start
+cd frontend
+npm run dev
+# or
+npm start
 ```
 
-The frontend will automatically open at: `http://localhost:3000`
+The frontend will automatically open at: `http://localhost:3000` (or the configured port)
 
 ---
 
-### Option 2: Run with Supervisor (Production Mode)
+### Option 2: Run in Development Mode (with auto-reload)
 
-If using supervisor (already configured in this environment):
+#### Backend (with Nodemon)
 
 ```bash
-# Check status
-sudo supervisorctl status
+cd backend
+npm run dev
+```
 
-# Restart services
-sudo supervisorctl restart frontend
-sudo supervisorctl restart backend
+#### Frontend
 
-# Stop services
-sudo supervisorctl stop frontend backend
-
-# Start services
-sudo supervisorctl start frontend backend
+```bash
+cd frontend
+npm run dev
 ```
 
 ---
 
 ## 🔑 Environment Variables
 
-### Frontend Environment (`/app/frontend/.env`)
+### Frontend Environment (`frontend/.env`)
 
 ```env
-REACT_APP_BACKEND_URL=https://your-backend-url.com
+REACT_APP_BACKEND_URL=http://localhost:8001/api
 ```
 
-- **REACT_APP_BACKEND_URL**: The URL where your backend API is hosted
-- ⚠️ **Important**: Do not modify this if running in production/deployment
+- **REACT_APP_BACKEND_URL**: The URL where your backend API is hosted (default: local development)
 
-### Backend Environment (`/app/backend/.env`)
+### Backend Environment (`backend/.env`)
 
 ```env
-MONGO_URL=mongodb://localhost:27017
-DB_NAME=health_tracker
+MONGO_URL=mongodb+srv://username:password@cluster.mongodb.net/health_tracker
+PORT=8001
+NODE_ENV=development
+CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+JWT_SECRET=your_secret_key_here
+JWT_EXPIRE=7d
 ```
 
-- **MONGO_URL**: MongoDB connection string
-- **DB_NAME**: Database name
-- ⚠️ **Important**: Do not modify these in production
+- **MONGO_URL**: MongoDB Atlas connection string or local MongoDB URI
+- **PORT**: Backend server port (default: 8001)
+- **NODE_ENV**: Environment mode (development/production)
+- **CORS_ORIGINS**: Comma-separated list of allowed frontend URLs
+- **JWT_SECRET**: Secret key for JWT token signing (authentication)
+- **JWT_EXPIRE**: JWT token expiration time
+
+⚠️ **Important**: Never commit `.env` files to git. Use `.env.example` instead.
 
 ---
 
@@ -182,13 +210,51 @@ DB_NAME=health_tracker
 
 ## 🛠 Development
 
+### Backend Development
+
+#### Run Development Server with Auto-Reload
+
+```bash
+cd backend
+npm run dev
+```
+
+The server will automatically restart when you modify files.
+
+#### Test Database Connection
+
+```bash
+curl http://localhost:8001/api/health
+```
+
+Expected response:
+```json
+{
+  "server": "running",
+  "database": "connected",
+  "timestamp": "2026-01-30T12:00:00Z"
+}
+```
+
+#### Database Models
+
+The backend includes the following MongoDB collections:
+
+| Model | File | Description |
+|-------|------|-------------|
+| User | `models/User.js` | User accounts with authentication |
+| UserStats | `models/UserStats.js` | User statistics (XP, Energy, Discipline, HP, Level) |
+| Quest | `models/Quest.js` | Daily/Weekly quests and challenges |
+| Reward | `models/Reward.js` | Unlockable rewards and badges |
+| HealthLog | `models/HealthLog.js` | Health metrics logging (heart rate, sleep, steps, etc.) |
+
 ### Frontend Development
 
 #### Run Development Server
 
 ```bash
-cd /app/frontend
-yarn start
+cd frontend
+npm run dev
 ```
 
 The app will automatically reload when you make changes to the code.
@@ -196,8 +262,8 @@ The app will automatically reload when you make changes to the code.
 #### Build for Production
 
 ```bash
-cd /app/frontend
-yarn build
+cd frontend
+npm run build
 ```
 
 Creates an optimized production build in the `build/` folder.
