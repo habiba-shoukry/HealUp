@@ -1,0 +1,73 @@
+/* welcom page */
+body {
+  background-color: #4b637a;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  height: 100vh;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  text-align: center;
+  padding: 20px;
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+}
+
+.logo-icon {
+  width: 80px;
+  margin-bottom: 20px;
+}
+
+h1 {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  line-height: 1.5;
+  margin-bottom: 30px;
+  color: #e0e0e0;
+}
+
+.get-started-btn {
+  background-color: #ffffff;
+  color: #4b637a;
+  border: none;
+  padding: 15px 30px;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.get-started-btn:hover {
+  background-color: #f0f0f0;
+}
+
+.download-section {
+  position: fixed; /* Keeps it stuck to the corner */
+  bottom: 30px;
+  right: 30px;
+  text-align: center;
+}
+
+.download-text {
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
+.app-icon {
+  width: 60px;
+  background-color: #ffffff;
+  border-radius: 15px;
+  padding: 10px;
+  cursor: pointer;
+}
