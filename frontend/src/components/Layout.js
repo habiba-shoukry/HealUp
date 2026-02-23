@@ -5,7 +5,7 @@ const Layout = ({ children }) => {
   const location = useLocation();
 
   const menuItems = [
-    { path: '/', icon: '📊', label: 'Dashboard' },
+    { path: '/dashboard', icon: '📊', label: 'Dashboard' },
     { path: '/program', icon: '👤', label: 'Program and Avatar customization' },
     { path: '/challenges', icon: '🏆', label: 'Challenges' },
     { path: '/goals', icon: '📈', label: 'Goals and Progress' },
