@@ -1,16 +1,17 @@
 const mongoose = require('mongoose');
 
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URL, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log('✓ MongoDB connected');
-  } catch (error) {
-    console.error('✗ MongoDB connection failed:', error.message);
-    process.exit(1);
-  }
-};
+const userDB = mongoose.createConnection(process.env.MONGO_USER_DB_URL);
+userDB.on('connected', () => console.log('✓ User DB connected (healup_users)'));
+userDB.on('error', (err) => {
+  console.error('✗ User DB connection error:', err.message);
+  process.exit(1);
+});
 
-module.exports = connectDB;
+const activityDB = mongoose.createConnection(process.env.MONGO_ACTIVITY_DB_URL);
+activityDB.on('connected', () => console.log('✓ Activity DB connected (healup_activity)'));
+activityDB.on('error', (err) => {
+  console.error('✗ Activity DB connection error:', err.message);
+  process.exit(1);
+});
+
+module.exports = { userDB, activityDB };

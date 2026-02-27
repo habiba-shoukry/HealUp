@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
+const { activityDB } = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
-const healthLogSchema = new mongoose.Schema({
+const activityLogSchema = new mongoose.Schema({
   id: {
     type: String,
     default: uuidv4,
@@ -11,19 +12,24 @@ const healthLogSchema = new mongoose.Schema({
     type: String,
     required: [true, 'User ID is required']
   },
-  logType: {
+  activityType: {
     type: String,
-    required: [true, 'Log type is required'],
-    enum: ['heart_rate', 'sleep', 'steps', 'calories', 'water_intake', 'weight', 'blood_pressure', 'temperature']
+    required: [true, 'Activity type is required'],
+    enum: ['running', 'cycling', 'swimming', 'gym', 'yoga', 'walking', 'sport', 'other']
   },
-  value: {
+  duration: {
     type: Number,
-    required: [true, 'Value is required']
+    required: [true, 'Duration is required']
+    // in minutes
   },
-  unit: {
-    type: String,
-    required: [true, 'Unit is required']
-    // Examples: 'bpm', 'hours', 'steps', 'kcal', 'ml', 'kg', 'mmHg', 'C'
+  caloriesBurned: {
+    type: Number,
+    default: 0
+  },
+  distance: {
+    type: Number,
+    default: 0
+    // in km
   },
   notes: {
     type: String,
@@ -44,8 +50,7 @@ const healthLogSchema = new mongoose.Schema({
   }
 });
 
-// Indexes
-healthLogSchema.index({ userId: 1, timestamp: -1 });
-healthLogSchema.index({ userId: 1, logType: 1, timestamp: -1 });
+activityLogSchema.index({ userId: 1, timestamp: -1 });
+activityLogSchema.index({ userId: 1, activityType: 1, timestamp: -1 });
 
-module.exports = mongoose.model('HealthLog', healthLogSchema);
+module.exports = activityDB.model('ActivityLog', activityLogSchema);
