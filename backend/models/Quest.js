@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
+const { activityDB } = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
-const questSchema = new mongoose.Schema({
+const challengeSchema = new mongoose.Schema({
   id: {
     type: String,
     default: uuidv4,
@@ -13,16 +14,16 @@ const questSchema = new mongoose.Schema({
   },
   title: {
     type: String,
-    required: [true, 'Quest title is required'],
+    required: [true, 'Challenge title is required'],
     trim: true
   },
   description: {
     type: String,
-    required: [true, 'Quest description is required']
+    required: [true, 'Challenge description is required']
   },
-  questType: {
+  challengeType: {
     type: String,
-    required: [true, 'Quest type is required'],
+    required: [true, 'Challenge type is required'],
     enum: ['daily', 'weekly', 'milestone', 'special']
   },
   rewardXp: {
@@ -57,8 +58,7 @@ const questSchema = new mongoose.Schema({
   }
 });
 
-// Indexes
-questSchema.index({ userId: 1, questType: 1 });
-questSchema.index({ userId: 1, isCompleted: 1 });
+challengeSchema.index({ userId: 1, challengeType: 1 });
+challengeSchema.index({ userId: 1, isCompleted: 1 });
 
-module.exports = mongoose.model('Quest', questSchema);
+module.exports = activityDB.model('Challenge', challengeSchema);

@@ -10,13 +10,25 @@ body, html {
 
 
 
+.auth-error {
+  color: #e03131;
+  background: #fff5f5;
+  border: 1px solid #ffc9c9;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+
 .login-container {
   display: flex;
-  min-height: 100vh; 
-  width: 100%;       
+  min-height: 100vh;
+  width: 100%;
   background-color: #3e5060;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  overflow-x: hidden; 
+  overflow-x: hidden;
 }
 
 /* left side */

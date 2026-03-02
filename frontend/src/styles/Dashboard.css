@@ -28,6 +28,59 @@
   gap: 2rem;
 }
 
+/* Dashboard Greeting */
+.dashboard-greeting {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #4dabf7;
+  margin: 0;
+  text-align: center;
+}
+
+/* Level & XP */
+.level-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.level-badge {
+  background: linear-gradient(135deg, #4dabf7, #357ABD);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 20px;
+}
+
+.xp-display {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+/* Big stat value in cards */
+.stat-big-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0.5rem 0 0;
+  line-height: 1;
+}
+
+.stat-unit {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+  font-weight: 500;
+}
+
+/* Placeholder text in empty cards */
+.stat-placeholder-text {
+  font-size: 0.85rem;
+  color: #aab7c4;
+  font-style: italic;
+}
+
 .avatar-placeholder {
   width: 200px;
   height: 200px;
