@@ -10,7 +10,9 @@ export default function SignUp() {
     fullName: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    role: 'patient',             // Default role
+    healthProgram: 'wellbeing'   // Default health program
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,6 +20,21 @@ export default function SignUp() {
   const handleChange = (e) => {
     setError('');
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  // Custom handlers for our new toggle buttons
+  const handleRoleChange = (selectedRole) => {
+    setFormData((prev) => ({
+      ...prev,
+      role: selectedRole,
+      // If they switch to doctor, we don't need a health program. 
+      // If they switch back to patient, default to wellbeing.
+      healthProgram: selectedRole === 'doctor' ? '' : 'wellbeing' 
+    }));
+  };
+
+  const handleProgramChange = (selectedProgram) => {
+    setFormData((prev) => ({ ...prev, healthProgram: selectedProgram }));
   };
 
   const validate = () => {
@@ -36,7 +53,7 @@ export default function SignUp() {
 
     if (password !== confirmPassword) return 'Passwords do not match.';
 
-    return null;
+    return null; // Health program is handled by default toggles, so no text validation needed!
   };
 
   const handleSubmit = async () => {
@@ -57,7 +74,9 @@ export default function SignUp() {
           fullName: formData.fullName.trim(),
           email: formData.email.trim(),
           password: formData.password,
-          confirmPassword: formData.confirmPassword
+          confirmPassword: formData.confirmPassword,
+          role: formData.role,
+          healthProgram: formData.healthProgram
         })
       });
 
@@ -107,6 +126,47 @@ export default function SignUp() {
 
           {error && <p className="auth-error">{error}</p>}
 
+          {/* NEW: Role Toggle Buttons */}
+          <div className="input-group">
+            <label style={{ display: 'block', marginBottom: '8px' }}>I am a:</label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => handleRoleChange('patient')}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '20px',
+                  border: '2px solid #4dabf7',
+                  backgroundColor: formData.role === 'patient' ? '#4dabf7' : 'transparent',
+                  color: formData.role === 'patient' ? '#fff' : '#4dabf7',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: '0.3s'
+                }}
+              >
+                Patient / User
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRoleChange('doctor')}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '20px',
+                  border: '2px solid #4dabf7',
+                  backgroundColor: formData.role === 'doctor' ? '#4dabf7' : 'transparent',
+                  color: formData.role === 'doctor' ? '#fff' : '#4dabf7',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: '0.3s'
+                }}
+              >
+                Doctor
+              </button>
+            </div>
+          </div>
+
           <div className="input-group">
             <label>Full Name</label>
             <input
@@ -135,6 +195,49 @@ export default function SignUp() {
               maxLength={100}
             />
           </div>
+
+          {/* NEW: Health Program Toggle Buttons (Only visible if Patient is selected) */}
+          {formData.role === 'patient' && (
+            <div className="input-group">
+              <label style={{ display: 'block', marginBottom: '8px' }}>Health Program:</label>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => handleProgramChange('wellbeing')}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    borderRadius: '20px',
+                    border: '2px solid #28a745',
+                    backgroundColor: formData.healthProgram === 'wellbeing' ? '#28a745' : 'transparent',
+                    color: formData.healthProgram === 'wellbeing' ? '#fff' : '#28a745',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    transition: '0.3s'
+                  }}
+                >
+                  Wellbeing
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleProgramChange('fitness')}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    borderRadius: '20px',
+                    border: '2px solid #28a745',
+                    backgroundColor: formData.healthProgram === 'fitness' ? '#28a745' : 'transparent',
+                    color: formData.healthProgram === 'fitness' ? '#fff' : '#28a745',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    transition: '0.3s'
+                  }}
+                >
+                  Fitness
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="input-group">
             <label>Password</label>

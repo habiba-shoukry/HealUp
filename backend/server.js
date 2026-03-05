@@ -25,6 +25,10 @@ app.use('/api/auth', authRoutes);
 const statsRoutes = require('./routes/stats');
 app.use('/api/stats', statsRoutes);
 
+const usersRoutes = require('./routes/users');
+app.use('/api/stats', usersRoutes);
+
+
 // Import models (registers them against their respective connections)
 require('./models/User');
 require('./models/UserStats');
