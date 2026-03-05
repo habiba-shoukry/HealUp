@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { activityDB } = require('../config/database'); 
+const { activityDB } = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
 const notificationSchema = new mongoose.Schema({
