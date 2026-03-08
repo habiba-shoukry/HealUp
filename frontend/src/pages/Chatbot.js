@@ -22,7 +22,7 @@ const Chatbot = () => {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (inputValue.trim() === '') return;
 
     /* user prompt */
@@ -33,22 +33,47 @@ const Chatbot = () => {
       timestamp: new Date()
     };
 
-    setMessages([...messages, userMessage]);
+    // setMessages([...messages, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setInputValue('');
 
     setIsTyping(true);
 
-    /* bot response */
-    setTimeout(() => {
+    // /* bot response */
+    // setTimeout(() => {
+    //   const botMessage = {
+    //     id: messages.length + 2,
+    //     text: "I'm here to help! This is a demo response.",
+    //     sender: 'bot',
+    //     timestamp: new Date()
+    //   };
+    //   setMessages(prev => [...prev, botMessage]);
+    //   setIsTyping(false);
+    // }, 1500);
+    try {
+      const response = await fetch("http://localhost:8001/api/chatbot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ message: inputValue })
+      });
+
+      const data = await response.json();
+
       const botMessage = {
         id: messages.length + 2,
-        text: "I'm here to help! This is a demo response.",
-        sender: 'bot',
+        text: data.reply,
+        sender: "bot",
         timestamp: new Date()
       };
+
       setMessages(prev => [...prev, botMessage]);
-      setIsTyping(false);
-    }, 1500);
+    } catch (error) {
+      console.error("Chat error:", error);
+    }
+
+    setIsTyping(false);
   };
 
   const handleKeyPress = (e) => {
