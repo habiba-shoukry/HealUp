@@ -181,6 +181,7 @@ NODE_ENV=development
 CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 JWT_SECRET=your_secret_key_here
 JWT_EXPIRE=7d
+HF_TOKEN=your_huggingface_api_token
 ```
 
 - **MONGO_URL**: MongoDB Atlas connection string or local MongoDB URI
@@ -189,8 +190,30 @@ JWT_EXPIRE=7d
 - **CORS_ORIGINS**: Comma-separated list of allowed frontend URLs
 - **JWT_SECRET**: Secret key for JWT token signing (authentication)
 - **JWT_EXPIRE**: JWT token expiration time
+- **HF_TOKEN**: Hugging Face API token used by the chatbot to generate responses
 
 ⚠️ **Important**: Never commit `.env` files to git. Use `.env.example` instead.
+
+---
+
+## 🤖 Hugging Face API Token
+
+The chatbot feature uses the Hugging Face Inference API.
+
+### Steps to get your token
+
+1. Go to https://huggingface.co
+2. Create an account or sign in
+3. Click your profile picture in the top right
+4. Open Settings
+5. Select Access Tokens
+6. Click New Token
+7. Choose Read access
+8. Copy the generated token
+9. Add the token to your backend .env file:
+    HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxx
+
+Restart the backend server after adding the token.
 
 ---
 
