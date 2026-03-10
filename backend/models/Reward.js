@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { activityDB } = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
 const rewardSchema = new mongoose.Schema({
@@ -60,8 +61,7 @@ const rewardSchema = new mongoose.Schema({
   }
 });
 
-// Indexes
 rewardSchema.index({ userId: 1, isUnlocked: 1 });
 rewardSchema.index({ userId: 1, rewardType: 1 });
 
-module.exports = mongoose.model('Reward', rewardSchema);
+module.exports = activityDB.model('Reward', rewardSchema);

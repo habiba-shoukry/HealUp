@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { userDB } = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
 const userStatsSchema = new mongoose.Schema({
@@ -54,6 +55,4 @@ const userStatsSchema = new mongoose.Schema({
   }
 });
 
-// Indexes (userId already has unique: true which creates an index)
-
-module.exports = mongoose.model('UserStats', userStatsSchema);
+module.exports = userDB.model('UserStats', userStatsSchema);

@@ -38,7 +38,96 @@
   position: relative; z-index: 1;
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
+<<<<<<< HEAD
   gap: 1.25rem;
+=======
+  gap: 1.5rem;
+}
+
+.large-card {
+  grid-column: span 1;
+  grid-row: span 2;
+}
+
+.medium-card {
+  grid-column: span 1;
+}
+
+.small-card {
+  min-height: 200px;
+}
+
+/* Avatar Section */
+.avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+/* Dashboard Greeting */
+.dashboard-greeting {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #4dabf7;
+  margin: 0;
+  text-align: center;
+}
+
+/* Level & XP */
+.level-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.level-badge {
+  background: linear-gradient(135deg, #4dabf7, #357ABD);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 20px;
+}
+
+.xp-display {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+/* Big stat value in cards */
+.stat-big-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0.5rem 0 0;
+  line-height: 1;
+}
+
+.stat-unit {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+  font-weight: 500;
+}
+
+/* Placeholder text in empty cards */
+.stat-placeholder-text {
+  font-size: 0.85rem;
+  color: #aab7c4;
+  font-style: italic;
+}
+
+.avatar-placeholder {
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, #B3A7D9, #E8B4B8);
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+
+.stat-bars {
+>>>>>>> 6e5e852d0642ea4cf449851088218ed2a345af31
   width: 100%;
   box-sizing: border-box;
 }
