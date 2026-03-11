@@ -1,108 +1,208 @@
-import React from 'react';
-import '../styles/Notifications.css';
-
+import React, { useState, useEffect } from "react";
+import "../styles/Notifications.css";
+ 
 const Notifications = () => {
-  const notifications = [
-    { 
-      title: 'Challenge Complete', 
-      description: 'Walked 10,000 steps',
-      time: '11:20AM'
-    },
-    { 
-      title: 'Reward Earned', 
-      description: 'Earned 10 XP',
-      time: '10:00AM'
-    },
-    { 
-      title: 'Goal Complete', 
-      description: 'Sleep time 7hr 46m',
-      time: '8:00AM'
-    }
-  ];
-
+ 
+  const [popupMessage, setPopupMessage] = useState("");
+  const [score, setScore] = useState(0);
+ 
+  const finalScore = 82;
+ 
+  useEffect(() => {
+ 
+    let current = 0;
+ 
+    const interval = setInterval(() => {
+      current += 1;
+ 
+      if (current >= finalScore) {
+        current = finalScore;
+        clearInterval(interval);
+      }
+ 
+      setScore(current);
+ 
+    }, 20);
+ 
+    return () => clearInterval(interval);
+ 
+  }, []);
+ 
+  const showPopup = (message) => {
+    setPopupMessage(message);
+ 
+    setTimeout(() => {
+      setPopupMessage("");
+    }, 3000);
+  };
+ 
   return (
     <div className="page-container">
-      <div className="notifications-grid">
-        {/* Left Section - Today's Notifications */}
-        <div className="notifications-section">
-          <div className="card notifications-card" data-testid="notifications-list">
-            <h2 className="section-title">Today's Notifications</h2>
-            <div className="notification-list">
-              {notifications.map((notification, index) => (
-                <div key={index} className="notification-item" data-testid={`notification-${index}`}>
-                  <div className="notification-content">
-                    <h3 className="notification-title">{notification.title}</h3>
-                    <p className="notification-description">{notification.description}</p>
-                  </div>
-                  <span className="notification-time">{notification.time}</span>
-                </div>
-              ))}
-            </div>
-            <button className="track-more-button" data-testid="track-more-btn">
-              Track More
-            </button>
-          </div>
+ 
+      {popupMessage && (
+        <div className="popup-notification">
+          {popupMessage}
         </div>
-
-        {/* Right Section - Health Reports */}
-        <div className="reports-section">
-          {/* Heart Rate Card */}
-          <div className="report-card-wrapper">
-            <div className="card report-card-small" data-testid="heart-rate-report">
-              <h3 className="report-title">Heart Rate</h3>
-              <div className="heart-rate-icon">❤️</div>
-              <div className="heart-rate-display">
-                {/* Content to be added */}
-              </div>
-            </div>
-            <div className="card report-card-detail" data-testid="heart-rate-detail">
-              <h3 className="report-title">Heart Rate</h3>
-              <p className="report-text">
-                {/* Content to be added */}
-              </p>
-            </div>
+      )}
+ 
+      <h1 className="page-title">📊 Health Reports</h1>
+ 
+ 
+      {/* HEALTH SCORE SUMMARY */}
+ 
+      <div className="health-summary">
+ 
+        <div className="health-score">
+ 
+          <h3>Overall Health Score</h3>
+ 
+          <div className="score-number">
+            {score}<span>/100</span>
           </div>
-
-          {/* Sleep Card */}
-          <div className="report-card-wrapper">
-            <div className="card report-card-small" data-testid="sleep-report">
-              <h3 className="report-title">Sleep</h3>
-              <div className="sleep-display">
-                {/* Content to be added */}
-              </div>
-            </div>
-            <div className="card report-card-detail" data-testid="sleep-detail">
-              <h3 className="report-title">Sleep</h3>
-              <p className="report-text">
-                {/* Content to be added */}
-              </p>
-            </div>
-          </div>
-
-          {/* Stress Card */}
-          <div className="report-card-wrapper">
-            <div className="card report-card-small" data-testid="stress-report">
-              <h3 className="report-title">Stress</h3>
-              <div className="stress-display">
-                {/* Content to be added */}
-              </div>
-            </div>
-            <div className="card report-card-detail" data-testid="stress-detail">
-              <h3 className="report-title">Stress</h3>
-              <p className="report-text">
-                {/* Content to be added */}
-              </p>
-            </div>
-          </div>
-
-          {/* Track Report Button */}
-          <button className="track-report-button" data-testid="track-report-btn">
-            Track Report
-          </button>
+ 
+          <p className="score-desc">
+            Based on sleep, stress and heart rate analysis
+          </p>
+ 
         </div>
+ 
+        <div className="health-breakdown">
+ 
+          <div className="break-item">
+            ❤️ Heart
+            <span className="good">Good</span>
+          </div>
+ 
+          <div className="break-item">
+            😴 Sleep
+            <span className="moderate">Moderate</span>
+          </div>
+ 
+          <div className="break-item">
+            🧠 Stress
+            <span className="good">Low</span>
+          </div>
+ 
+        </div>
+ 
       </div>
+ 
+ 
+      {/* REPORT CARDS */}
+ 
+      <div className="report-grid">
+ 
+ 
+        {/* HEART RATE */}
+ 
+        <div className="report-card">
+ 
+          <div className="report-header">
+ 
+            <img
+              src="/icons/heart-rate.png"
+              alt="Heart Rate"
+              className="report-icon"
+            />
+ 
+            <h2>Heart Rate</h2>
+ 
+          </div>
+ 
+          <div className="report-data">
+ 
+            <p>Resting Heart Rate: <strong>72 bpm</strong></p>
+            <p>Average Today: <strong>75 bpm</strong></p>
+            <p>Max Today: <strong>110 bpm</strong></p>
+            <p>Status: <span className="status-good">Healthy</span></p>
+ 
+          </div>
+ 
+        </div>
+ 
+ 
+ 
+        {/* SLEEP */}
+ 
+        <div className="report-card">
+ 
+          <div className="report-header">
+ 
+            <img
+              src="/icons/sleep.png"
+              alt="Sleep"
+              className="report-icon"
+            />
+ 
+            <h2>Sleep</h2>
+ 
+          </div>
+ 
+          <div className="report-data">
+ 
+            <p>Total Sleep: <strong>7h 46m</strong></p>
+            <p>Deep Sleep: <strong>2h 12m</strong></p>
+            <p>REM Sleep: <strong>1h 30m</strong></p>
+            <p>Sleep Score: <strong>86 / 100</strong></p>
+ 
+          </div>
+ 
+        </div>
+ 
+ 
+ 
+        {/* STRESS */}
+ 
+        <div className="report-card">
+ 
+          <div className="report-header">
+ 
+            <img
+              src="/icons/stress.png"
+              alt="Stress"
+              className="report-icon"
+            />
+ 
+            <h2>Stress</h2>
+ 
+          </div>
+ 
+          <div className="report-data">
+ 
+            <p>Stress Level: <strong>Low</strong></p>
+            <p>HRV Score: <strong>72</strong></p>
+            <p>Relaxation Time: <strong>45 min</strong></p>
+            <p>Status: <span className="status-good">Stable</span></p>
+ 
+          </div>
+ 
+        </div>
+ 
+      </div>
+ 
+ 
+      {/* BUTTONS */}
+ 
+      <div className="report-buttons">
+ 
+        <button
+          className="download-button"
+          onClick={() => showPopup("✔ Health Report PDF Downloaded")}
+        >
+          Download PDF Report
+        </button>
+ 
+        <button
+          className="share-button"
+          onClick={() => showPopup("✔ Report Shared With Doctor")}
+        >
+          Share With Doctor
+        </button>
+ 
+      </div>
+ 
     </div>
   );
 };
-
+ 
 export default Notifications;
