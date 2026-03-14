@@ -27,6 +27,11 @@ const goalSchema = new mongoose.Schema({
     required: [true, 'Goal type is required'],
     enum: ['fitness', 'nutrition', 'weight', 'sleep', 'hydration', 'custom']
   },
+  programType: {
+    type: String,
+    default: 'general',
+    enum: ['general', 'weight-loss', 'muscle-gain', 'endurance', 'sleep', 'stress', 'custom']
+  },
   targetValue: {
     type: Number,
     required: [true, 'Target value is required']
@@ -48,6 +53,10 @@ const goalSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  completedAt: {
+    type: Date,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -60,5 +69,6 @@ const goalSchema = new mongoose.Schema({
 
 goalSchema.index({ userId: 1, goalType: 1 });
 goalSchema.index({ userId: 1, isCompleted: 1 });
+goalSchema.index({ userId: 1, programType: 1 });
 
 module.exports = activityDB.model('Goal', goalSchema);

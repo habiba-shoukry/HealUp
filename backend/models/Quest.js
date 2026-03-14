@@ -26,6 +26,11 @@ const challengeSchema = new mongoose.Schema({
     required: [true, 'Challenge type is required'],
     enum: ['daily', 'weekly', 'milestone', 'special']
   },
+  programType: {
+    type: String,
+    default: 'general',
+    enum: ['general', 'weight-loss', 'muscle-gain', 'endurance', 'sleep', 'stress', 'custom']
+  },
   rewardXp: {
     type: Number,
     default: 0
@@ -41,6 +46,10 @@ const challengeSchema = new mongoose.Schema({
   isCompleted: {
     type: Boolean,
     default: false
+  },
+  completedAt: {
+    type: Date,
+    default: null
   },
   progress: {
     type: Number,
@@ -60,5 +69,6 @@ const challengeSchema = new mongoose.Schema({
 
 challengeSchema.index({ userId: 1, challengeType: 1 });
 challengeSchema.index({ userId: 1, isCompleted: 1 });
+challengeSchema.index({ userId: 1, programType: 1 });
 
 module.exports = activityDB.model('Challenge', challengeSchema);

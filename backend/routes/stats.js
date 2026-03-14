@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { getStats } = require('../controllers/statsController');
+const { getStats, updateStats } = require('../controllers/statsController');
 
 router.get('/:userId', getStats);
+router.patch('/:userId', updateStats);
 
 module.exports = router;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import '../styles/ActivityFoodLog.css';
 
@@ -12,23 +12,54 @@ const BAD_HABITS = [
 ];
 
 const ActivityFoodLog = ({ onBadHabit }) => {
-  const [activityDate, setActivityDate] = useState('11/12/2025');
-  const [activityType, setActivityType] = useState('Walking');
-  const [duration, setDuration]         = useState('34 km');
-  const [mealType, setMealType]         = useState('Breakfast');
+  const [activityDate, setActivityDate] = useState(new Date().toISOString().slice(0, 10));
+  const [activityType, setActivityType] = useState('walking');
+  const [duration, setDuration]         = useState('30');
+  const [distanceKm, setDistanceKm]     = useState('3.0');
+  const [mealType, setMealType]         = useState('breakfast');
+  const [foodName, setFoodName]         = useState('Oatmeal');
+  const [calories, setCalories]         = useState('320');
   const [proteins, setProteins]         = useState('23');
   const [carbs, setCarbs]               = useState('42');
   const [fats, setFats]                 = useState('19');
+  const [submitMessage, setSubmitMessage] = useState('');
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [foodLogs, setFoodLogs] = useState([]);
   const [reported, setReported]         = useState({});
   const [flash, setFlash]               = useState(null);
   const [confirmHabit, setConfirmHabit] = useState(null);
 
-  const weeklyData = [
-    { day: 'Mon', value: 30 }, { day: 'Tue', value: 45 },
-    { day: 'Wed', value: 35 }, { day: 'Thu', value: 50 },
-    { day: 'Fri', value: 40 }, { day: 'Sat', value: 55 },
-    { day: 'Sun', value: 35 },
-  ];
+  const fetchLogs = async () => {
+    const userId = getUserId();
+    try {
+      const [activitiesRes, foodsRes] = await Promise.all([
+        fetch(`http://localhost:8001/api/health-logs/activities?userId=${userId}`),
+        fetch(`http://localhost:8001/api/health-logs/foods?userId=${userId}`),
+      ]);
+      const [activities, foods] = await Promise.all([activitiesRes.json(), foodsRes.json()]);
+      setActivityLogs(Array.isArray(activities) ? activities : []);
+      setFoodLogs(Array.isArray(foods) ? foods : []);
+    } catch {
+      setActivityLogs([]);
+      setFoodLogs([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
+  const weeklyData = useMemo(() => {
+    const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayBuckets = labels.map((day, idx) => ({ day, idx, value: 0 }));
+    activityLogs.forEach((log) => {
+      const d = new Date(log.timestamp || log.createdAt || Date.now());
+      const dayIdx = d.getDay();
+      const duration = Number(log.duration) || 0;
+      dayBuckets[dayIdx].value += duration;
+    });
+    return dayBuckets.map(({ day, value }) => ({ day, value: Math.round(value) }));
+  }, [activityLogs]);
 
   const nutritionData = [
     { name: 'Protein', value: parseInt(proteins) || 0, color: '#4A90E2' },
@@ -40,9 +71,80 @@ const ActivityFoodLog = ({ onBadHabit }) => {
     if (reported[habit.id]) return;
     setReported(prev => ({ ...prev, [habit.id]: true }));
     if (onBadHabit) onBadHabit(habit.penalties);
+    fetch('http://localhost:8001/api/health-logs/activities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: getUserId(),
+        activityType: 'other',
+        duration: 0,
+        caloriesBurned: 0,
+        distance: 0,
+        notes: `BAD_HABIT:${habit.id}`,
+        timestamp: new Date().toISOString(),
+      }),
+    }).catch(() => {});
     setFlash({ id: habit.id, tags: habit.tags });
     setTimeout(() => setFlash(null), 2500);
     setConfirmHabit(null);
+  };
+
+  const getUserId = () => {
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    return user?.id || 'demo-user';
+  };
+
+  const handleLogActivity = async () => {
+    const payload = {
+      userId: getUserId(),
+      activityType,
+      duration: Number(duration) || 0,
+      distance: Number(distanceKm) || 0,
+      caloriesBurned: Math.max(0, Math.round((Number(duration) || 0) * 6)),
+      timestamp: new Date(activityDate).toISOString(),
+    };
+    try {
+      await fetch('http://localhost:8001/api/health-logs/activities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      setSubmitMessage('Activity logged successfully');
+      fetchLogs();
+      setTimeout(() => setSubmitMessage(''), 2500);
+    } catch {
+      setSubmitMessage('Failed to log activity');
+      setTimeout(() => setSubmitMessage(''), 2500);
+    }
+  };
+
+  const handleLogMeal = async () => {
+    const payload = {
+      userId: getUserId(),
+      mealType,
+      foodName,
+      calories: Number(calories) || 0,
+      protein: Number(proteins) || 0,
+      carbohydrates: Number(carbs) || 0,
+      fat: Number(fats) || 0,
+      timestamp: new Date().toISOString(),
+    };
+    try {
+      await fetch('http://localhost:8001/api/health-logs/foods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      setSubmitMessage('Meal logged successfully');
+      fetchLogs();
+      // Signal the Dashboard to re-fetch metrics (handles the case where the
+      // user hasn't navigated away and back yet).
+      window.dispatchEvent(new CustomEvent('healup_food_logged'));
+      setTimeout(() => setSubmitMessage(''), 2500);
+    } catch {
+      setSubmitMessage('Failed to log meal');
+      setTimeout(() => setSubmitMessage(''), 2500);
+    }
   };
 
   return (
@@ -83,6 +185,9 @@ const ActivityFoodLog = ({ onBadHabit }) => {
               <div className="dhl-header-sub">Track your habits, activity and nutrition every day</div>
             </div>
           </div>
+          {submitMessage && (
+            <div style={{ color: '#34d399', fontWeight: 700, fontSize: '0.8rem' }}>{submitMessage}</div>
+          )}
         </div>
 
         {/* ── Three Columns ── */}
@@ -140,19 +245,28 @@ const ActivityFoodLog = ({ onBadHabit }) => {
             <div className="dhl-form">
               <div className="dhl-form-group">
                 <label>Date</label>
-                <input type="text" value={activityDate} onChange={e => setActivityDate(e.target.value)} className="dhl-input" />
+                <input type="date" value={activityDate} onChange={e => setActivityDate(e.target.value)} className="dhl-input" />
               </div>
               <div className="dhl-form-group">
                 <label>Activity Type</label>
                 <select value={activityType} onChange={e => setActivityType(e.target.value)} className="dhl-select">
-                  <option>Walking</option><option>Running</option><option>Cycling</option><option>Swimming</option><option>Gym</option>
+                  <option value="walking">Walking</option>
+                  <option value="running">Running</option>
+                  <option value="cycling">Cycling</option>
+                  <option value="swimming">Swimming</option>
+                  <option value="gym">Gym</option>
+                  <option value="yoga">Yoga</option>
                 </select>
               </div>
               <div className="dhl-form-group">
-                <label>Duration / Distance</label>
-                <input type="text" value={duration} onChange={e => setDuration(e.target.value)} className="dhl-input" />
+                <label>Duration (minutes)</label>
+                <input type="number" min="0" value={duration} onChange={e => setDuration(e.target.value)} className="dhl-input" />
               </div>
-              <button className="dhl-submit-btn blue">Log Activity</button>
+              <div className="dhl-form-group">
+                <label>Distance (km)</label>
+                <input type="number" min="0" step="0.1" value={distanceKm} onChange={e => setDistanceKm(e.target.value)} className="dhl-input" />
+              </div>
+              <button type="button" className="dhl-submit-btn blue" onClick={handleLogActivity}>Log Activity</button>
             </div>
 
             <div className="dhl-chart-box">
@@ -167,6 +281,21 @@ const ActivityFoodLog = ({ onBadHabit }) => {
                 </LineChart>
               </ResponsiveContainer>
               <p className="dhl-chart-caption">+12% compared to last week</p>
+            </div>
+
+            <div className="dhl-chart-box" style={{ marginTop: '0.8rem' }}>
+              <div className="dhl-chart-label">Recent Activity Logs</div>
+              {activityLogs.length === 0 ? (
+                <p className="dhl-chart-caption">No activity logs yet</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  {activityLogs.slice(0, 4).map((log) => (
+                    <div key={log.id} style={{ fontSize: '0.74rem', color: '#a8c8e0' }}>
+                      <strong style={{ color: '#fff' }}>{log.activityType}</strong> - {log.duration} min, {log.distance} km
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -184,24 +313,37 @@ const ActivityFoodLog = ({ onBadHabit }) => {
               <div className="dhl-form-group">
                 <label>Meal Type</label>
                 <select value={mealType} onChange={e => setMealType(e.target.value)} className="dhl-select">
-                  <option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option>
+                  <option value="breakfast">Breakfast</option>
+                  <option value="lunch">Lunch</option>
+                  <option value="dinner">Dinner</option>
+                  <option value="snack">Snack</option>
                 </select>
               </div>
               <div className="dhl-form-row">
                 <div className="dhl-form-group">
+                  <label>Food Name</label>
+                  <input type="text" value={foodName} onChange={e => setFoodName(e.target.value)} className="dhl-input" />
+                </div>
+                <div className="dhl-form-group">
+                  <label>Calories</label>
+                  <input type="number" min="0" value={calories} onChange={e => setCalories(e.target.value)} className="dhl-input" />
+                </div>
+              </div>
+              <div className="dhl-form-row">
+                <div className="dhl-form-group">
                   <label>Protein (g)</label>
-                  <input type="text" value={proteins} onChange={e => setProteins(e.target.value)} className="dhl-input" />
+                  <input type="number" min="0" value={proteins} onChange={e => setProteins(e.target.value)} className="dhl-input" />
                 </div>
                 <div className="dhl-form-group">
                   <label>Carbs (g)</label>
-                  <input type="text" value={carbs} onChange={e => setCarbs(e.target.value)} className="dhl-input" />
+                  <input type="number" min="0" value={carbs} onChange={e => setCarbs(e.target.value)} className="dhl-input" />
                 </div>
                 <div className="dhl-form-group">
                   <label>Fats (g)</label>
-                  <input type="text" value={fats} onChange={e => setFats(e.target.value)} className="dhl-input" />
+                  <input type="number" min="0" value={fats} onChange={e => setFats(e.target.value)} className="dhl-input" />
                 </div>
               </div>
-              <button className="dhl-submit-btn green">Log Meal</button>
+              <button type="button" className="dhl-submit-btn green" onClick={handleLogMeal}>Log Meal</button>
             </div>
 
             <div className="dhl-chart-box">
@@ -221,6 +363,21 @@ const ActivityFoodLog = ({ onBadHabit }) => {
                   <div className="dhl-legend-item"><span style={{ background: '#2ECC71' }} />Fats <strong>{fats}g</strong></div>
                 </div>
               </div>
+            </div>
+
+            <div className="dhl-chart-box" style={{ marginTop: '0.8rem' }}>
+              <div className="dhl-chart-label">Recent Food Logs</div>
+              {foodLogs.length === 0 ? (
+                <p className="dhl-chart-caption">No food logs yet</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  {foodLogs.slice(0, 4).map((log) => (
+                    <div key={log.id} style={{ fontSize: '0.74rem', color: '#a8c8e0' }}>
+                      <strong style={{ color: '#fff' }}>{log.foodName}</strong> - {log.calories} kcal ({log.mealType})
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

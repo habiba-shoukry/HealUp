@@ -1,29 +1,159 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import '../styles/GoalsProgress.css';
 
 const Img = ({ src, size = 24 }) => (
   <img src={src} alt="" style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }} />
 );
 
-const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 } }) => {
- const [goals, setGoals] = useState([
-   { id: 'g1', icon: '/training.png',       title: 'Run 50km this month',      current: 34, target: 50,  unit: 'km',       deadline: 'Mar 31', status: 'on-track',  xp: 300, coins: 50  },
-   { id: 'g2', icon: '/plastic-bottle.png', title: 'Drink 2L water daily',     current: 18, target: 30,  unit: 'days',     deadline: 'Mar 31', status: 'on-track',  xp: 150, coins: 25  },
-   { id: 'g3', icon: '/sleeping-mask.png',  title: 'Sleep 8hrs for 21 nights', current: 9,  target: 21,  unit: 'nights',   deadline: 'Mar 31', status: 'at-risk',   xp: 200, coins: 35  },
-   { id: 'g4', icon: '/healthy-food.png',   title: 'Log meals for 30 days',    current: 6,  target: 30,  unit: 'days',     deadline: 'Mar 31', status: 'behind',    xp: 120, coins: 20  },
-   { id: 'g5', icon: '/workout.png',        title: 'Complete 20 workouts',     current: 20, target: 20,  unit: 'sessions', deadline: 'Mar 20', status: 'completed', xp: 400, coins: 75  },
-   { id: 'g6', icon: '/exercising.png',     title: 'Meditate 15 days',         current: 11, target: 15,  unit: 'days',     deadline: 'Mar 31', status: 'on-track',  xp: 100, coins: 15  },
- ]);
+const PROGRAMS = [
+  { value: 'general', label: 'General' },
+  { value: 'weight-loss', label: 'Weight Loss' },
+  { value: 'muscle-gain', label: 'Muscle Gain' },
+  { value: 'endurance', label: 'Endurance' },
+  { value: 'sleep', label: 'Sleep' },
+  { value: 'stress', label: 'Stress' },
+  { value: 'custom', label: 'Custom' },
+];
 
- const weeklyData = [
-   { day: 'Mon', steps: 8.2,  cals: 320 },
-   { day: 'Tue', steps: 11.4, cals: 480 },
-   { day: 'Wed', steps: 7.8,  cals: 290 },
-   { day: 'Thu', steps: 13.1, cals: 560 },
-   { day: 'Fri', steps: 9.6,  cals: 410 },
-   { day: 'Sat', steps: 15.2, cals: 620 },
-   { day: 'Sun', steps: 6.4,  cals: 240 },
- ];
+const GOAL_TYPE_ICON = {
+  fitness: '/training.png',
+  nutrition: '/healthy-food.png',
+  weight: '/workout.png',
+  sleep: '/sleeping-mask.png',
+  hydration: '/plastic-bottle.png',
+  custom: '/dart.png',
+};
+
+const FALLBACK_GOALS = [
+  { id: 'g1', icon: '/training.png',       title: 'Run 50km this month',      current: 34, target: 50,  unit: 'km',       deadline: 'Mar 31', status: 'on-track',  xp: 300, coins: 50, programType: 'endurance' },
+  { id: 'g2', icon: '/plastic-bottle.png', title: 'Drink 2L water daily',     current: 18, target: 30,  unit: 'days',     deadline: 'Mar 31', status: 'on-track',  xp: 150, coins: 25, programType: 'general' },
+  { id: 'g3', icon: '/sleeping-mask.png',  title: 'Sleep 8hrs for 21 nights', current: 9,  target: 21,  unit: 'nights',   deadline: 'Mar 31', status: 'at-risk',   xp: 200, coins: 35, programType: 'sleep' },
+  { id: 'g4', icon: '/healthy-food.png',   title: 'Log meals for 30 days',    current: 6,  target: 30,  unit: 'days',     deadline: 'Mar 31', status: 'behind',    xp: 120, coins: 20, programType: 'weight-loss' },
+  { id: 'g5', icon: '/workout.png',        title: 'Complete 20 workouts',     current: 20, target: 20,  unit: 'sessions', deadline: 'Mar 20', status: 'completed', xp: 400, coins: 75, programType: 'muscle-gain' },
+  { id: 'g6', icon: '/exercising.png',     title: 'Meditate 15 days',         current: 11, target: 15,  unit: 'days',     deadline: 'Mar 31', status: 'on-track',  xp: 100, coins: 15, programType: 'stress' },
+];
+
+const normalizeGoal = (goal) => {
+  const current = goal.effectiveCurrentValue ?? goal.currentValue ?? 0;
+  const target = goal.targetValue ?? 1;
+  const pct = target > 0 ? Math.round((current / target) * 100) : 0;
+  const status = goal.isCompleted || pct >= 100
+    ? 'completed'
+    : pct >= 60
+      ? 'on-track'
+      : pct >= 35
+        ? 'at-risk'
+        : 'behind';
+  const xp = Math.max(100, Math.round(target * 5));
+  const coins = Math.max(15, Math.round(xp * 0.2));
+  return {
+    id: goal.id,
+    icon: GOAL_TYPE_ICON[goal.goalType] || '/dart.png',
+    title: goal.title,
+    current,
+    target,
+    unit: goal.unit,
+    deadline: goal.deadline ? new Date(goal.deadline).toLocaleDateString() : 'No deadline',
+    status,
+    xp,
+    coins,
+    programType: goal.programType || 'general',
+  };
+};
+
+const FALLBACK_WEEKLY_DATA = [
+  { day: 'Mon', steps: 8.2, cals: 320 },
+  { day: 'Tue', steps: 11.4, cals: 480 },
+  { day: 'Wed', steps: 7.8, cals: 290 },
+  { day: 'Thu', steps: 13.1, cals: 560 },
+  { day: 'Fri', steps: 9.6, cals: 410 },
+  { day: 'Sat', steps: 15.2, cals: 620 },
+  { day: 'Sun', steps: 6.4, cals: 240 },
+];
+
+const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDevice = 'apple' }) => {
+ const [selectedProgram, setSelectedProgram] = useState('general');
+ const [goals, setGoals] = useState(FALLBACK_GOALS.filter(g => g.programType === 'general'));
+ const [weeklyData, setWeeklyData] = useState(FALLBACK_WEEKLY_DATA);
+ const [totalXp, setTotalXp] = useState(0);
+ const [dayStreak, setDayStreak] = useState(0);
+ const [bestStreak, setBestStreak] = useState(0);
+
+ useEffect(() => {
+   let user = null;
+   try {
+     user = JSON.parse(localStorage.getItem('user') || 'null');
+   } catch {
+     user = null;
+   }
+   if (!user?.id) {
+     setGoals(FALLBACK_GOALS.filter(g => g.programType === selectedProgram));
+     return;
+   }
+
+   fetch(`http://localhost:8001/api/goals?userId=${user.id}&programType=${selectedProgram}&device=${encodeURIComponent(activeDevice)}`)
+     .then(res => res.json())
+     .then(data => {
+       if (Array.isArray(data) && data.length > 0) {
+         setGoals(data.map(normalizeGoal));
+       } else {
+         setGoals(FALLBACK_GOALS.filter(g => g.programType === selectedProgram));
+       }
+     })
+     .catch(() => {
+       setGoals(FALLBACK_GOALS.filter(g => g.programType === selectedProgram));
+     });
+ }, [selectedProgram, activeDevice]);
+
+ useEffect(() => {
+   let user = null;
+   try {
+     user = JSON.parse(localStorage.getItem('user') || 'null');
+   } catch {
+     user = null;
+   }
+   if (!user?.id) return;
+
+   fetch(`http://localhost:8001/api/stats/${user.id}`)
+     .then(res => res.json())
+     .then(data => {
+       if (!data || data.error) return;
+       setTotalXp(data.totalXp || 0);
+       setDayStreak(data.dayStreak || 0);
+       setBestStreak(data.bestStreak || 0);
+     })
+     .catch(() => {});
+ }, []);
+
+ useEffect(() => {
+   let user = null;
+   try {
+     user = JSON.parse(localStorage.getItem('user') || 'null');
+   } catch {
+     user = null;
+   }
+
+   if (!user?.id) {
+     setWeeklyData(FALLBACK_WEEKLY_DATA);
+     return;
+   }
+
+   fetch(`http://localhost:8001/api/metrics/weekly/${user.id}?device=${encodeURIComponent(activeDevice)}`)
+     .then(res => (res.ok ? res.json() : null))
+     .then(data => {
+       if (!data?.metrics || !Array.isArray(data.metrics) || !data.metrics.length) {
+         setWeeklyData(FALLBACK_WEEKLY_DATA);
+         return;
+       }
+       const next = data.metrics.map((m) => ({
+         day: new Date(m.date).toLocaleDateString('en-US', { weekday: 'short' }),
+         steps: Number(((m.steps || 0) / 1000).toFixed(1)),
+         cals: Math.round(m.caloriesBurned || 0),
+       }));
+       setWeeklyData(next);
+     })
+     .catch(() => setWeeklyData(FALLBACK_WEEKLY_DATA));
+ }, [activeDevice]);
 
  const achievements = [
    { icon: '/throphy.png',   name: 'First Goal',     desc: 'Completed your first goal',                     unlocked: true  },
@@ -35,8 +165,6 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 } }) => {
    { icon: '/medal.png',     name: 'Top Performer',  desc: 'Rank #1 on weekly leaderboard',                 unlocked: false },
    { icon: '/muscles.png',   name: 'Iron Will',      desc: 'Complete all daily challenges 5 days in a row', unlocked: true  },
  ];
-
- const streakDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
  const [popup, setPopup] = useState(null);
  const [chatOpen, setChatOpen] = useState(false);
@@ -64,24 +192,6 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 } }) => {
  const showPopup = (data) => {
    setPopup(data);
    setTimeout(() => setPopup(null), 2700);
- };
-
- const handleGoalProgress = (id) => {
-   setGoals(prev => prev.map(g => {
-     if (g.id !== id || g.current >= g.target) return g;
-     const next = Math.min(g.target, g.current + 1);
-     const completed = next >= g.target;
-     if (completed) {
-       showPopup({
-         burst: '/throphy.png', title: 'Goal Achieved!',
-         rewards: [
-           { type: 'xp',    icon: '/star.png',   value: `+${g.xp} XP`      },
-           { type: 'coins', icon: '/profit.png',  value: `+${g.coins} Coins` },
-         ]
-       });
-     }
-     return { ...g, current: next, status: completed ? 'completed' : g.status };
-   }));
  };
 
  const handleAddGoal = () => {
@@ -118,8 +228,15 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 } }) => {
    return parts.map((part, i) => i % 2 === 1 ? <strong key={i}>{part}</strong> : part);
  };
 
- const maxSteps = Math.max(...weeklyData.map(d => d.steps));
- const maxCals  = Math.max(...weeklyData.map(d => d.cals));
+ const maxSteps = Math.max(1, ...weeklyData.map(d => d.steps || 0));
+ const maxCals  = Math.max(1, ...weeklyData.map(d => d.cals || 0));
+ const activeGoals = goals.filter(g => g.status !== 'completed').length;
+ const avgProgress = goals.length
+   ? Math.round(goals.reduce((sum, g) => sum + Math.min(100, Math.round((g.current / Math.max(1, g.target)) * 100)), 0) / goals.length)
+   : 0;
+ const streakBonusPct = Math.min(dayStreak * 10, 100);
+ const streakDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+ const todayStreakIdx = dayStreak > 0 ? Math.min(dayStreak - 1, 6) : 0;
 
  const getFillClass = (status) => ({ completed: 'green', 'at-risk': 'gold', behind: 'red' }[status] || '');
  const getStatusLabel = (status) => ({ 'on-track': 'On Track', 'at-risk': 'At Risk', behind: 'Behind', completed: 'Complete' }[status]);
@@ -136,24 +253,35 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 } }) => {
         <div>
           <h1 className="gp-page-title">Goals & Progress</h1>
           <p className="gp-page-sub">Track your long-term health milestones</p>
+          <div style={{ marginTop: 8 }}>
+            <select
+              value={selectedProgram}
+              onChange={(e) => setSelectedProgram(e.target.value)}
+              style={{ background: 'rgba(255,255,255,0.08)', color: '#e8f4ff', border: '1px solid rgba(91,184,255,0.25)', borderRadius: 8, padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
+            >
+              {PROGRAMS.map((p) => (
+                <option key={p.value} value={p.value} style={{ color: '#0b1a27' }}>{p.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
       <div className="gp-header-stats">
         <div className="gp-hstat">
-          <span className="gp-hstat-val gold">2,839</span>
+          <span className="gp-hstat-val gold">{totalXp.toLocaleString()}</span>
           <span className="gp-hstat-label">Total XP</span>
         </div>
         <div className="gp-hstat">
-          <span className="gp-hstat-val green">4 / 6</span>
+          <span className="gp-hstat-val green">{activeGoals} / {goals.length}</span>
           <span className="gp-hstat-label">Goals Active</span>
         </div>
         <div className="gp-hstat">
-          <span className="gp-hstat-val blue">68%</span>
+          <span className="gp-hstat-val blue">{avgProgress}%</span>
           <span className="gp-hstat-label">Avg Progress</span>
         </div>
         <div className="gp-hstat gp-hstat-streak">
           <span className="gp-hstat-val orange" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <img src="/fire2.png" alt="streak" style={{ width: 18, height: 18, objectFit: 'contain' }} /> 7
+            <img src="/fire2.png" alt="streak" style={{ width: 18, height: 18, objectFit: 'contain' }} /> {dayStreak}
           </span>
           <span className="gp-hstat-label">Day Streak</span>
         </div>
@@ -195,7 +323,7 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 } }) => {
       <div className="card gp-section" data-testid="active-goals">
         <div className="gp-section-header">
           <div className="gp-section-title"><span className="gp-dot" />Active Goals</div>
-          <div className="gp-badge">4 In Progress</div>
+          <div className="gp-badge">{activeGoals} In Progress</div>
         </div>
         <div className="gp-goals-list">
           {goals.map(g => {
@@ -206,7 +334,6 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 } }) => {
                 key={g.id}
                 id={`goal-${g.id}`}
                 className={`gp-goal-item ${g.status}`}
-                onClick={g.status !== 'completed' ? () => handleGoalProgress(g.id) : undefined}
                 data-testid={`goal-${g.id}`}
               >
                 <div className="gp-goal-top">
@@ -347,20 +474,20 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 } }) => {
       <div className="card gp-section" data-testid="streak-panel">
         <div className="gp-section-header">
           <div className="gp-section-title"><span className="gp-dot orange" />Daily Streak</div>
-          <div className="gp-badge orange">+20% XP Bonus</div>
+          <div className="gp-badge orange">+{streakBonusPct}% XP Bonus</div>
         </div>
         <div className="gp-streak-body">
 
           {/* Top row: big number + bonus chip */}
           <div className="gp-streak-row">
             <div>
-              <div className="gp-streak-num">7</div>
+              <div className="gp-streak-num">{dayStreak}</div>
               <div className="gp-streak-lbl" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <img src="/fire2.png" alt="" style={{ width: 14, height: 14, objectFit: 'contain' }} /> Keep it going!
               </div>
             </div>
             <div className="gp-streak-bonus">
-              <div className="gp-streak-bonus-val">+20% XP</div>
+              <div className="gp-streak-bonus-val">+{streakBonusPct}% XP</div>
               <div className="gp-streak-bonus-lbl">Streak Bonus</div>
             </div>
           </div>
@@ -368,7 +495,7 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 } }) => {
           {/* Day pills */}
           <div className="gp-streak-days">
             {streakDays.map((d, i) => (
-              <div key={i} className={`gp-streak-day${i < 6 ? ' done' : ''}${i === 6 ? ' today' : ''}`}>
+              <div key={i} className={`gp-streak-day${i < todayStreakIdx ? ' done' : ''}${i === todayStreakIdx ? ' today' : ''}`}>
                 {d}<div className="gp-streak-dot" />
               </div>
             ))}
@@ -381,32 +508,32 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 } }) => {
                 <img src="/throphy.png" alt="" style={{ width: 13, height: 13, objectFit: 'contain', marginRight: 4, verticalAlign: 'middle' }} />
                 Next milestone: <strong style={{ color: '#fb923c' }}>10 days</strong>
               </span>
-              <span className="gp-streak-milestone-label">3 days away</span>
+              <span className="gp-streak-milestone-label">{Math.max(0, 10 - dayStreak)} days away</span>
             </div>
             <div className="gp-streak-milestone-track">
-              <div className="gp-streak-milestone-fill" style={{ width: '70%' }} />
+              <div className="gp-streak-milestone-fill" style={{ width: `${Math.min(100, Math.round((dayStreak / 10) * 100))}%` }} />
             </div>
           </div>
 
           {/* Quick stats row */}
           <div className="gp-streak-stats">
             <div className="gp-streak-stat">
-              <div className="gp-streak-stat-val">7</div>
+              <div className="gp-streak-stat-val">{dayStreak}</div>
               <div className="gp-streak-stat-label">Current</div>
             </div>
             <div className="gp-streak-stat-divider" />
             <div className="gp-streak-stat">
-              <div className="gp-streak-stat-val" style={{ color: '#fbbf24' }}>14</div>
+              <div className="gp-streak-stat-val" style={{ color: '#fbbf24' }}>{bestStreak}</div>
               <div className="gp-streak-stat-label">Best Ever</div>
             </div>
             <div className="gp-streak-stat-divider" />
             <div className="gp-streak-stat">
-              <div className="gp-streak-stat-val" style={{ color: '#34d399' }}>23</div>
+              <div className="gp-streak-stat-val" style={{ color: '#34d399' }}>{dayStreak}</div>
               <div className="gp-streak-stat-label">Total Days</div>
             </div>
             <div className="gp-streak-stat-divider" />
             <div className="gp-streak-stat">
-              <div className="gp-streak-stat-val" style={{ color: '#a78bfa' }}>+20%</div>
+              <div className="gp-streak-stat-val" style={{ color: '#a78bfa' }}>+{streakBonusPct}%</div>
               <div className="gp-streak-stat-label">XP Boost</div>
             </div>
           </div>

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/Dashboard.css';
@@ -28,20 +27,45 @@ const STAT_META = {
   discipline: { icon: '/roman-helmet.png', label: 'Discipline', color: '#a78bfa' },
 };
 
-const DAILY = [
-  { title: 'Walk 10,000 steps today',  reward: '50 XP',  xp: 50, barEffects: { energy: 5 } },
-  { title: 'Drink 2L of water',        reward: '20 XP',  xp: 20, barEffects: { hp: 3 } },
-  { title: 'No Sugary snacks',         reward: '30 XP',  xp: 30, barEffects: { discipline: 3 } },
-  { title: 'Morning Stretch',          reward: '15 XP',  xp: 15, barEffects: { energy: 2 } },
-  { title: 'Daily Workout Complete',   reward: '50 XP',  xp: 50, barEffects: { energy: 5, discipline: 2 } },
+const FALLBACK_DAILY_CHALLENGES = [
+  { id: 'd1', title: 'Walk 10,000 steps today', rewardXp: 50, rewardEnergy: 5, rewardDiscipline: 0, progress: 0, isCompleted: false, programType: 'endurance' },
+  { id: 'd2', title: 'Drink 2L of water', rewardXp: 20, rewardEnergy: 0, rewardDiscipline: 0, progress: 0, isCompleted: false, barEffects: { hp: 3 }, programType: 'general' },
+  { id: 'd3', title: 'No Sugary snacks', rewardXp: 30, rewardEnergy: 0, rewardDiscipline: 3, progress: 0, isCompleted: false, programType: 'weight-loss' },
+  { id: 'd4', title: 'Morning Stretch', rewardXp: 15, rewardEnergy: 2, rewardDiscipline: 0, progress: 0, isCompleted: false, programType: 'stress' },
+  { id: 'd5', title: 'Daily Workout Complete', rewardXp: 50, rewardEnergy: 5, rewardDiscipline: 2, progress: 0, isCompleted: false, programType: 'muscle-gain' },
 ];
 
-const WEEKLY = [
-  { title: 'Run 20 km this week',          progress: 40,  reward: '150 XP +50 Energy' },
-  { title: 'Share progress with a friend', progress: 100, reward: '60 XP +20 Energy'  },
-  { title: 'Sleep 7-8 hrs for 5 nights',  progress: 70,  reward: '120 XP +40 Energy' },
-  { title: 'Drink 14L water this week',    progress: 60,  reward: '100 XP +30 Energy' },
+const FALLBACK_WEEKLY_CHALLENGES = [
+  { id: 'w1', title: 'Run 20 km this week', progress: 40, rewardXp: 150, rewardEnergy: 50, rewardDiscipline: 0, isCompleted: false, programType: 'endurance' },
+  { id: 'w2', title: 'Share progress with a friend', progress: 100, rewardXp: 60, rewardEnergy: 20, rewardDiscipline: 0, isCompleted: true, programType: 'general' },
+  { id: 'w3', title: 'Sleep 7-8 hrs for 5 nights', progress: 70, rewardXp: 120, rewardEnergy: 40, rewardDiscipline: 0, isCompleted: false, programType: 'sleep' },
+  { id: 'w4', title: 'Drink 14L water this week', progress: 60, rewardXp: 100, rewardEnergy: 30, rewardDiscipline: 0, isCompleted: false, programType: 'general' },
 ];
+
+const mapRemoteChallenge = (c) => {
+  const barEffects = {
+    ...(c.rewardEnergy ? { energy: c.rewardEnergy } : {}),
+    ...(c.rewardDiscipline ? { discipline: c.rewardDiscipline } : {}),
+  };
+  return {
+    id: c.id,
+    title: c.title,
+    rewardXp: c.rewardXp || 0,
+    rewardEnergy: c.rewardEnergy || 0,
+    rewardDiscipline: c.rewardDiscipline || 0,
+    progress: c.progress || 0,
+    isCompleted: Boolean(c.isCompleted),
+    barEffects: Object.keys(barEffects).length ? barEffects : null,
+    challengeType: c.challengeType,
+  };
+};
+
+const rewardText = (challenge) => {
+  const parts = [`${challenge.rewardXp || 0} XP`];
+  if (challenge.rewardEnergy) parts.push(`+${challenge.rewardEnergy} Energy`);
+  if (challenge.rewardDiscipline) parts.push(`+${challenge.rewardDiscipline} Discipline`);
+  return parts.join(' ');
+};
 
 const getTodayKey = () => `healup_daily_checked_${new Date().toISOString().slice(0, 10)}`;
 const loadChecked = () => {
@@ -52,6 +76,38 @@ const saveChecked = (v) => {
   try { localStorage.setItem(getTodayKey(), JSON.stringify(v)); } catch {}
 };
 
+const PROGRAM_STORAGE_KEY = 'healup_selected_program';
+
+const getStoredUserId = () => {
+  const stored = localStorage.getItem('user');
+  if (!stored) return null;
+  try {
+    const parsed = JSON.parse(stored);
+    return parsed?.id || parsed?._id || null;
+  } catch {
+    return null;
+  }
+};
+
+const getMetricsCacheKey = (userId, deviceId) => `healup_metrics_cache_${userId}_${deviceId}`;
+
+const readMetricsCache = (userId, deviceId) => {
+  if (!userId || !deviceId) return null;
+  try {
+    const raw = localStorage.getItem(getMetricsCacheKey(userId, deviceId));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeMetricsCache = (userId, deviceId, data) => {
+  if (!userId || !deviceId || !data) return;
+  try {
+    localStorage.setItem(getMetricsCacheKey(userId, deviceId), JSON.stringify(data));
+  } catch {}
+};
+
 const getCenter = (el) => {
   if (!el) return { x: window.innerWidth / 2, y: 40 };
   const r = el.getBoundingClientRect();
@@ -59,7 +115,7 @@ const getCenter = (el) => {
 };
 
 // ─── Metric Detail Popup ──────────────────────────────────────────────────────
-const MetricPopup = ({ type, onClose }) => {
+const MetricPopup = ({ type, onClose, metrics }) => {
   if (!type) return null;
 
   const handleOverlayClick = (e) => {
@@ -86,19 +142,36 @@ const MetricPopup = ({ type, onClose }) => {
     { day: 'S', resting: 72, peak: 89, min: 61, chart: [68,72,76,80,84,81,75,72,69,66,70,72] },
     { day: 'S', resting: 72, peak: 92, min: 65, chart: [68,72,75,80,78,85,82,88,84,79,76,72] },
   ];
-  const avgBpm = Math.round(HR_DAYS.reduce((s, d) => s + d.resting, 0) / HR_DAYS.length);
+  const heartRateDays = metrics?.heartRateDays?.length ? metrics.heartRateDays : HR_DAYS;
+  const sleepDays = metrics?.sleepDays?.length ? metrics.sleepDays : SLEEP_DAYS;
+  const stepsDays = metrics?.stepsDays?.length ? metrics.stepsDays : STEPS_DAYS;
+  const stressDays = metrics?.stressDays?.length ? metrics.stressDays : STRESS_DAYS;
+  const calories = metrics?.calories || {
+    burned: 1840,
+    intake: 2200,
+    goal: 2551,
+    protein: '82g',
+    carbs: '210g',
+    fat: '54g'
+  };
+
+  const avgBpm = Math.round(heartRateDays.reduce((s, d) => s + (d.resting || 0), 0) / (heartRateDays.length || 1));
+  const sleepAvg = (sleepDays.reduce((s, d) => s + (d.hrs || 0), 0) / (sleepDays.length || 1)).toFixed(1);
+  const stepsAvg = Math.round(stepsDays.reduce((s, d) => s + (d.steps || 0), 0) / (stepsDays.length || 1));
+  const netCalories = Math.max(0, calories.intake - calories.burned);
+  const goalGap = Math.max(0, calories.goal - calories.burned);
 
   const [selectedDayIdx, setSelectedDayIdx] = useState(6);
   const [selectedSleepIdx, setSelectedSleepIdx] = useState(6);
   const [selectedStepsIdx, setSelectedStepsIdx] = useState(6);
   const [selectedStressIdx, setSelectedStressIdx] = useState(6);
-  const selectedDay = HR_DAYS[selectedDayIdx];
-  const selectedSleep = SLEEP_DAYS[selectedSleepIdx];
-  const selectedSteps = STEPS_DAYS[selectedStepsIdx];
-  const selectedStress = STRESS_DAYS[selectedStressIdx];
-  const maxSleepHrs = Math.max(...SLEEP_DAYS.map(d => d.hrs));
-  const maxStepsVal = Math.max(...STEPS_DAYS.map(d => d.steps));
-  const maxStressVal = Math.max(...STRESS_DAYS.map(d => d.level));
+  const selectedDay = heartRateDays[Math.min(selectedDayIdx, heartRateDays.length - 1)] || heartRateDays[0];
+  const selectedSleep = sleepDays[Math.min(selectedSleepIdx, sleepDays.length - 1)] || sleepDays[0];
+  const selectedSteps = stepsDays[Math.min(selectedStepsIdx, stepsDays.length - 1)] || stepsDays[0];
+  const selectedStress = stressDays[Math.min(selectedStressIdx, stressDays.length - 1)] || stressDays[0];
+  const maxSleepHrs = Math.max(...sleepDays.map(d => d.hrs || 0), 1);
+  const maxStepsVal = Math.max(...stepsDays.map(d => d.steps || 0), 1);
+  const maxStressVal = Math.max(...stressDays.map(d => d.level || 0), 1);
 
   const configs = {
     heartRate: {
@@ -126,19 +199,19 @@ const MetricPopup = ({ type, onClose }) => {
       icon: '/fire.png', title: 'Calories', subtitle: 'Today\'s burn & intake',
       badge: { label: 'Active', color: '#fb923c' },
       accentColor: '#fb923c',
-      metricValue: '1,840', metricUnit: 'kcal burned',
+      metricValue: calories.burned.toLocaleString(), metricUnit: 'kcal burned',
       stats: [
-        { label: 'BMR (Base)',    value: '1,420 kcal', note: 'At rest burn',    color: '#fbbf24' },
-        { label: 'Active Burn',   value: '420 kcal',   note: 'From movement',   color: '#fb923c' },
-        { label: 'Net Calories',  value: '+360',        note: 'Intake − burned', color: '#34d399' },
-        { label: 'Goal Gap',      value: '711 kcal',   note: 'Left to burn',    color: '#a78bfa' },
+        { label: 'BMR (Base)',    value: `${Math.max(1200, calories.burned - 420)} kcal`, note: 'At rest burn',    color: '#fbbf24' },
+        { label: 'Active Burn',   value: `${Math.max(0, calories.burned - Math.max(1200, calories.burned - 420))} kcal`,   note: 'From movement',   color: '#fb923c' },
+        { label: 'Net Calories',  value: `+${netCalories}`,        note: 'Intake − burned', color: '#34d399' },
+        { label: 'Goal Gap',      value: `${goalGap} kcal`,   note: 'Left to burn',    color: '#a78bfa' },
       ],
       macros: [
-        { label: 'Protein', value: '82g',  pct: 52, color: '#f472b6' },
-        { label: 'Carbs',   value: '210g', pct: 80, color: '#fbbf24' },
-        { label: 'Fat',     value: '54g',  pct: 40, color: '#60a5fa' },
+        { label: 'Protein', value: calories.protein,  pct: 52, color: '#f472b6' },
+        { label: 'Carbs',   value: calories.carbs, pct: 80, color: '#fbbf24' },
+        { label: 'Fat',     value: calories.fat,  pct: 40, color: '#60a5fa' },
       ],
-      donut: { burned: 1840, goal: 2551, intake: 2200 },
+      donut: { burned: calories.burned, goal: calories.goal, intake: calories.intake },
       insight: { icon: '/idea.png', title: 'Insight', text: 'Your protein intake is solid! Carbs are on the higher side — consider a lighter dinner to stay within your calorie goal and maximize recovery.' },
     },
     stress: {
@@ -178,7 +251,7 @@ const MetricPopup = ({ type, onClose }) => {
 
   // ── Heart Rate popup (interactive day selection) ────────────────────────────
   if (type === 'heartRate') {
-    const maxResting = Math.max(...HR_DAYS.map(d => d.resting));
+    const maxResting = Math.max(...heartRateDays.map(d => d.resting || 0), 1);
     return (
       <div className="metric-popup-overlay" onClick={handleOverlayClick}>
         <div className="metric-popup">
@@ -240,7 +313,7 @@ const MetricPopup = ({ type, onClose }) => {
             {/* Interactive weekly bar chart */}
             <div className="metric-popup-section-label">Weekly Breakdown</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, textAlign: 'center', marginBottom: '1rem' }}>
-              {HR_DAYS.map((d, i) => {
+              {heartRateDays.map((d, i) => {
                 const pct = (d.resting / maxResting) * 100;
                 const isSelected = i === selectedDayIdx;
                 return (
@@ -312,7 +385,7 @@ const MetricPopup = ({ type, onClose }) => {
             <div className="metric-popup-stats-grid" style={{ marginBottom: '1rem' }}>
               <div className="metric-popup-stat-box">
                 <div style={{ fontSize: '0.68rem', color: '#a8c8e0', marginBottom: 3 }}>7-Day Average</div>
-                <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#a78bfa' }}>{SLEEP_AVG} hrs</div>
+                <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#a78bfa' }}>{sleepAvg} hrs</div>
                 <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: 2 }}>Near your goal</div>
               </div>
               <div className="metric-popup-stat-box">
@@ -330,7 +403,7 @@ const MetricPopup = ({ type, onClose }) => {
               <div className="metric-popup-stat-box">
                 <div style={{ fontSize: '0.68rem', color: '#a8c8e0', marginBottom: 3 }}>Best Night</div>
                 <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#fbbf24' }}>
-                  {Math.max(...SLEEP_DAYS.map(d=>d.hrs))} hrs
+                  {Math.max(...sleepDays.map(d => d.hrs || 0), 0)} hrs
                 </div>
                 <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: 2 }}>Friday</div>
               </div>
@@ -339,7 +412,7 @@ const MetricPopup = ({ type, onClose }) => {
             {/* Interactive weekly bar chart */}
             <div className="metric-popup-section-label">Weekly Breakdown</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, textAlign: 'center', marginBottom: '1rem' }}>
-              {SLEEP_DAYS.map((d, i) => {
+              {sleepDays.map((d, i) => {
                 const pct = (d.hrs / maxSleepHrs) * 100;
                 const isSelected = i === selectedSleepIdx;
                 return (
@@ -450,7 +523,7 @@ const MetricPopup = ({ type, onClose }) => {
               </div>
               <div className="metric-popup-stat-box">
                 <div style={{ fontSize: '0.68rem', color: '#a8c8e0', marginBottom: 3 }}>7-Day Avg</div>
-                <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#a78bfa' }}>{STEPS_AVG.toLocaleString()}</div>
+                <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#a78bfa' }}>{stepsAvg.toLocaleString()}</div>
                 <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: 2 }}>Above average</div>
               </div>
             </div>
@@ -458,7 +531,7 @@ const MetricPopup = ({ type, onClose }) => {
             {/* Interactive weekly bar chart */}
             <div className="metric-popup-section-label">Weekly Breakdown</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, textAlign: 'center', marginBottom: '1rem' }}>
-              {STEPS_DAYS.map((d, i) => {
+              {stepsDays.map((d, i) => {
                 const pct = (d.steps / maxStepsVal) * 100;
                 const isSelected = i === selectedStepsIdx;
                 return (
@@ -560,7 +633,7 @@ const MetricPopup = ({ type, onClose }) => {
             {/* Interactive weekly bar chart */}
             <div className="metric-popup-section-label">Weekly Breakdown</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, textAlign: 'center', marginBottom: '1rem' }}>
-              {STRESS_DAYS.map((d, i) => {
+              {stressDays.map((d, i) => {
                 const pct = (d.level / maxStressVal) * 100;
                 const isSelected = i === selectedStressIdx;
                 const barCol = stressColor(d.level);
@@ -647,105 +720,6 @@ const MetricPopup = ({ type, onClose }) => {
               <div>
                 <div style={{ fontSize: '0.75rem', color: '#a8c8e0', marginBottom: 2 }}>Intake: <strong style={{ color: '#fff' }}>{cfg.donut.intake.toLocaleString()} kcal</strong></div>
                 <div style={{ fontSize: '0.75rem', color: '#a8c8e0' }}>Goal: <strong style={{ color: '#fff' }}>{cfg.donut.goal.toLocaleString()} kcal</strong></div>
-=======
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import '../styles/Dashboard.css';
-
-const HP_MAX = 100;
-const ENERGY_MAX = 100;
-const DISCIPLINE_MAX = 100;
-
-const Dashboard = () => {
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const storedStats = localStorage.getItem('stats');
-
-    if (!storedUser) {
-      navigate('/login');
-      return;
-    }
-
-    const parsedUser = JSON.parse(storedUser);
-    setUser(parsedUser);
-
-    // Seed with cached stats immediately, then refresh from API
-    if (storedStats) {
-      setStats(JSON.parse(storedStats));
-      setLoading(false);
-    }
-
-    fetch(`http://localhost:8001/api/stats/${parsedUser.id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && !data.error) {
-          setStats(data);
-          localStorage.setItem('stats', JSON.stringify(data));
-        }
-      })
-      .catch(() => {/* use cached stats if fetch fails */})
-      .finally(() => setLoading(false));
-  }, [navigate]);
-
-  const hpPct = stats ? Math.round((stats.hp / HP_MAX) * 100) : 0;
-  const energyPct = stats ? Math.min(Math.round((stats.totalEnergy / ENERGY_MAX) * 100), 100) : 0;
-  const disciplinePct = stats ? Math.min(Math.round((stats.totalDiscipline / DISCIPLINE_MAX) * 100), 100) : 0;
-
-  return (
-    <div className="page-container">
-      <div className="dashboard-grid">
-
-        {/* Avatar and Stats Section */}
-        <div className="card large-card">
-          <div className="avatar-section">
-            <div className="avatar-placeholder" data-testid="avatar-image"></div>
-
-            {user && (
-              <p className="dashboard-greeting">Welcome, {user.fullName}!</p>
-            )}
-
-            {stats && (
-              <div className="level-info">
-                <span className="level-badge">Level {stats.level}</span>
-                <span className="xp-display">{stats.totalXp} XP</span>
-              </div>
-            )}
-
-            <div className="stat-bars">
-              <div className="stat-bar" data-testid="hp-bar">
-                <span className="stat-icon">❤️</span>
-                <div className="progress-bar">
-                  <div className="progress-fill red" style={{ width: `${hpPct}%` }}></div>
-                </div>
-                <span className="stat-label">
-                  HP {loading ? '—' : `${stats?.hp ?? 0}/${HP_MAX}`}
-                </span>
-              </div>
-
-              <div className="stat-bar" data-testid="energy-bar">
-                <span className="stat-icon">⚡</span>
-                <div className="progress-bar">
-                  <div className="progress-fill blue" style={{ width: `${energyPct}%` }}></div>
-                </div>
-                <span className="stat-label">
-                  Energy {loading ? '—' : stats?.totalEnergy ?? 0}
-                </span>
-              </div>
-
-              <div className="stat-bar" data-testid="discipline-bar">
-                <span className="stat-icon">💪</span>
-                <div className="progress-bar">
-                  <div className="progress-fill green" style={{ width: `${disciplinePct}%` }}></div>
-                </div>
-                <span className="stat-label">
-                  Discipline {loading ? '—' : stats?.totalDiscipline ?? 0}
-                </span>
->>>>>>> 6e5e852d0642ea4cf449851088218ed2a345af31
               </div>
             </div>
           )}
@@ -862,7 +836,6 @@ const FlyingParticle = ({ p }) => (
   </div>
 );
 
-<<<<<<< HEAD
 // ─── Reward Popup ─────────────────────────────────────────────────────────────
 const RewardPopup = ({ popup }) => {
   if (!popup) return null;
@@ -886,33 +859,6 @@ const RewardPopup = ({ popup }) => {
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:'0.3rem', padding:'0.3rem 0.85rem', borderRadius:20, background:'rgba(251,191,36,0.15)', border:'1px solid rgba(251,191,36,0.4)', color:'#fbbf24', fontWeight:800, fontSize:'0.88rem' }}>
             <img src="/profit.png" alt="" style={{ width:18, height:18, objectFit:'contain' }} />+{popup.coins} Coins
-=======
-        {/* Heart Rate Card */}
-        <div className="card small-card" data-testid="heart-rate-card">
-          <h3>Heart Rate</h3>
-          <div className="heart-icon">❤️</div>
-          <div className="heart-rate-value">
-            <span className="stat-placeholder-text">No data yet</span>
-          </div>
-        </div>
-
-        {/* Sleep Card */}
-        <div className="card small-card" data-testid="sleep-card">
-          <h3>Sleep</h3>
-          <div className="sleep-chart">
-            <span className="stat-placeholder-text">No data yet</span>
-          </div>
-        </div>
-
-        {/* Activities Card */}
-        <div className="card small-card" data-testid="steps-card">
-          <h3>Activities</h3>
-          <div className="steps-content">
-            <p className="stat-big-value">
-              {loading ? '—' : stats?.totalActivitiesLogged ?? 0}
-            </p>
-            <span className="stat-unit">logged</span>
->>>>>>> 6e5e852d0642ea4cf449851088218ed2a345af31
           </div>
           {popup.statBonuses.map((s, i) => (
             <div key={i} style={{ display:'flex', alignItems:'center', gap:'0.3rem', padding:'0.3rem 0.85rem', borderRadius:20, background:`${s.color}22`, border:`1px solid ${s.color}66`, color:s.color, fontWeight:800, fontSize:'0.88rem' }}>
@@ -920,49 +866,6 @@ const RewardPopup = ({ popup }) => {
             </div>
           ))}
         </div>
-<<<<<<< HEAD
-=======
-
-        {/* Calories Card */}
-        <div className="card small-card" data-testid="calories-card">
-          <h3>Calories Burned</h3>
-          <div className="calories-chart">
-            <p className="stat-big-value">
-              {loading ? '—' : stats?.totalCaloriesBurned ?? 0}
-            </p>
-            <span className="stat-unit">kcal</span>
-          </div>
-        </div>
-
-        {/* Challenges Card */}
-        <div className="card medium-card" data-testid="challenges-summary-card">
-          <h3>Challenges</h3>
-          <div className="challenge-list">
-            <span className="stat-placeholder-text">No challenges yet</span>
-          </div>
-        </div>
-
-        {/* Distance Card */}
-        <div className="card medium-card" data-testid="stress-card">
-          <h3>Distance</h3>
-          <div className="stress-meter">
-            <p className="stat-big-value">
-              {loading ? '—' : (stats?.totalDistance ?? 0).toFixed(1)}
-            </p>
-            <span className="stat-unit">km</span>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <button className="dashboard-action-btn log-btn" data-testid="log-activities-btn">
-          Log Activities and Food Intake
-        </button>
-
-        <button className="dashboard-action-btn sync-btn" data-testid="sync-device-btn">
-          Sync Device
-        </button>
-
->>>>>>> 6e5e852d0642ea4cf449851088218ed2a345af31
       </div>
     </div>
   );
@@ -971,16 +874,81 @@ const RewardPopup = ({ popup }) => {
 // ─── Challenges Card ──────────────────────────────────────────────────────────
 const ChallengesCard = ({ onViewAll, onChallengeComplete }) => {
   const [checked,   setChecked]   = useState(loadChecked);
+  const [remoteChallenges, setRemoteChallenges] = useState({ daily: [], weekly: [] });
+  const [selectedProgram, setSelectedProgram] = useState(() => {
+    try {
+      return localStorage.getItem(PROGRAM_STORAGE_KEY) || 'general';
+    } catch {
+      return 'general';
+    }
+  });
   const [particles, setParticles] = useState([]);
   const [popup,     setPopup]     = useState(null);
   const itemRefs = useRef({});
+  const hasRemoteDaily = remoteChallenges.daily.length > 0;
+
+  const dailyChallenges = hasRemoteDaily
+    ? remoteChallenges.daily
+    : FALLBACK_DAILY_CHALLENGES.filter((c) => c.programType === selectedProgram);
+  const weeklyChallenges = remoteChallenges.weekly.length > 0
+    ? remoteChallenges.weekly
+    : FALLBACK_WEEKLY_CHALLENGES.filter((c) => c.programType === selectedProgram);
+  const challengeKey = (c, i) => c.id || String(i);
+  const isDone = (c, i) => hasRemoteDaily ? Boolean(c.isCompleted) : Boolean(checked[challengeKey(c, i)]);
 
   useEffect(() => {
-    const sync = () => setChecked(loadChecked());
+    const sync = () => {
+      if (hasRemoteDaily) return;
+      setChecked(loadChecked());
+      try {
+        setSelectedProgram(localStorage.getItem(PROGRAM_STORAGE_KEY) || 'general');
+      } catch {}
+    };
     sync();
     window.addEventListener('focus', sync);
     return () => window.removeEventListener('focus', sync);
-  }, []);
+  }, [hasRemoteDaily]);
+
+  useEffect(() => {
+    const userId = getStoredUserId();
+    if (!userId) {
+      setRemoteChallenges({ daily: [], weekly: [] });
+      return;
+    }
+
+    fetch(`http://localhost:8001/api/challenges?userId=${userId}&programType=${encodeURIComponent(selectedProgram)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!Array.isArray(data) || data.length === 0) {
+          setRemoteChallenges({ daily: [], weekly: [] });
+          return;
+        }
+        const mapped = data.map(mapRemoteChallenge);
+        const daily = mapped.filter((c) => c.challengeType === 'daily');
+        const weekly = mapped.filter((c) => c.challengeType === 'weekly');
+        setRemoteChallenges({ daily, weekly });
+        if (daily.length > 0) {
+          const persistedChecked = daily.reduce((acc, c) => {
+            acc[c.id] = Boolean(c.isCompleted);
+            return acc;
+          }, {});
+          setChecked(persistedChecked);
+        }
+      })
+      .catch(() => {
+        setRemoteChallenges({ daily: [], weekly: [] });
+      });
+  }, [selectedProgram]);
+
+  const selectedProgramLabel = ({
+    general: 'General',
+    'weight-loss': 'Weight Loss',
+    'muscle-gain': 'Muscle Gain',
+    endurance: 'Endurance',
+    sleep: 'Sleep',
+    stress: 'Stress',
+    custom: 'Custom',
+  })[selectedProgram] || 'General';
 
   const spawnParticles = useCallback((originEl, challenge) => {
     const rect    = originEl.getBoundingClientRect();
@@ -1020,23 +988,36 @@ const ChallengesCard = ({ onViewAll, onChallengeComplete }) => {
   }, []);
 
   const handleTick = (i) => {
-    if (checked[i]) return;
-    const next = { ...checked, [i]: true };
+    const c = dailyChallenges[i];
+    const key = challengeKey(c, i);
+    if (isDone(c, i)) return;
+    const next = { ...checked, [key]: true };
     setChecked(next);
-    saveChecked(next);
-    const c = DAILY[i];
-    const coins = Math.max(5, Math.round(c.xp * 0.2));
+    if (!hasRemoteDaily) saveChecked(next);
+    if (hasRemoteDaily && c.id) {
+      setRemoteChallenges((prev) => ({
+        ...prev,
+        daily: prev.daily.map((d) => (d.id === c.id ? { ...d, isCompleted: true, progress: 100 } : d)),
+      }));
+      fetch(`http://localhost:8001/api/challenges/${c.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ progress: 100, isCompleted: true }),
+      }).catch(() => {});
+    }
+    const xp = c.rewardXp || c.xp || 0;
+    const coins = Math.max(5, Math.round(xp * 0.2));
     const statBonuses = c.barEffects
       ? Object.entries(c.barEffects).filter(([k]) => STAT_META[k]).map(([k, v]) => ({ ...STAT_META[k], val: v }))
       : [];
-    setPopup({ xp: c.xp, coins, statBonuses });
+    setPopup({ xp, coins, statBonuses });
     setTimeout(() => setPopup(null), 2800);
     const el = itemRefs.current[i];
     if (el) spawnParticles(el, c);
-    if (onChallengeComplete) onChallengeComplete(c.xp, coins, c.barEffects || null);
+    if (onChallengeComplete) onChallengeComplete(xp, coins, c.barEffects || null);
   };
 
-  const done = Object.values(checked).filter(Boolean).length;
+  const done = dailyChallenges.filter((c, i) => isDone(c, i)).length;
 
   return (
     <>
@@ -1047,25 +1028,26 @@ const ChallengesCard = ({ onViewAll, onChallengeComplete }) => {
           <img src="/target.png" alt="Challenges" className="bio-icon" style={{width:22,height:22,objectFit:'contain'}} />
           <div>
             <div className="bio-title">Challenges</div>
-            <div className="bio-subtitle">{done}/{DAILY.length} daily done</div>
+            <div className="bio-subtitle">{selectedProgramLabel} · {done}/{dailyChallenges.length} daily done</div>
           </div>
           <button className="view-all-btn" onClick={onViewAll}>View All →</button>
         </div>
         <div className="ch-section-label">DAILY</div>
         <div className="ch-list">
-          {DAILY.slice(0, 3).map((c, i) => {
-            const coins = Math.max(5, Math.round(c.xp * 0.2));
+          {dailyChallenges.slice(0, 3).map((c, i) => {
+            const xp = c.rewardXp || c.xp || 0;
+            const coins = Math.max(5, Math.round(xp * 0.2));
             return (
-              <div key={i} ref={el => itemRefs.current[i] = el} className={`ch-row ${checked[i] ? 'ch-done' : ''}`}>
-                <div className={`ch-check ${checked[i] ? 'checked' : ''}`} onClick={() => handleTick(i)}>
-                  {checked[i] && '✓'}
+              <div key={challengeKey(c, i)} ref={el => itemRefs.current[i] = el} className={`ch-row ${isDone(c, i) ? 'ch-done' : ''}`}>
+                <div className={`ch-check ${isDone(c, i) ? 'checked' : ''}`} onClick={() => handleTick(i)}>
+                  {isDone(c, i) && '✓'}
                 </div>
                 <div className="ch-row-body">
                   <span className="ch-title">{c.title}</span>
                   <div className="ch-tags">
                     {/* XP tag */}
                     <span className="ch-tag ch-tag-xp">
-                      <img src="/star.png" alt="" style={{width:11,height:11,objectFit:'contain'}}/> {c.xp} XP
+                      <img src="/star.png" alt="" style={{width:11,height:11,objectFit:'contain'}}/> {xp} XP
                     </span>
                     {/* Stat bonus tags */}
                     {c.barEffects && Object.entries(c.barEffects).map(([key, val]) => {
@@ -1089,11 +1071,11 @@ const ChallengesCard = ({ onViewAll, onChallengeComplete }) => {
         </div>
         <div className="ch-section-label" style={{ marginTop: '0.5rem' }}>WEEKLY</div>
         <div className="ch-list">
-          {WEEKLY.slice(0, 2).map((c, i) => (
-            <div key={i} className="ch-weekly-row">
+          {weeklyChallenges.slice(0, 2).map((c, i) => (
+            <div key={challengeKey(c, i)} className="ch-weekly-row">
               <div className="ch-weekly-top">
                 <span className="ch-title">{c.title}</span>
-                <span className="ch-reward"><img src="/lightning.png" alt="xp" style={{width:13,height:13,objectFit:'contain',verticalAlign:'middle',marginRight:3}}/>{c.reward}</span>
+                <span className="ch-reward"><img src="/lightning.png" alt="xp" style={{width:13,height:13,objectFit:'contain',verticalAlign:'middle',marginRight:3}}/>{rewardText(c)}</span>
               </div>
               <div className="ch-weekly-bar">
                 <div className="ch-weekly-fill" style={{ width: `${c.progress}%` }} />
@@ -1181,8 +1163,11 @@ const MiniLineChart = ({ data, color, height = 52, width = 160 }) => {
 };
 
 // ─── Bio Cards (now accept onClick) ──────────────────────────────────────────
-const HeartRateCard = ({ onClick }) => {
-  const data = [68,72,75,80,78,85,82,88,84,79,76,72];
+const HeartRateCard = ({ onClick, days }) => {
+  const fallbackData = [68,72,75,80,78,85,82,88,84,79,76,72];
+  const sourceDays = days?.length ? days : [{ resting: 72, min: 58, peak: 92, chart: fallbackData }];
+  const latestDay = sourceDays[sourceDays.length - 1] || sourceDays[0];
+  const data = latestDay?.chart?.length ? latestDay.chart : fallbackData;
   const hours = ['6am','7am','8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm'];
   const [hoverIdx, setHoverIdx] = useState(null);
   const W = 160, H = 52;
@@ -1203,7 +1188,7 @@ const HeartRateCard = ({ onClick }) => {
       </div>
       <div className="bio-value-row">
         <span className="bio-value" style={{color: hoveredVal ? '#ff5c7a' : undefined, transition:'color 0.15s'}}>
-          {hoveredVal ?? 72}
+          {hoveredVal ?? latestDay.resting ?? 72}
         </span>
         <span className="bio-unit">bpm{hoveredVal ? ` · ${hours[hoverIdx]}` : ''}</span>
       </div>
@@ -1266,7 +1251,7 @@ const HeartRateCard = ({ onClick }) => {
         )}
       </div>
 
-      <div className="bio-footer"><span>Min: {min} bpm</span><span>Max: {max} bpm</span></div>
+      <div className="bio-footer"><span>Min: {latestDay.min ?? min} bpm</span><span>Max: {latestDay.peak ?? max} bpm</span></div>
     </div>
   );
 };
@@ -1283,9 +1268,12 @@ const SLEEP_DAYS = [
 ];
 const SLEEP_AVG = (SLEEP_DAYS.reduce((s,d)=>s+d.hrs,0)/SLEEP_DAYS.length).toFixed(1);
 
-const SleepCard = ({ onClick }) => {
+const SleepCard = ({ onClick, sleepDays }) => {
+  const dayData = sleepDays?.length ? sleepDays : SLEEP_DAYS;
+  const avgHours = (dayData.reduce((s,d)=>s+(d.hrs || 0),0)/(dayData.length || 1)).toFixed(1);
   const [selectedIdx, setSelectedIdx] = useState(6); // default Sunday
-  const selected = SLEEP_DAYS[selectedIdx];
+  const safeIdx = Math.min(selectedIdx, dayData.length - 1);
+  const selected = dayData[safeIdx] || dayData[0];
 
   return (
     <div className="bio-card-inner bio-card-clickable" onClick={onClick}>
@@ -1299,7 +1287,7 @@ const SleepCard = ({ onClick }) => {
         <span className="bio-unit">hrs</span>
       </div>
       <div className="mini-bar-chart" style={{alignItems:'flex-end',gap:'4px'}}>
-        {SLEEP_DAYS.map((d,i)=>(
+        {dayData.map((d,i)=>(
           <div
             key={i}
             onClick={(e)=>{e.stopPropagation(); setSelectedIdx(i);}}
@@ -1316,7 +1304,7 @@ const SleepCard = ({ onClick }) => {
           </div>
         ))}
       </div>
-      <div className="bio-footer"><span>Avg: {SLEEP_AVG} hrs</span><span>Goal: 8 hrs</span></div>
+      <div className="bio-footer"><span>Avg: {avgHours} hrs</span><span>Goal: 8 hrs</span></div>
     </div>
   );
 };
@@ -1333,17 +1321,19 @@ const STEPS_DAYS = [
 ];
 const STEPS_AVG = Math.round(STEPS_DAYS.reduce((s,d)=>s+d.steps,0)/STEPS_DAYS.length);
 
-const StepsCard = ({ onClick }) => {
+const StepsCard = ({ onClick, stepsDays }) => {
+  const dayData = stepsDays?.length ? stepsDays : STEPS_DAYS;
   const [selectedIdx, setSelectedIdx] = useState(6);
-  const selected = STEPS_DAYS[selectedIdx];
-  const maxSteps = Math.max(...STEPS_DAYS.map(d => d.steps));
+  const safeIdx = Math.min(selectedIdx, dayData.length - 1);
+  const selected = dayData[safeIdx] || dayData[0];
+  const maxSteps = Math.max(...dayData.map(d => d.steps), 1);
   const pct = Math.round((selected.steps / selected.goal) * 100);
 
   return (
     <div className="bio-card-inner bio-card-clickable" onClick={onClick}>
       <div className="bio-card-top">
         <img src="/football.png" alt="Steps" className="bio-icon" style={{width:22,height:22,objectFit:'contain'}} />
-        <div><div className="bio-title">Steps</div><div className="bio-subtitle">{STEPS_DAYS[selectedIdx].day === STEPS_DAYS[6].day && selectedIdx === 6 ? 'Today' : STEPS_DAYS[selectedIdx].day}</div></div>
+        <div><div className="bio-title">Steps</div><div className="bio-subtitle">{safeIdx === dayData.length - 1 ? 'Today' : selected.day}</div></div>
         <div className="bio-badge green">On Track</div>
       </div>
       <div className="bio-value-row">
@@ -1352,7 +1342,7 @@ const StepsCard = ({ onClick }) => {
       </div>
       {/* Interactive bar chart */}
       <div className="mini-bar-chart" style={{alignItems:'flex-end',gap:'3px'}}>
-        {STEPS_DAYS.map((d,i) => (
+        {dayData.map((d,i) => (
           <div
             key={i}
             onClick={(e)=>{e.stopPropagation(); setSelectedIdx(i);}}
@@ -1378,8 +1368,14 @@ const StepsCard = ({ onClick }) => {
   );
 };
 
-const CaloriesCard = ({ onClick }) => {
-  const burned=1840,intake=2200,goal=2551,pct=Math.round((burned/goal)*100);
+const CaloriesCard = ({ onClick, calories }) => {
+  const burned = calories?.burned ?? 1840;
+  const intake = calories?.intake ?? 2200;
+  const goal = calories?.goal ?? 2551;
+  const protein = calories?.protein ?? '82g';
+  const carbs = calories?.carbs ?? '210g';
+  const fat = calories?.fat ?? '54g';
+  const pct=Math.round((burned/goal)*100);
   const r=28,circ=2*Math.PI*r,dash=(burned/goal)*circ;
   return (
     <div className="bio-card-inner bio-card-clickable" onClick={onClick}>
@@ -1403,7 +1399,7 @@ const CaloriesCard = ({ onClick }) => {
           <div style={{fontSize:'0.72rem',color:'#a8c8e0'}}>Goal: {goal.toLocaleString()} kcal</div>
         </div>
       </div>
-      <div className="bio-footer"><span>Protein: 82g</span><span>Carbs: 210g</span><span>Fat: 54g</span></div>
+      <div className="bio-footer"><span>Protein: {protein}</span><span>Carbs: {carbs}</span><span>Fat: {fat}</span></div>
     </div>
   );
 };
@@ -1419,10 +1415,12 @@ const STRESS_DAYS = [
   { day:'S', level:42, hrv:58, peak:67, peakTime:'2pm', recovery:71, chart:[55,62,48,70,65,45,52,58,44,50,47,42] },
 ];
 
-const StressCard = ({ onClick }) => {
+const StressCard = ({ onClick, stressDays }) => {
+  const dayData = stressDays?.length ? stressDays : STRESS_DAYS;
   const [selectedIdx, setSelectedIdx] = useState(6);
-  const selected = STRESS_DAYS[selectedIdx];
-  const maxLevel = Math.max(...STRESS_DAYS.map(d => d.level));
+  const safeIdx = Math.min(selectedIdx, dayData.length - 1);
+  const selected = dayData[safeIdx] || dayData[0];
+  const maxLevel = Math.max(...dayData.map(d => d.level), 1);
   const stressColor = (l) => l < 40 ? '#34d399' : l < 60 ? '#d97706' : '#dc2626';
   const stressLabel = (l) => l < 40 ? 'Low' : l < 60 ? 'Moderate' : 'High';
   const color = stressColor(selected.level);
@@ -1440,7 +1438,7 @@ const StressCard = ({ onClick }) => {
       </div>
       {/* Interactive bar chart */}
       <div className="mini-bar-chart" style={{alignItems:'flex-end',gap:'3px',height:'52px'}}>
-        {STRESS_DAYS.map((d,i) => {
+        {dayData.map((d,i) => {
           const barColor = stressColor(d.level);
           return (
             <div
@@ -1460,7 +1458,7 @@ const StressCard = ({ onClick }) => {
         })}
       </div>
       <div style={{display:'flex',gap:'3px',marginTop:'3px'}}>
-        {STRESS_DAYS.map((d,i)=>(
+        {dayData.map((d,i)=>(
           <div key={i} style={{flex:1,textAlign:'center',fontSize:'0.55rem',color: i===selectedIdx ? stressColor(d.level) : '#a8c8e0', fontWeight: i===selectedIdx ? 700 : 400}}>{d.day}</div>
         ))}
       </div>
@@ -1550,12 +1548,127 @@ const ViewDoctorModal = ({ onClose }) => {
   );
 };
 
+const toHourMinutes = (hours) => {
+  const totalMinutes = Math.round((Number(hours) || 0) * 60);
+  const hrs = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  return `${hrs}h ${String(mins).padStart(2, '0')}m`;
+};
+
+const mapMetricsForDashboard = (metrics = []) => {
+  if (!Array.isArray(metrics) || metrics.length === 0) return null;
+  const dayData = metrics.slice(-7);
+  const today = dayData[dayData.length - 1];
+
+  return {
+    heartRateDays: dayData.map((d) => ({
+      day: d.day,
+      resting: d.restingHeartRate,
+      peak: d.heartRateMax,
+      min: d.heartRateMin,
+      chart: Array.isArray(d.heartRateSeries) && d.heartRateSeries.length ? d.heartRateSeries : [d.restingHeartRate]
+    })),
+    sleepDays: dayData.map((d) => {
+      const total = (d.sleepDeepHours || 0) + (d.sleepRemHours || 0) + (d.sleepLightHours || 0);
+      const base = total || 1;
+      return {
+        day: d.day,
+        hrs: Number(d.sleepHours || 0).toFixed(1),
+        score: d.sleepScore || 0,
+        deep: toHourMinutes(d.sleepDeepHours),
+        rem: toHourMinutes(d.sleepRemHours),
+        light: toHourMinutes(d.sleepLightHours),
+        deepPct: Math.round(((d.sleepDeepHours || 0) / base) * 100),
+        remPct: Math.round(((d.sleepRemHours || 0) / base) * 100),
+        lightPct: Math.round(((d.sleepLightHours || 0) / base) * 100),
+      };
+    }),
+    stepsDays: dayData.map((d) => ({
+      day: d.day,
+      steps: d.steps || 0,
+      dist: Number(d.distanceKm || 0).toFixed(1),
+      cal: d.caloriesBurned || 0,
+      goal: 10000,
+    })),
+    stressDays: dayData.map((d) => ({
+      day: d.day,
+      level: d.stressLevel || 0,
+      hrv: d.stressHrv || 0,
+      peak: d.stressPeak || 0,
+      peakTime: d.stressPeakTime || '-',
+      recovery: d.stressRecovery || 0,
+      chart: Array.isArray(d.stressSeries) && d.stressSeries.length ? d.stressSeries : [d.stressLevel || 0],
+    })),
+    calories: {
+      burned: today?.caloriesBurned || 0,
+      intake: today?.calorieIntake || 0,
+      goal: 2551,
+      protein: '82g',
+      carbs: '210g',
+      fat: '54g',
+    },
+  };
+};
+
+const MetricsLoadingCard = ({ label }) => (
+  <div className="bio-card-inner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 180 }}>
+    <div style={{ color: '#8fb2cd', fontSize: '0.78rem', fontWeight: 600 }}>{label}</div>
+  </div>
+);
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
-const Dashboard = ({ avatarSelections, avatarName, bars = { hp:65, energy:80, discipline:45 }, onChallengeComplete }) => {
+const Dashboard = ({ avatarSelections, avatarName, bars = { hp:65, energy:80, discipline:45 }, onChallengeComplete, activeDevice = 'apple' }) => {
   const petId    = avatarSelections?.pets || null;
   const navigate = useNavigate();
   const [showDoctor,     setShowDoctor]     = useState(false);
   const [activeMetric,   setActiveMetric]   = useState(null); // 'heartRate' | 'sleep' | 'steps' | 'calories' | 'stress'
+  const [metricsData,    setMetricsData]    = useState(() => {
+    const userId = getStoredUserId();
+    return readMetricsCache(userId, activeDevice);
+  });
+  const [metricsReady,   setMetricsReady]   = useState(() => Boolean(getStoredUserId() && readMetricsCache(getStoredUserId(), activeDevice)));
+
+  useEffect(() => {
+    const userId = getStoredUserId();
+
+    if (!userId) return;
+
+    const cached = readMetricsCache(userId, activeDevice);
+    if (cached) {
+      setMetricsData(cached);
+      setMetricsReady(true);
+    } else {
+      setMetricsReady(false);
+    }
+
+    let isMounted = true;
+    const fetchMetrics = () => {
+      fetch(`http://localhost:8001/api/metrics/weekly/${userId}?device=${encodeURIComponent(activeDevice)}`)
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (!isMounted || !data?.metrics) return;
+          const mapped = mapMetricsForDashboard(data.metrics);
+          if (!mapped) return;
+          setMetricsData(mapped);
+          setMetricsReady(true);
+          writeMetricsCache(userId, activeDevice, mapped);
+        })
+        .catch(() => {
+          if (cached) setMetricsReady(true);
+        });
+    };
+
+    fetchMetrics();
+
+    // Re-fetch when a food is logged from the ActivityFoodLog page
+    // (both pages can be active in the same SPA session).
+    window.addEventListener('healup_food_logged', fetchMetrics);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('healup_food_logged', fetchMetrics);
+    };
+  }, [activeDevice]);
 
   return (
     <div className="page-container">
@@ -1601,16 +1714,32 @@ const Dashboard = ({ avatarSelections, avatarName, bars = { hp:65, energy:80, di
 
         {/* Bio metric cards — each gets an onClick to open its popup */}
         <div className="card small-card bio-card" data-testid="heart-rate-card">
-          <HeartRateCard onClick={() => setActiveMetric('heartRate')} />
+          {metricsReady && metricsData ? (
+            <HeartRateCard onClick={() => setActiveMetric('heartRate')} days={metricsData.heartRateDays} />
+          ) : (
+            <MetricsLoadingCard label="Syncing heart rate..." />
+          )}
         </div>
         <div className="card small-card bio-card" data-testid="sleep-card">
-          <SleepCard onClick={() => setActiveMetric('sleep')} />
+          {metricsReady && metricsData ? (
+            <SleepCard onClick={() => setActiveMetric('sleep')} sleepDays={metricsData.sleepDays} />
+          ) : (
+            <MetricsLoadingCard label="Syncing sleep..." />
+          )}
         </div>
         <div className="card small-card bio-card" data-testid="steps-card">
-          <StepsCard onClick={() => setActiveMetric('steps')} />
+          {metricsReady && metricsData ? (
+            <StepsCard onClick={() => setActiveMetric('steps')} stepsDays={metricsData.stepsDays} />
+          ) : (
+            <MetricsLoadingCard label="Syncing steps..." />
+          )}
         </div>
         <div className="card small-card bio-card" data-testid="calories-card">
-          <CaloriesCard onClick={() => setActiveMetric('calories')} />
+          {metricsReady && metricsData ? (
+            <CaloriesCard onClick={() => setActiveMetric('calories')} calories={metricsData.calories} />
+          ) : (
+            <MetricsLoadingCard label="Syncing calories..." />
+          )}
         </div>
         <div className="card medium-card bio-card" data-testid="challenges-summary-card">
           <ChallengesCard
@@ -1619,7 +1748,11 @@ const Dashboard = ({ avatarSelections, avatarName, bars = { hp:65, energy:80, di
           />
         </div>
         <div className="card medium-card bio-card" data-testid="stress-card">
-          <StressCard onClick={() => setActiveMetric('stress')} />
+          {metricsReady && metricsData ? (
+            <StressCard onClick={() => setActiveMetric('stress')} stressDays={metricsData.stressDays} />
+          ) : (
+            <MetricsLoadingCard label="Syncing stress..." />
+          )}
         </div>
 
         {/* Action buttons */}
@@ -1630,7 +1763,9 @@ const Dashboard = ({ avatarSelections, avatarName, bars = { hp:65, energy:80, di
       </div>
 
       {/* Metric detail popups */}
-      <MetricPopup type={activeMetric} onClose={() => setActiveMetric(null)} />
+      {metricsReady && metricsData && (
+        <MetricPopup type={activeMetric} onClose={() => setActiveMetric(null)} metrics={metricsData} />
+      )}
 
       {/* Doctor modal */}
       {showDoctor && <ViewDoctorModal onClose={() => setShowDoctor(false)} />}

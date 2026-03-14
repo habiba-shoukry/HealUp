@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "./styles.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 
 // Components
 import Layout from "./components/Layout";
@@ -37,7 +37,13 @@ const save = (key, val) => {
 
 const loadSelections = () => load('healup_avatar_selections', DEFAULT_SELECTIONS);
 const loadAvatarName = () => { try { return localStorage.getItem('healup_avatar_name') || ''; } catch { return ''; } };
-const loadStats      = () => load('healup_stats', { xp: 0, coins: 0 });
+const loadStats      = () => {
+  const raw = load('healup_stats', { xp: 0, coins: 0 });
+  return {
+    xp: raw?.xp ?? raw?.totalXp ?? 0,
+    coins: raw?.coins ?? 0,
+  };
+};
 const loadBars       = () => load('healup_bars',  { hp: 65, energy: 80, discipline: 45 });
 const loadStreak     = () => load('healup_streak', { count: 0, lastCompletedDate: null, todayDone: false });
 const loadLastActive = () => load('healup_last_active', { date: null });
@@ -64,6 +70,11 @@ function App() {
   const [avatarSelections, setAvatarSelections] = useState(loadSelections);
   const [avatarName, setAvatarName]             = useState(loadAvatarName);
   const [stats, setStats]                       = useState(loadStats);
+  const [activeDevice, setActiveDevice]         = useState(() => localStorage.getItem('healup_active_device') || 'apple');
+  const handleDeviceSwitch = useCallback((deviceId) => {
+    setActiveDevice(deviceId);
+    localStorage.setItem('healup_active_device', deviceId);
+  }, []);
   const [bars, setBars]                         = useState(() => {
     const defaultBars = { hp: 65, energy: 80, discipline: 45 };
     const saved = load('healup_bars', defaultBars);
@@ -75,6 +86,59 @@ function App() {
     localStorage.removeItem('healup_daily_checked');
     return 'challenges';
   });
+
+  const getCurrentUserId = useCallback(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      return user?.id || null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const patchUserStats = useCallback(async (payload) => {
+    const userId = getCurrentUserId();
+    if (!userId) return null;
+    try {
+      const res = await fetch(`http://localhost:8001/api/stats/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }, [getCurrentUserId]);
+
+  useEffect(() => {
+    const userId = getCurrentUserId();
+    if (!userId) return;
+    fetch(`http://localhost:8001/api/stats/${userId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data || data.error) return;
+        const mappedStats = { xp: data.totalXp ?? 0, coins: data.coins ?? 0 };
+        const mappedBars = {
+          hp: data.hp ?? 100,
+          energy: data.totalEnergy ?? 0,
+          discipline: data.totalDiscipline ?? 0,
+        };
+        const mappedStreak = {
+          count: data.dayStreak ?? 0,
+          lastCompletedDate: data.streakLastCompletedDate || null,
+          todayDone: Boolean(data.streakTodayDone),
+        };
+        setStats(mappedStats);
+        setBars(mappedBars);
+        setStreak(mappedStreak);
+        save('healup_stats', mappedStats);
+        save('healup_bars', mappedBars);
+        save('healup_streak', mappedStreak);
+      })
+      .catch(() => {});
+  }, [getCurrentUserId]);
 
   useEffect(() => {
     const lastActive = loadLastActive();
@@ -148,7 +212,14 @@ function App() {
         return next;
       });
     }
-  }, []);
+
+    patchUserStats({
+      hpDelta: -(penalties.hp || 0),
+      energyDelta: -(penalties.energy || 0),
+      disciplineDelta: -(penalties.discipline || 0),
+      xpDelta: -(penalties.xpPenalty || 0),
+    });
+  }, [patchUserStats]);
 
   const handleChallengeComplete = useCallback((xpGain, coinGain, barEffects) => {
     const today = todayStr();
@@ -178,7 +249,10 @@ function App() {
     const finalCoins = Math.round(coinGain  * streakBonus);
 
     setStats(prev => {
-      const next = { xp: prev.xp + finalXP, coins: prev.coins + finalCoins };
+      const next = {
+        xp: Math.max(0, prev.xp + finalXP),
+        coins: Math.max(0, prev.coins + finalCoins),
+      };
       save('healup_stats', next);
       return next;
     });
@@ -195,8 +269,30 @@ function App() {
       });
     }
 
+    patchUserStats({
+      xpDelta: finalXP,
+      coinsDelta: finalCoins,
+      hpDelta: barEffects?.hp || 0,
+      energyDelta: barEffects?.energy || 0,
+      disciplineDelta: barEffects?.discipline || 0,
+      dayStreak: newStreak.count,
+      bestStreak: Math.max(streak.count || 0, newStreak.count || 0),
+      streakLastCompletedDate: newStreak.lastCompletedDate || null,
+      streakTodayDone: Boolean(newStreak.todayDone),
+    });
+
     return { finalXP, finalCoins, streakCount: newStreak.count, streakBonus };
-  }, [streak]);
+  }, [streak, patchUserStats]);
+
+  const handleGoalComplete = useCallback((xpGain = 0) => {
+    if (!xpGain) return;
+    setStats(prev => {
+      const next = { ...prev, xp: prev.xp + xpGain };
+      save('healup_stats', next);
+      return next;
+    });
+    patchUserStats({ xpDelta: xpGain });
+  }, [patchUserStats]);
 
   const handleSetSelections = (updater) => {
     setAvatarSelections(prev => {
@@ -249,45 +345,15 @@ function App() {
     );
   };
 
+  const AppShell = () => (
+    <Layout stats={stats} onDeviceSwitch={handleDeviceSwitch}>
+      <Outlet />
+      <ChatboxButton />
+    </Layout>
+  );
+
   return (
     <BrowserRouter>
-<<<<<<< HEAD
-      <DecayAlert />
-      <Layout stats={stats} streak={streak}>
-        <Routes>
-          <Route path="/" element={
-            <Dashboard
-              avatarSelections={avatarSelections}
-              avatarName={avatarName}
-              bars={bars}
-              streak={streak}
-              onChallengeComplete={handleChallengeComplete}
-            />
-          } />
-          <Route path="/program" element={
-            <ProgramAvatar
-              avatarSelections={avatarSelections}
-              setAvatarSelections={handleSetSelections}
-              avatarName={avatarName}
-              setAvatarName={handleSetAvatarName}
-            />
-          } />
-          <Route path="/challenges" element={
-            <Challenges
-              key={dailyChallengesKey}
-              onChallengeComplete={handleChallengeComplete}
-              bars={bars}
-              streak={streak}
-            />
-          } />
-          <Route path="/goals"         element={<GoalsProgress bars={bars} />} />
-          <Route path="/activity-food" element={<ActivityFoodLog onBadHabit={handleBadHabit} />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/chatbot"       element={<Chatbot />} />
-        </Routes>
-        <ChatboxButton />
-      </Layout>
-=======
       <Routes>
         {/* ----------------------------------------------- */}
         {/* GROUP 1:  No Sidebar, No Layout                 */}
@@ -301,27 +367,47 @@ function App() {
         {/* use "/*" to catch all other links and apply  */}
         {/* the Layout to them.                             */}
         {/* ----------------------------------------------- */}
-        <Route
-          path="/*"
-          element={
-            <Layout>
-              <Routes>
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="program" element={<ProgramAvatar />} />
-                <Route path="challenges" element={<Challenges />} />
-                <Route path="goals" element={<GoalsProgress />} />
-                <Route path="activity-food" element={<ActivityFoodLog />} />
-                <Route path="notifications" element={<Notifications />} />
-                <Route path="chatbot" element={<Chatbot />} />
-              </Routes>
-              
-              
-              <ChatboxButton />
-            </Layout>
-          }
-        />
+        <Route element={<AppShell />}>
+          <Route
+            path="/dashboard"
+            element={
+              <Dashboard
+                avatarSelections={avatarSelections}
+                avatarName={avatarName}
+                bars={bars}
+                onChallengeComplete={handleChallengeComplete}
+                activeDevice={activeDevice}
+              />
+            }
+          />
+          <Route
+            path="/program"
+            element={
+              <ProgramAvatar
+                selections={avatarSelections}
+                setSelections={handleSetSelections}
+                avatarName={avatarName}
+                setAvatarName={handleSetAvatarName}
+              />
+            }
+          />
+          <Route
+            path="/challenges"
+            element={
+              <Challenges
+                onBadHabit={handleBadHabit}
+                onChallengeComplete={handleChallengeComplete}
+                bars={bars}
+                streak={streak}
+              />
+            }
+          />
+          <Route path="/goals" element={<GoalsProgress bars={bars} onGoalComplete={handleGoalComplete} activeDevice={activeDevice} />} />
+          <Route path="/activity-food" element={<ActivityFoodLog onBadHabit={handleBadHabit} />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/chatbot" element={<Chatbot />} />
+        </Route>
       </Routes>
->>>>>>> 6e5e852d0642ea4cf449851088218ed2a345af31
     </BrowserRouter>
   );
 }
