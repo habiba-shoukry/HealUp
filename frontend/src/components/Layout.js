@@ -565,7 +565,6 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 } }) => {
     { path:'/goals',         icon:'/dart.png',              label:'Goals and Progress' },
     { path:'/activity-food', icon:'/healthy-food.png',      label:'Daily Health Log' },
     { path:'/notifications', icon:'/notification-bell.png', label:'Notifications and Report' },
-    { path:'/chatbot',       icon:'/robot (1).png',         label:'Chatbot' },
   ];
 
   return (
@@ -577,10 +576,6 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 } }) => {
         </div>
 
         <div className="topbar-center">
-          <button className="topbar-icon-btn" onClick={() => navigate('/chatbot')} title="AI Chatbot">
-            <img src="/robot.png" alt="Chatbot" className="topbar-icon-img" />
-          </button>
-
           <button className="topbar-icon-btn" title="Sync Devices"
             onClick={() => { setSyncOpen(p => !p); setNotifOpen(false); }}
             style={{ position:'relative' }}>
