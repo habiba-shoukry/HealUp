@@ -573,13 +573,13 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
   const handleViewAll = () => { markAll(); setNotifOpen(false); navigate('/notifications'); };
 
   const menuItems = [
-    { path: '/dashboard', icon: '📊', label: 'Dashboard' },
-    { path: '/program', icon: '👤', label: 'Program and Avatar customization' },
-    { path: '/challenges', icon: '🏆', label: 'Challenges' },
-    { path: '/goals', icon: '📈', label: 'Goals and Progress' },
-    { path: '/activity-food', icon: '🍴', label: 'Activity and Food Log' },
-    { path: '/notifications', icon: '📋', label: 'Notifications and Report' },
-    { path: '/chatbot', icon: '💬', label: 'Chatbot' }
+    { path:'/dashboard',     icon:'/dashboard.png',         label:'Dashboard' },
+    { path:'/program',       icon:'/user.png',              label:'Program and Avatar customization' },
+    { path:'/challenges',    icon:'/rpg-game.png',          label:'Challenges' },
+    { path:'/goals',         icon:'/dart.png',              label:'Goals and Progress' },
+    { path:'/activity-food', icon:'/healthy-food.png',      label:'Daily Health Log' },
+    { path:'/notifications', icon:'/notification-bell.png', label:'Notifications and Report' },
+    { path:'/chatbot',       icon:'/robot (1).png',         label:'Chatbot' },
   ];
 
   return (

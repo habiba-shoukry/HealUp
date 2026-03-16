@@ -384,8 +384,8 @@ function App() {
             path="/program"
             element={
               <ProgramAvatar
-                selections={avatarSelections}
-                setSelections={handleSetSelections}
+                avatarSelections={avatarSelections}
+                setAvatarSelections={handleSetSelections}
                 avatarName={avatarName}
                 setAvatarName={handleSetAvatarName}
               />
