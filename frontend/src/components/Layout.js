@@ -559,23 +559,12 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 } }) => {
   const handleViewAll = () => { markAll(); setNotifOpen(false); navigate('/notifications'); };
 
   const menuItems = [
-<<<<<<< HEAD
     { path:'/',              icon:'/dashboard.png',         label:'Dashboard' },
     { path:'/program',       icon:'/user.png',              label:'Program and Avatar customization' },
     { path:'/challenges',    icon:'/rpg-game.png',          label:'Challenges' },
     { path:'/goals',         icon:'/dart.png',              label:'Goals and Progress' },
     { path:'/activity-food', icon:'/healthy-food.png',      label:'Daily Health Log' },
     { path:'/notifications', icon:'/notification-bell.png', label:'Notifications and Report' },
-    { path:'/chatbot',       icon:'/robot (1).png',         label:'Chatbot' },
-=======
-    { path: '/dashboard', icon: '📊', label: 'Dashboard' },
-    { path: '/program', icon: '👤', label: 'Program and Avatar customization' },
-    { path: '/challenges', icon: '🏆', label: 'Challenges' },
-    { path: '/goals', icon: '📈', label: 'Goals and Progress' },
-    { path: '/activity-food', icon: '🍴', label: 'Activity and Food Log' },
-    { path: '/notifications', icon: '📋', label: 'Notifications and Report' },
-    { path: '/chatbot', icon: '💬', label: 'Chatbot' }
->>>>>>> 6e5e852d0642ea4cf449851088218ed2a345af31
   ];
 
   return (
@@ -587,10 +576,6 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 } }) => {
         </div>
 
         <div className="topbar-center">
-          <button className="topbar-icon-btn" onClick={() => navigate('/chatbot')} title="AI Chatbot">
-            <img src="/robot.png" alt="Chatbot" className="topbar-icon-img" />
-          </button>
-
           <button className="topbar-icon-btn" title="Sync Devices"
             onClick={() => { setSyncOpen(p => !p); setNotifOpen(false); }}
             style={{ position:'relative' }}>
