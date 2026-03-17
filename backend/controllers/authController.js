@@ -330,9 +330,10 @@ const seedInitialWeeklyMetrics = async (userId) => {
 
 // POST /api/auth/signup
 exports.signup = async (req, res) => {
+    console.log("🟢 SIGNUP ROUTE TRIGGERED!");
+    console.log("📦 Incoming Data:", req.body);
     try {
-        const { fullName, email, password, confirmPassword } = req.body;
-
+        const { fullName, email, password, confirmPassword, role, healthProgram } = req.body;
         if (!fullName || !email || !password || !confirmPassword) {
             return res.status(400).json({ error: 'All fields are required.' });
         }
@@ -344,6 +345,10 @@ exports.signup = async (req, res) => {
         if (password.length < 8) {
             return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
         }
+        //vlidates to ensure patients select a health program
+        if (role === 'patient' && !healthProgram) {
+            return res.status(400).json({ error: 'A health program is required for patients.' });
+        }
 
         const emailExists = await User.findOne({ email: email.toLowerCase() });
         if (emailExists) {
@@ -352,7 +357,15 @@ exports.signup = async (req, res) => {
 
         const username = await deriveUsername(email);
 
-        const user = await User.create({ fullName, username, email, password });
+        // NEW: Added role and healthProgram to the creation payload
+        const user = await User.create({ 
+            fullName, 
+            username, 
+            email, 
+            password, 
+            role: role || 'patient', 
+            healthProgram: role === 'doctor' ? null : healthProgram 
+        });
 
         // Create initial UserStats document for the new user
         const stats = await UserStats.create({ userId: user.id });
@@ -370,7 +383,9 @@ exports.signup = async (req, res) => {
                 id: user.id,
                 fullName: user.fullName,
                 username: user.username,
-                email: user.email
+                email: user.email,
+                role: user.role,            
+                healthProgram: user.healthProgram 
             },
             stats: {
                 level: stats.level,
@@ -385,6 +400,7 @@ exports.signup = async (req, res) => {
             }
         });
     } catch (error) {
+        console.error("🔥 SIGNUP CRASHED:", error);
         if (error.name === 'ValidationError') {
             const messages = Object.values(error.errors).map((e) => e.message);
             return res.status(400).json({ error: messages[0] });
@@ -433,7 +449,9 @@ exports.login = async (req, res) => {
                 id: user.id,
                 fullName: user.fullName,
                 username: user.username,
-                email: user.email
+                email: user.email, 
+                role: user.role,                
+                healthProgram: user.healthProgram 
             },
             stats: stats ? {
                 level: stats.level,

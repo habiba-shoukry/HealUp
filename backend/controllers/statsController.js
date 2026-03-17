@@ -85,3 +85,45 @@ exports.updateStats = async (req, res) => {
         return res.status(500).json({ error: 'Server error. Please try again.' });
     }
 };
+
+
+
+
+exports.updateRewards = async (req, res) => {
+    try {
+        const { userId, xp, coins, energy, discipline, hp } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({ error: 'User ID is required' });
+        }
+
+        // Find the user's stats document
+        const stats = await UserStats.findOne({ userId: userId });
+        
+        if (!stats) {
+            return res.status(404).json({ error: 'User stats not found' });
+        }
+
+        // Add the rewards and use the 'clamp' helper to keep them within boundaries
+        // This prevents stats from dropping below 0 or going above 100!
+        stats.totalXp = clamp(stats.totalXp + (xp || 0), 0);
+        stats.coins = clamp((stats.coins || 0) + (coins || 0), 0);
+        
+        stats.totalEnergy = clamp(stats.totalEnergy + (energy || 0), 0, 100);
+        stats.totalDiscipline = clamp(stats.totalDiscipline + (discipline || 0), 0, 100);
+        stats.hp = clamp(stats.hp + (hp || 0), 0, 100);
+
+        // 🟢 Automatic Level-Up Logic
+        // Every 200 XP grants 1 level. 
+        stats.level = Math.max(1, Math.floor(stats.totalXp / 200) + 1);
+        
+        stats.updatedAt = new Date();
+
+        await stats.save();
+
+        res.status(200).json({ success: true, stats });
+    } catch (error) {
+        console.error("🔥 Error updating rewards:", error);
+        res.status(500).json({ error: 'Server error while updating stats.' });
+    }
+};

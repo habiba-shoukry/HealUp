@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const { userDB } = require('../config/database');
 
 const userSchema = new mongoose.Schema({
+    // --- SHARED ATTRIBUTES ---
     id: {
         type: String,
         default: uuidv4,
@@ -39,14 +40,33 @@ const userSchema = new mongoose.Schema({
         minlength: [8, 'Password must be at least 8 characters long'],
         select: false
     },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now
-    }
+
+    role: {
+    type: String,
+    enum: ['patient', 'doctor'],
+    required: true,
+    default: 'patient'
+  },
+// --- PATIENT-ONLY ATTRIBUTES ---
+  healthProgram: {
+    type: String,
+    // Only required if the user is a patient
+    required: function() { return this.role === 'patient'; } 
+  },
+  hasDoctor: {
+    type: Boolean,
+    default: false
+  },
+  sharedBiometrics: [{
+    type: String,
+    enum: ['heart_rate', 'sleep', 'steps', 'calories'] // The info they allow the doc to see
+  }],
+  doctorId: {
+    type: mongoose.Schema.Types.ObjectId, // This is how you link to another user!
+    ref: 'User',
+    default: null
+  }
+}, { timestamps: true 
 });
 
 // Hash password before saving
