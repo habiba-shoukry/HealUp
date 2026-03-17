@@ -37,6 +37,9 @@ app.use('/api/health-logs', healthLogsRoutes);
 const metricsRoutes = require('./routes/metrics');
 app.use('/api/metrics', metricsRoutes);
 
+const avatarRoutes = require('./routes/avatars');
+app.use('/api/avatars', avatarRoutes);
+
 // Import models (registers them against their respective connections)
 require('./models/User');
 require('./models/UserStats');
@@ -46,6 +49,8 @@ require('./models/HealthLog');
 require('./models/Goals');
 require('./models/FoodIntake');
 require('./models/WeeklyHealthMetrics');
+require('./models/AvatarItem');
+require('./models/UserAvatarSelection'); // Registers UserAvatarProfile
 
 // Drop legacy single-field unique index on userId if it still exists, so the new
 // compound (userId, deviceId) index can allow multiple docs per user.

@@ -24,6 +24,27 @@ const DEFAULT_SELECTIONS = {
   animalEars: 'ae1', armour: 'ar1', pets: null,
 };
 
+const toFrontendSelections = (backendSelections = {}) => ({
+  ...DEFAULT_SELECTIONS,
+  ...backendSelections,
+  hairStyle: backendSelections.hairStyle
+    ? backendSelections.hairStyle.replace(/^h(\d+)$/, 'hs$1')
+    : DEFAULT_SELECTIONS.hairStyle,
+  animalEars: backendSelections.animalEars
+    ? backendSelections.animalEars.replace(/^e(\d+)$/, 'ae$1')
+    : DEFAULT_SELECTIONS.animalEars,
+  pets: backendSelections.pet ?? backendSelections.pets ?? null,
+});
+
+const toBackendSelections = (frontendSelections = {}) => ({
+  skin: frontendSelections.skin ?? DEFAULT_SELECTIONS.skin,
+  hairStyle: (frontendSelections.hairStyle ?? DEFAULT_SELECTIONS.hairStyle).replace(/^hs(\d+)$/, 'h$1'),
+  hairColor: frontendSelections.hairColor ?? DEFAULT_SELECTIONS.hairColor,
+  animalEars: (frontendSelections.animalEars ?? DEFAULT_SELECTIONS.animalEars).replace(/^ae(\d+)$/, 'e$1'),
+  armour: frontendSelections.armour ?? DEFAULT_SELECTIONS.armour,
+  pet: frontendSelections.pets ?? null,
+});
+
 const DECAY_PER_DAY = { hp: 8, energy: 10, discipline: 6 };
 const STREAK_BONUS_PER_DAY = 0.1;
 
@@ -82,6 +103,7 @@ function App() {
   });
   const [streak, setStreak]                     = useState(loadStreak);
   const [decayAlert, setDecayAlert]             = useState(null);
+  const [avatarSyncReady, setAvatarSyncReady]   = useState(false);
   const [dailyChallengesKey] = useState(() => {
     localStorage.removeItem('healup_daily_checked');
     return 'challenges';
@@ -139,6 +161,70 @@ function App() {
       })
       .catch(() => {});
   }, [getCurrentUserId]);
+
+  useEffect(() => {
+    const userId = getCurrentUserId();
+    if (!userId) {
+      setAvatarSyncReady(true);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadAvatarProfile = async () => {
+      try {
+        const res = await fetch(`http://localhost:8001/api/avatars/profile/${userId}`);
+        if (!res.ok) {
+          setAvatarSyncReady(true);
+          return;
+        }
+
+        const payload = await res.json();
+        const profileSelections = payload?.data?.selections;
+        if (!cancelled && profileSelections) {
+          const mapped = toFrontendSelections(profileSelections);
+          setAvatarSelections(mapped);
+          save('healup_avatar_selections', mapped);
+        }
+      } catch {
+        // Keep local fallback selections if backend is unavailable.
+      } finally {
+        if (!cancelled) setAvatarSyncReady(true);
+      }
+    };
+
+    loadAvatarProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getCurrentUserId]);
+
+  useEffect(() => {
+    const userId = getCurrentUserId();
+    if (!userId || !avatarSyncReady) return;
+
+    const controller = new AbortController();
+
+    const persistSelections = async () => {
+      try {
+        await fetch(`http://localhost:8001/api/avatars/profile/${userId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            selections: toBackendSelections(avatarSelections),
+          }),
+          signal: controller.signal,
+        });
+      } catch {
+        // Keep UI responsive even if persistence fails.
+      }
+    };
+
+    persistSelections();
+
+    return () => controller.abort();
+  }, [avatarSelections, avatarSyncReady, getCurrentUserId]);
 
   useEffect(() => {
     const lastActive = loadLastActive();

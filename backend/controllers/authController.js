@@ -6,6 +6,7 @@ const Challenge = require('../models/Quest');
 const ActivityLog = require('../models/HealthLog');
 const FoodIntake = require('../models/FoodIntake');
 const WeeklyHealthMetrics = require('../models/WeeklyHealthMetrics');
+const { initializeUserAvatar } = require('../utils/avatarUtils');
 
 const generateToken = (userId) => {
     return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -357,7 +358,8 @@ exports.signup = async (req, res) => {
         const stats = await UserStats.create({ userId: user.id });
         await Promise.all([
             seedInitialHealthData(user.id),
-            seedInitialWeeklyMetrics(user.id)
+            seedInitialWeeklyMetrics(user.id),
+            initializeUserAvatar(user.id)
         ]);
 
         const token = generateToken(user.id);
