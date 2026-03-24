@@ -17,6 +17,10 @@ const userStatsSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  coins: {
+    type: Number,
+    default: 0
+  },
   totalEnergy: {
     type: Number,
     default: 0
@@ -33,17 +37,21 @@ const userStatsSchema = new mongoose.Schema({
     type: Number,
     default: 1
   },
-  totalActivitiesLogged: {
+  dayStreak: {
     type: Number,
     default: 0
   },
-  totalCaloriesBurned: {
+  bestStreak: {
     type: Number,
     default: 0
   },
-  totalDistance: {
-    type: Number,
-    default: 0
+  streakLastCompletedDate: {
+    type: String,
+    default: null
+  },
+  streakTodayDone: {
+    type: Boolean,
+    default: false
   },
   createdAt: {
     type: Date,

@@ -17,8 +17,10 @@ const Img = ({ src, size = 28 }) => (
   <img src={src} alt="" style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }} />
 );
 
-const dailyChallenges = [
+const FALLBACK_DAILY_CHALLENGES = [
   {
+    id: 'd1',
+    programType: 'endurance',
     title: 'Walk 10,000 steps today',
     tags: [{ label: '50 XP', type: 'xp' }, { label: '+5 Energy', type: 'energy' }, { label: '+10 Coins', type: 'coins' }],
     reward: '50 XP +5 Energy',
@@ -26,6 +28,8 @@ const dailyChallenges = [
     icon: '/footprint.png',
   },
   {
+    id: 'd2',
+    programType: 'general',
     title: 'Drink 2L of water',
     tags: [{ label: '20 XP', type: 'xp' }, { label: '+3 HP', type: 'hp' }, { label: '+4 Coins', type: 'coins' }],
     reward: '20 XP +3 HP',
@@ -33,6 +37,8 @@ const dailyChallenges = [
     icon: '/plastic-bottle.png',
   },
   {
+    id: 'd3',
+    programType: 'weight-loss',
     title: 'No Sugary snacks',
     tags: [{ label: '30 XP', type: 'xp' }, { label: '+3 Discipline', type: 'disc' }, { label: '+6 Coins', type: 'coins' }],
     reward: '30 XP +3 Discipline',
@@ -40,6 +46,8 @@ const dailyChallenges = [
     icon: '/no-sugar.png',
   },
   {
+    id: 'd4',
+    programType: 'stress',
     title: 'Morning Stretch',
     tags: [{ label: '15 XP', type: 'xp' }, { label: '+2 Energy', type: 'energy' }, { label: '+3 Coins', type: 'coins' }],
     reward: '15 XP +2 Energy',
@@ -47,6 +55,8 @@ const dailyChallenges = [
     icon: '/exercising.png',
   },
   {
+    id: 'd5',
+    programType: 'muscle-gain',
     title: 'Daily Workout Complete',
     tags: [{ label: '50 XP', type: 'xp' }, { label: '+5 Energy', type: 'energy' }, { label: '+2 Discipline', type: 'disc' }, { label: '+10 Coins', type: 'coins' }],
     reward: '50 XP +5 Energy +2 Discipline',
@@ -55,17 +65,57 @@ const dailyChallenges = [
   },
 ];
 
-const weeklyChallenges = [
-  { title: 'Run a total distance of 20 km in a week', progress: 40,  reward: '150 XP +50 Energy', icon: '/training.png' },
-  { title: 'Share progress with a friend',            progress: 100, reward: '60 XP +20 Energy',  icon: '/collaborative-growth.png' },
-  { title: 'Sleep 7-8 hours per night for 5 nights', progress: 70,  reward: '120 XP +40 Energy', icon: '/sleeping-mask.png' },
-  { title: 'Drink 14L water total this week',         progress: 60,  reward: '100 XP +30 Energy', icon: '/plastic-bottle.png' },
+const FALLBACK_WEEKLY_CHALLENGES = [
+  { id: 'w1', programType: 'endurance', title: 'Run a total distance of 20 km in a week', progress: 40,  reward: '150 XP +50 Energy', icon: '/training.png' },
+  { id: 'w2', programType: 'general', title: 'Share progress with a friend',            progress: 100, reward: '60 XP +20 Energy',  icon: '/collaborative-growth.png' },
+  { id: 'w3', programType: 'sleep', title: 'Sleep 7-8 hours per night for 5 nights', progress: 70,  reward: '120 XP +40 Energy', icon: '/sleeping-mask.png' },
+  { id: 'w4', programType: 'general', title: 'Drink 14L water total this week',         progress: 60,  reward: '100 XP +30 Energy', icon: '/plastic-bottle.png' },
 ];
 
 const statMeta = {
   energy:     { icon: '/lighting.png',      label: 'Energy',     color: '#60a5fa' },
   hp:         { icon: '/health.png',        label: 'HP',         color: '#f87171' },
   discipline: { icon: '/roman-helmet.png',  label: 'Discipline', color: '#a78bfa' },
+};
+
+const PROGRAMS = [
+  { value: 'general', label: 'General' },
+  { value: 'weight-loss', label: 'Weight Loss' },
+  { value: 'muscle-gain', label: 'Muscle Gain' },
+  { value: 'endurance', label: 'Endurance' },
+  { value: 'sleep', label: 'Sleep' },
+  { value: 'stress', label: 'Stress' },
+  { value: 'custom', label: 'Custom' },
+];
+
+const PROGRAM_STORAGE_KEY = 'healup_selected_program';
+
+const mapChallenge = (c) => {
+  const effects = {};
+  if ((c.rewardEnergy || 0) > 0) effects.energy = c.rewardEnergy;
+  if ((c.rewardDiscipline || 0) > 0) effects.discipline = c.rewardDiscipline;
+  const coins = Math.max(5, Math.round((c.rewardXp || 0) * 0.2));
+  const tags = [
+    { label: `${c.rewardXp || 0} XP`, type: 'xp' },
+    ...(effects.energy ? [{ label: `+${effects.energy} Energy`, type: 'energy' }] : []),
+    ...(effects.discipline ? [{ label: `+${effects.discipline} Discipline`, type: 'disc' }] : []),
+    { label: `+${coins} Coins`, type: 'coins' },
+  ];
+  return {
+    id: c.id,
+    title: c.title,
+    tags,
+    reward: `${c.rewardXp || 0} XP${effects.energy ? ` +${effects.energy} Energy` : ''}${effects.discipline ? ` +${effects.discipline} Discipline` : ''}`,
+    barEffects: Object.keys(effects).length ? effects : null,
+    icon: c.challengeType === 'weekly' ? '/training.png' : '/rpg-game.png',
+    progress: c.progress || 0,
+    isCompleted: Boolean(c.isCompleted),
+    rewardXp: c.rewardXp || 0,
+    rewardEnergy: c.rewardEnergy || 0,
+    rewardDiscipline: c.rewardDiscipline || 0,
+    programType: c.programType || 'general',
+    challengeType: c.challengeType,
+  };
 };
 
 const FlyingParticle = ({ particle }) => (
@@ -114,21 +164,83 @@ const RewardPopup = ({ popup }) => {
 };
 
 const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipline: 45 }, streak = { count: 0 } }) => {
+  const [selectedProgram, setSelectedProgram] = useState(() => {
+    try {
+      return localStorage.getItem(PROGRAM_STORAGE_KEY) || 'general';
+    } catch {
+      return 'general';
+    }
+  });
+  const [remoteChallenges, setRemoteChallenges] = useState({ daily: [], weekly: [] });
   const [checked, setChecked]     = useState(loadChecked);
   const [justDone, setJustDone]   = useState({});
   const [particles, setParticles] = useState([]);
   const [popup, setPopup]         = useState(null);
   const itemRefs                  = useRef({});
   let particleId                  = useRef(0);
+  const hasRemoteDaily = remoteChallenges.daily.length > 0;
 
   useEffect(() => {
-    const sync = () => setChecked(loadChecked());
+    const sync = () => {
+      // When daily challenges are DB-backed, checked state is derived from DB.
+      if (hasRemoteDaily) return;
+      setChecked(loadChecked());
+    };
     sync();
     window.addEventListener('focus', sync);
     return () => window.removeEventListener('focus', sync);
-  }, []);
+  }, [hasRemoteDaily]);
 
-  const doneCount = Object.values(checked).filter(Boolean).length;
+  useEffect(() => {
+    try {
+      localStorage.setItem(PROGRAM_STORAGE_KEY, selectedProgram);
+    } catch {}
+  }, [selectedProgram]);
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user?.id) {
+      setRemoteChallenges({ daily: [], weekly: [] });
+      return;
+    }
+    fetch(`http://localhost:8001/api/challenges?userId=${user.id}&programType=${selectedProgram}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!Array.isArray(data) || data.length === 0) {
+          setRemoteChallenges({ daily: [], weekly: [] });
+          return;
+        }
+        const mapped = data.map(mapChallenge);
+        const daily = mapped.filter(c => c.challengeType === 'daily');
+        const weekly = mapped.filter(c => c.challengeType === 'weekly');
+        setRemoteChallenges({ daily, weekly });
+        if (daily.length > 0) {
+          const persistedChecked = daily.reduce((acc, c) => {
+            acc[c.id] = Boolean(c.isCompleted);
+            return acc;
+          }, {});
+          setChecked(persistedChecked);
+        }
+      })
+      .catch(() => {
+        setRemoteChallenges({ daily: [], weekly: [] });
+      });
+  }, [selectedProgram]);
+
+  const dailyChallenges = remoteChallenges.daily.length
+    ? remoteChallenges.daily
+    : FALLBACK_DAILY_CHALLENGES.filter(c => c.programType === selectedProgram);
+  const weeklyChallenges = remoteChallenges.weekly.length
+    ? remoteChallenges.weekly
+    : FALLBACK_WEEKLY_CHALLENGES.filter(c => c.programType === selectedProgram);
+
+  const challengeKey = (c, index) => c.id || String(index);
+  const isDone = (c, index) => {
+    if (hasRemoteDaily) return Boolean(c.isCompleted);
+    return Boolean(checked[challengeKey(c, index)]);
+  };
+
+  const doneCount = dailyChallenges.filter((c, i) => isDone(c, i)).length;
   const totalXP = dailyChallenges.reduce((sum, c) => {
     const m = c.reward.match(/(\d+)\s*XP/); return sum + (m ? parseInt(m[1]) : 0);
   }, 0);
@@ -224,17 +336,31 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
   }, []);
 
   const handleCheck = (index) => {
-    if (checked[index]) return;
     const c = dailyChallenges[index];
+    const key = challengeKey(c, index);
+    if (isDone(c, index)) return;
 
-    const next = { ...checked, [index]: true };
+    const next = { ...checked, [key]: true };
     setChecked(next);
-    saveChecked(next);
+    if (!hasRemoteDaily) saveChecked(next);
+    if (hasRemoteDaily && c.id) {
+      setRemoteChallenges(prev => ({
+        ...prev,
+        daily: prev.daily.map((d) => d.id === c.id ? { ...d, isCompleted: true, progress: 100 } : d),
+      }));
+    }
 
-    setJustDone(prev => ({ ...prev, [index]: true }));
-    setTimeout(() => setJustDone(prev => ({ ...prev, [index]: false })), 700);
+    setJustDone(prev => ({ ...prev, [key]: true }));
+    setTimeout(() => setJustDone(prev => ({ ...prev, [key]: false })), 700);
 
     const { xp, coins } = parseReward(c.reward);
+    if (hasRemoteDaily && c.id) {
+      fetch(`http://localhost:8001/api/challenges/${c.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ progress: 100, isCompleted: true }),
+      }).catch(() => {});
+    }
     if (onChallengeComplete) onChallengeComplete(xp, coins, c.barEffects);
 
     let statInfo = null;
@@ -253,15 +379,55 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
 
   const handleUndo = (index) => {
     const c = dailyChallenges[index];
-    const next = { ...checked, [index]: false };
+    const key = challengeKey(c, index);
+    const next = { ...checked, [key]: false };
     setChecked(next);
-    saveChecked(next);
+    if (!hasRemoteDaily) saveChecked(next);
+    if (hasRemoteDaily && c.id) {
+      setRemoteChallenges(prev => ({
+        ...prev,
+        daily: prev.daily.map((d) => d.id === c.id ? { ...d, isCompleted: false, progress: 0 } : d),
+      }));
+      fetch(`http://localhost:8001/api/challenges/${c.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ progress: 0, isCompleted: false }),
+      }).catch(() => {});
+    }
 
     const { xp, coins } = parseReward(c.reward);
     if (onChallengeComplete) onChallengeComplete(
       -xp, -coins,
       c.barEffects ? Object.fromEntries(Object.entries(c.barEffects).map(([k,v]) => [k, -v])) : null
     );
+  };
+
+  const handleWeeklyProgress = (challenge) => {
+    if (!challenge?.id || challenge.isCompleted) return;
+    const nextProgress = Math.min(100, (challenge.progress || 0) + 10);
+    const justCompleted = nextProgress >= 100 && !challenge.isCompleted;
+
+    setRemoteChallenges(prev => ({
+      ...prev,
+      weekly: prev.weekly.map((w) => w.id === challenge.id
+        ? { ...w, progress: nextProgress, isCompleted: nextProgress >= 100 }
+        : w),
+    }));
+
+    fetch(`http://localhost:8001/api/challenges/${challenge.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ progress: nextProgress, isCompleted: nextProgress >= 100 }),
+    }).catch(() => {});
+
+    if (justCompleted && onChallengeComplete) {
+      const coins = Math.max(5, Math.round((challenge.rewardXp || 0) * 0.2));
+      const barEffects = {
+        ...(challenge.rewardEnergy ? { energy: challenge.rewardEnergy } : {}),
+        ...(challenge.rewardDiscipline ? { discipline: challenge.rewardDiscipline } : {}),
+      };
+      onChallengeComplete(challenge.rewardXp || 0, coins, Object.keys(barEffects).length ? barEffects : null);
+    }
   };
 
   return (
@@ -281,6 +447,17 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
               <div>
                 <div className="challenges-header-title">Challenges</div>
                 <div className="challenges-header-sub">Complete tasks to earn XP, coins and stat boosts</div>
+                <div style={{ marginTop: 8 }}>
+                  <select
+                    value={selectedProgram}
+                    onChange={(e) => setSelectedProgram(e.target.value)}
+                    style={{ background: 'rgba(255,255,255,0.08)', color: '#e8f4ff', border: '1px solid rgba(91,184,255,0.25)', borderRadius: 8, padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
+                  >
+                    {PROGRAMS.map((p) => (
+                      <option key={p.value} value={p.value} style={{ color: '#0b1a27' }}>{p.label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
             <div className="challenges-header-stats">
@@ -348,14 +525,14 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
               <div className="challenges-list">
                 {dailyChallenges.map((c, i) => (
                   <div
-                    key={i}
+                    key={challengeKey(c, i)}
                     ref={el => itemRefs.current[i] = el}
-                    className={`ch-item ${checked[i] ? 'ch-completed' : ''} ${justDone[i] ? 'ch-just-completed' : ''}`}
+                    className={`ch-item ${isDone(c, i) ? 'ch-completed' : ''} ${justDone[challengeKey(c, i)] ? 'ch-just-completed' : ''}`}
                     onClick={() => handleCheck(i)}
                     data-testid={`daily-challenge-${i}`}
                   >
-                    <div className={`ch-custom-check ${checked[i] ? 'checked' : ''}`}>
-                      {checked[i] && <span className="ch-check-icon">✓</span>}
+                    <div className={`ch-custom-check ${isDone(c, i) ? 'checked' : ''}`}>
+                      {isDone(c, i) && <span className="ch-check-icon">✓</span>}
                     </div>
                     <Img src={c.icon} size={30} />
                     <div className="ch-item-body">
@@ -367,7 +544,7 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
                       </div>
                     </div>
                     <div className="ch-reward-badge">
-                      {checked[i] ? (
+                      {isDone(c, i) ? (
                         <button
                           className="ch-undo-btn"
                           onClick={e => { e.stopPropagation(); handleUndo(i); }}
@@ -400,7 +577,7 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
               </div>
               <div className="challenges-list">
                 {weeklyChallenges.map((c, i) => (
-                  <div key={i} className="ch-weekly-item" data-testid={`weekly-challenge-${i}`}>
+                  <div key={challengeKey(c, i)} className="ch-weekly-item" data-testid={`weekly-challenge-${i}`}>
                     <div className="ch-weekly-top">
                       <Img src={c.icon} size={28} style={{ marginRight: '0.4rem' }} />
                       <div className="ch-weekly-title">{c.title}</div>
@@ -414,6 +591,16 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
                         <img src="/lighting.png" alt="" style={{width:16,height:16,objectFit:'contain'}} />
                         <span className="ch-weekly-reward-text">{c.reward}</span>
                       </div>
+                      {remoteChallenges.weekly.length > 0 && (
+                        <button
+                          className="ch-undo-btn"
+                          onClick={() => handleWeeklyProgress(c)}
+                          disabled={Boolean(c.isCompleted)}
+                          style={{ opacity: c.isCompleted ? 0.6 : 1, cursor: c.isCompleted ? 'default' : 'pointer' }}
+                        >
+                          {c.isCompleted ? 'Completed' : '+10%'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

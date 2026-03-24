@@ -36,6 +36,45 @@ const Notifications = () => {
     }, 3000);
   };
  
+  const downloadReport = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const userId = user?.id;
+
+      if (!userId) {
+        showPopup("❌ User not logged in");
+        return;
+      }
+
+      const response = await fetch(
+        "http://127.0.0.1:8001/api/report/download?userId=" + userId
+      );
+
+      if (!response.ok) {
+        const err = await response.json();
+        showPopup(err.error || "Failed to download report");
+        return;
+      }
+
+      const blob = await response.blob();
+
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "health-report.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      showPopup("✔ Health Report PDF Downloaded");
+
+    } catch (error) {
+      console.error(error);
+      showPopup("❌ Failed to download report");
+    }
+  };
+
   return (
     <div className="page-container">
  
@@ -46,9 +85,6 @@ const Notifications = () => {
       )}
  
       <h1 className="page-title">📊 Health Reports</h1>
- 
- 
-      {/* HEALTH SCORE SUMMARY */}
  
       <div className="health-summary">
  
@@ -184,10 +220,10 @@ const Notifications = () => {
       {/* BUTTONS */}
  
       <div className="report-buttons">
- 
+
         <button
           className="download-button"
-          onClick={() => showPopup("✔ Health Report PDF Downloaded")}
+          onClick={downloadReport}
         >
           Download PDF Report
         </button>

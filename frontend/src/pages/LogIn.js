@@ -65,11 +65,11 @@ export default function LoginPage() {
       {/* left side brand, socials */}
       <div className="login-brand-section">
         <div className="brand-content">
-          <img
+          {/* <img
             src=""
             alt="HealUp Logo"
             className="brand-logo"
-          />
+          /> */}
           <h1 className="brand-name">HealUP!</h1>
 
           <div className="social-icons">

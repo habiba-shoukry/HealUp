@@ -1,14 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-// ─── Notifications ────────────────────────────────────────────────────────────
-const NOTIFICATIONS = [
-  { id:1, icon:'heart (2)', title:'Heart Rate Normal',          desc:'Resting heart rate is 72 bpm — within healthy range.',            time:'2 min ago', type:'good', tag:'Heart'    },
-  { id:2, icon:'zzz', title:'Sleep Goal Not Met',          desc:'You only slept 5.5 hrs last night. Try to aim for 8 hrs tonight.', time:'1 hr ago',  type:'warn', tag:'Sleep'    },
-  { id:3, icon:'burn', title:'Calorie Goal Almost Reached', desc:"You're at 72% of your daily calorie burn goal. Keep it up!",       time:'3 hr ago',  type:'info', tag:'Calories' },
-  { id:4, icon:'mental-pressure', title:'Stress Level Elevated',       desc:'HRV indicates moderate stress today. A short walk may help.',      time:'5 hr ago',  type:'warn', tag:'Stress'   },
-  { id:5, icon:'step', title:'Step Goal Achieved!',         desc:'You hit 9,158 steps today — 91% of your daily goal. Great work!',  time:'6 hr ago',  type:'good', tag:'Steps'    },
-];
 const NS = {
   good: { dot:'#34d399', glow:'rgba(52,211,153,0.6)',  bg:'rgba(52,211,153,0.07)',  border:'rgba(52,211,153,0.2)',  tag:{color:'#34d399',bg:'rgba(52,211,153,0.12)',border:'rgba(52,211,153,0.25)'} },
   warn: { dot:'#fbbf24', glow:'rgba(251,191,36,0.6)',  bg:'rgba(251,191,36,0.07)',  border:'rgba(251,191,36,0.2)',  tag:{color:'#fbbf24',bg:'rgba(251,191,36,0.12)',border:'rgba(251,191,36,0.25)'} },
@@ -305,30 +297,40 @@ const ConnectMethodPicker = ({ dev, onConnect, onBack, custom }) => {
 };
 
 // ─── Sync Modal ───────────────────────────────────────────────────────────────
-const SyncModal = ({ onClose }) => {
+const SyncModal = ({ onClose, onDeviceSwitch, devices, setDevices }) => {
   const [tab, setTab]         = useState('my');
-  const [devices, setDevices] = useState(INIT_DEVICES);
   const [syncing, setSyncing] = useState(null);
   const [picking, setPicking] = useState(null);
 
   const handleToggle = (id) => {
     const dev = devices.find(d => d.id === id);
     if (dev.connected) {
+      // Disconnect this device only
       setDevices(prev => prev.map(d => d.id===id ? {...d, connected:false, method:null} : d));
     } else {
+      // Disconnect all other devices, then connect this one
       setSyncing(id);
-      setTimeout(() => { setDevices(prev => prev.map(d => d.id===id ? {...d, connected:true} : d)); setSyncing(null); }, 1800);
+      setTimeout(() => {
+        setDevices(prev => prev.map(d =>
+          d.id===id ? {...d, connected:true} : {...d, connected:false, method:null}
+        ));
+        setSyncing(null);
+        if (onDeviceSwitch) onDeviceSwitch(id);
+      }, 1800);
     }
   };
 
   const handleRemove = (id) => setDevices(prev => prev.filter(d => d.id !== id));
   const handlePickMethod = (dev) => setPicking(dev);
   const handleConnect = (dev, method) => {
+    // Disconnect all existing devices, then connect the new one
     setDevices(prev => {
-      const exists = prev.find(d => d.id === dev.id);
-      if (exists) return prev.map(d => d.id===dev.id ? {...d, connected:true, method} : d);
-      return [...prev, {...dev, connected:true, method}];
+      const allDisconnected = prev.map(d => ({...d, connected:false, method:null}));
+      const exists = allDisconnected.find(d => d.id === dev.id);
+      if (exists) return allDisconnected.map(d => d.id===dev.id ? {...d, connected:true, method} : d);
+      return [...allDisconnected, {...dev, connected:true, method}];
     });
+    if (onDeviceSwitch) onDeviceSwitch(dev.id);
     setPicking(null);
     setTab('my');
   };
@@ -538,14 +540,46 @@ const SyncModal = ({ onClose }) => {
 };
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
-const Layout = ({ children, stats = { xp: 0, coins: 0 } }) => {
+const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [notifOpen, setNotifOpen] = useState(false);
   const [syncOpen,  setSyncOpen]  = useState(false);
-  const [read, setRead]           = useState({});
+  const [devices,   setDevices]   = useState(() => {
+    const active = localStorage.getItem('healup_active_device') || 'apple';
+    return INIT_DEVICES.map(d => ({ ...d, connected: d.id === active }));
+  });
+
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "null");
+        const userId = user?.id || user?._id;
+
+        if (!userId) {
+          setNotifications([]);
+          return;
+        }
+
+        const res = await fetch(
+          `http://localhost:8001/api/notifications?userId=${userId}`
+        );
+
+        const data = await res.json();
+        setNotifications(data);
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+        setNotifications([]);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
   const notifRef = useRef(null);
-  const unread   = NOTIFICATIONS.filter(n => !read[n.id]).length;
+  const unread = notifications.filter(n => !n.isRead).length;
 
   useEffect(() => {
     const h = (e) => {
@@ -555,11 +589,53 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 } }) => {
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
-  const markAll       = () => setRead(Object.fromEntries(NOTIFICATIONS.map(n => [n.id, true])));
+  const markAll = async () => {
+    try {
+      await Promise.all(
+        notifications.map(n =>
+          fetch(`http://localhost:8001/api/notifications/${n._id}/read`, {
+            method: "PATCH",
+          })
+        )
+      );
+
+      setNotifications(prev =>
+        prev.map(n => ({ ...n, isRead: true }))
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
   const handleViewAll = () => { markAll(); setNotifOpen(false); navigate('/notifications'); };
 
+  const markAsRead = async (id) => {
+    try {
+      await fetch(`http://localhost:8001/api/notifications/${id}/read`, {
+        method: "PATCH",
+      });
+
+      setNotifications(prev =>
+        prev.map(n => n._id === id ? { ...n, isRead: true } : n)
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const deleteNotification = async (id) => {
+    try {
+      await fetch(`http://localhost:8001/api/notifications/${id}`, {
+        method: "DELETE",
+      });
+
+      setNotifications(prev => prev.filter(n => n._id !== id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const menuItems = [
-    { path:'/',              icon:'/dashboard.png',         label:'Dashboard' },
+    { path:'/dashboard',     icon:'/dashboard.png',         label:'Dashboard' },
     { path:'/program',       icon:'/user.png',              label:'Program and Avatar customization' },
     { path:'/challenges',    icon:'/rpg-game.png',          label:'Challenges' },
     { path:'/goals',         icon:'/dart.png',              label:'Goals and Progress' },
@@ -652,22 +728,27 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 } }) => {
                 </div>
 
                 <div className="notif-scroll" style={{ maxHeight:460, overflowY:'auto', padding:'0.85rem 1rem' }}>
-                  {NOTIFICATIONS.map((n, idx) => {
-                    const isRead = !!read[n.id];
+                  {notifications.length === 0 && (
+                    <div style={{ textAlign:'center', padding:'2rem', color:'#3d6b8a', fontFamily:F, fontSize:'0.85rem' }}>
+                      No notifications yet. You'll be alerted when you miss goals, complete challenges, or have health events.
+                    </div>
+                  )}
+                  {notifications.map((n, idx) => {
+                    const isRead = n.isRead;
                     return (
-                      <div key={n.id} onClick={() => setRead(p=>({...p,[n.id]:true}))}
+                      <div key={n._id}
                         style={{
                           display:'flex', gap:'1rem', alignItems:'flex-start',
                           padding:'1rem 1.1rem', borderRadius:18,
                           background: isRead ? 'rgba(255,255,255,0.02)' : 'rgba(91,184,255,0.07)',
                           border:`1px solid ${isRead ? 'rgba(255,255,255,0.05)' : 'rgba(91,184,255,0.2)'}`,
-                          marginBottom: idx<NOTIFICATIONS.length-1 ? '0.55rem' : 0,
-                          cursor:'pointer', transition:'transform 0.18s', opacity: isRead ? 0.4 : 1,
+                          marginBottom: idx<notifications.length-1 ? '0.55rem' : 0,
+                          transition:'transform 0.18s', opacity: isRead ? 0.6 : 1,
                         }}
                         onMouseEnter={e=>{ if(!isRead) e.currentTarget.style.transform='translateX(4px)'; }}
                         onMouseLeave={e=>{ e.currentTarget.style.transform='translateX(0)'; }}
                       >
-                        <div style={{ width:42, height:42, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        <div style={{ width:42, height:42, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }} onClick={() => markAsRead(n._id)}>
                           <img src={`/icons/${n.icon}.png`} alt={n.icon} style={{
                             width:36, height:36, objectFit:'contain',
                             opacity: isRead ? 0.25 : 1,
@@ -676,8 +757,21 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 } }) => {
                         </div>
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.4rem', marginBottom:5 }}>
-                            <span style={{ fontFamily:F, fontSize:'0.9rem', fontWeight:700, color: isRead?'#4a7a9b':'#e2e8f0' }}>{n.title}</span>
+                            <span style={{ fontFamily:F, fontSize:'0.9rem', fontWeight:700, color: isRead?'#4a7a9b':'#e2e8f0', cursor:'pointer' }} onClick={() => markAsRead(n._id)}>{n.title}</span>
                             {!isRead && <div style={{ width:10, height:10, borderRadius:'50%', flexShrink:0, background:'#5bb8ff', boxShadow:'0 0 8px rgba(91,184,255,0.7)' }} />}
+                            <button onClick={(e) => { e.stopPropagation(); deleteNotification(n._id); }} style={{
+                              background:'none', border:'none', cursor:'pointer', padding:'4px',
+                              color:'#5a88a8', display:'flex', alignItems:'center', justifyContent:'center',
+                              transition:'all 0.15s', borderRadius:'6px',
+                            }}
+                              title="Delete notification"
+                              onMouseEnter={e=>{ e.currentTarget.style.color='#f87171'; e.currentTarget.style.background='rgba(248,113,113,0.1)'; }}
+                              onMouseLeave={e=>{ e.currentTarget.style.color='#5a88a8'; e.currentTarget.style.background='none'; }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+                              </svg>
+                            </button>
                           </div>
                           <div style={{ fontFamily:F, fontSize:'0.77rem', fontWeight:400, color: isRead?'#3d5c72':'#5a88a8', lineHeight:1.6, marginBottom:8 }}>{n.desc}</div>
                           <div style={{ display:'flex', alignItems:'center', gap:'0.55rem' }}>
@@ -746,7 +840,7 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 } }) => {
         <main className="main-content">{children}</main>
       </div>
 
-      {syncOpen && <SyncModal onClose={() => setSyncOpen(false)} />}
+      {syncOpen && <SyncModal onClose={() => setSyncOpen(false)} onDeviceSwitch={onDeviceSwitch} devices={devices} setDevices={setDevices} />}
 
       <style>{SHARED_STYLES}</style>
     </div>
