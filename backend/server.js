@@ -55,12 +55,9 @@ require('./models/HealthLog');
 require('./models/Goals');
 require('./models/FoodIntake');
 require('./models/WeeklyHealthMetrics');
-<<<<<<< HEAD
 require('./models/Notification');
-=======
 require('./models/AvatarItem');
 require('./models/UserAvatarSelection'); // Registers UserAvatarProfile
->>>>>>> backend
 
 // Drop legacy single-field unique index on userId if it still exists, so the new
 // compound (userId, deviceId) index can allow multiple docs per user.
