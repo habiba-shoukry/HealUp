@@ -1,5 +1,5 @@
 const express = require('express');
-const Challenge = require('../models/Quest');
+const Challenge = require('../models/Challenges');
 const Goal = require('../models/Goals');
 
 const router = express.Router();
@@ -65,6 +65,7 @@ router.get('/', async (req, res) => {
 		if (challengeType) filter.challengeType = challengeType;
 		if (typeof isCompleted !== 'undefined') filter.isCompleted = isCompleted === 'true';
 
+		console.log("🕵️ Frontend is searching for:", filter);
 		const challenges = await Challenge.find(filter).sort({ createdAt: -1 });
 		return res.json(challenges);
 	} catch (error) {

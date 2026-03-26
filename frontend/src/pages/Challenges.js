@@ -101,6 +101,23 @@ const PROGRAMS = [
 
 const PROGRAM_STORAGE_KEY = 'healup_selected_program';
 
+// ICON MATCHER: Reads the challenge text and picks the best image
+const getIconForChallenge = (c) => {
+  // Combine title and description and make it lowercase to search for keywords
+  const text = `${c.title || ''} ${c.description || ''}`.toLowerCase();
+
+  if (/water|hydrat|drink|liter|ml/.test(text)) return '/plastic-bottle.png';
+  if (/step|walk/.test(text)) return '/footprint.png';
+  if (/sleep|rest|bed|night/.test(text)) return '/sleeping-mask.png';
+  if (/sugar|snack|candy|sweet/.test(text)) return '/no-sugar.png';
+  if (/stretch|yoga|morning/.test(text)) return '/exercising.png';
+  if (/workout|gym|lift|muscle|exercise|run|distance/.test(text)) return '/workout.png';
+  if (/share|friend|progress/.test(text)) return '/collaborative-growth.png';
+
+  // If no keywords match, fall back to the default daily/weekly icons
+  return c.challengeType === 'weekly' ? '/training.png' : '/rpg-game.png';
+};
+
 const mapChallenge = (c) => {
   const effects = {};
   if ((c.rewardEnergy || 0) > 0) effects.energy = c.rewardEnergy;
@@ -118,8 +135,8 @@ const mapChallenge = (c) => {
     tags,
     reward: `${c.rewardXp || 0} XP${effects.energy ? ` +${effects.energy} Energy` : ''}${effects.discipline ? ` +${effects.discipline} Discipline` : ''}`,
     barEffects: Object.keys(effects).length ? effects : null,
-    icon: c.challengeType === 'weekly' ? '/training.png' : '/rpg-game.png',
-    progress: c.currentProgress || c.progress || 0,    
+    icon: getIconForChallenge(c), 
+    progress: c.currentProgress || c.progress || 0,   
     isCompleted: Boolean(c.isCompleted),
     rewardXp: c.rewardXp || 0,
     rewardEnergy: c.rewardEnergy || 0,
@@ -199,10 +216,8 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
   const processingRef             = useRef({});
   const hasRemoteDaily = remoteChallenges.daily.length > 0;
   
-
-  useEffect(() => {
+useEffect(() => {
     const sync = () => {
-      // When daily challenges are DB-backed, checked state is derived from DB.
       if (hasRemoteDaily) return;
       setChecked(loadChecked());
     };
@@ -217,13 +232,14 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
     } catch {}
   }, [selectedProgram]);
 
+  // The Initial Load: Fetches data when the page first opens
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || 'null');
     if (!user?.id) {
       setRemoteChallenges({ daily: [], weekly: [] });
       return;
     }
-    // 👉 FIX 1: Add the comma and { cache: 'no-store' } right here!
+    
     fetch(`http://localhost:8001/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
       cache: 'no-store'
     })
@@ -250,19 +266,57 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
       });
   }, [selectedProgram]);
 
-  // 🟢 We added `|| c.programType === 'all'` so the general ones never disappear!
-  const dailyChallenges = (remoteChallenges.daily.length
-    ? remoteChallenges.daily
-    : FALLBACK_DAILY_CHALLENGES.filter(c => c.programType === selectedProgram || c.programType === 'all')
-  ).slice(0, 3); // Limits it to exactly 3 daily
+  // 🔄 NEW AUTO-REFRESH: Paste this right below the one above!
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      if (!user?.id) return;
 
-  const weeklyChallenges = (remoteChallenges.weekly.length
-    ? remoteChallenges.weekly
-    : FALLBACK_WEEKLY_CHALLENGES.filter(c => c.programType === selectedProgram || c.programType === 'all')
+      fetch(`http://localhost:8001/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
+        cache: 'no-store'
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!Array.isArray(data) || data.length === 0) return;
+          
+          const mapped = data.map(mapChallenge);
+          const daily = mapped.filter(c => c.challengeType === 'daily');
+          const weekly = mapped.filter(c => c.challengeType === 'weekly');
+          
+          setRemoteChallenges({ daily, weekly });
+          
+          // Also update the checked state so the UI checkmarks disappear!
+          if (daily.length > 0) {
+             const persistedChecked = daily.reduce((acc, c) => {
+               acc[c.id] = Boolean(c.isCompleted);
+               return acc;
+             }, {});
+             setChecked(persistedChecked);
+          }
+        })
+        .catch(err => console.error("Silent sync failed", err));
+    }, 60000); 
+
+    return () => clearInterval(interval);
+  }, [selectedProgram]);
+  
+
+
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const isGuest = !user?.id;
+
+  const dailyChallenges = (isGuest
+    ? FALLBACK_DAILY_CHALLENGES.filter(c => c.programType === selectedProgram || c.programType === 'all')
+    : remoteChallenges.daily
+  ).slice(0, 3);
+
+  const weeklyChallenges = (isGuest
+    ? FALLBACK_WEEKLY_CHALLENGES.filter(c => c.programType === selectedProgram || c.programType === 'all')
+    : remoteChallenges.weekly
   ).slice(0, 3).map(c => ({ 
     ...c,
-    // 👉 FIX 2: If we have real DB data, strictly trust the DB. Otherwise, use local memory.
-    isCompleted: remoteChallenges.weekly.length > 0 ? c.isCompleted : (c.isCompleted || weeklyClaimed[c.id]) 
+    // Strictly trust DB for logged-in users; use local storage only for guests
+    isCompleted: !isGuest ? Boolean(c.isCompleted) : (c.isCompleted || weeklyClaimed[c.id]) 
   }));
 
   const challengeKey = (c, index) => c.id || String(index);

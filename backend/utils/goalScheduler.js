@@ -1,6 +1,6 @@
 const cron = require('node-cron');
 const Goal = require('../models/Goals');
-const Challenge = require('../models/Quest');
+const Challenge = require('../models/Challenges');
 const HealthLog = require('../models/HealthLog');
 const UserStats = require('../models/UserStats');
 const Notification = require('../models/Notification');

@@ -29,7 +29,7 @@ app.use('/api/stats', statsRoutes);
 const goalsRoutes = require('./routes/goals');
 app.use('/api/goals', goalsRoutes);
 
-const challengesRoutes = require('./routes/quests');
+const challengesRoutes = require('./routes/challenges');
 app.use('/api/challenges', challengesRoutes);
 
 const healthLogsRoutes = require('./routes/healthLogs');
@@ -49,7 +49,6 @@ app.use('/api/avatars', avatarRoutes);
 // Import models (registers them against their respective connections)
 require('./models/User');
 require('./models/UserStats');
-require('./models/Quest');
 require('./models/Reward');
 require('./models/HealthLog');
 require('./models/Goals');
@@ -84,54 +83,31 @@ app.get('/api/health', (req, res) => {
 
 
 const cron = require('node-cron');
-const UserQuest = require('./models/Quest'); // 👉 Update this if your model is named differently (e.g., Challenge)
+const UserQuest = require('./models/Challenges'); 
 
-// 🕛 The text '0 0 * * *' tells the server: "Run this exactly at 00:00 (Midnight) every single day"
-cron.schedule('* * * * *', async () => {
-    console.log("🕛 Midnight Reset: Wiping daily challenge progress...");
-    try {
-        // This searches your database for all daily challenges and resets their progress to 0
-        // 👉 Note: If your database uses a different field name to identify dailies, update `challengeType: 'daily'` to match!
-        await UserQuest.updateMany(
-            { challengeType: 'daily' }, 
-            { 
-                $set: { 
-                    progress: 0, 
-                    currentProgress: 0, 
-                    isCompleted: false 
-                } 
-            }
-        );
-        console.log("✅ Daily challenges successfully reset for the new day!");
-    } catch (error) {
-        console.error("🔥 Error resetting daily challenges:", error);
-    }
-});
-
-
-// 🕛 ALARM 1: The Daily Reset (Runs at Midnight every single day)
+// ALARM 1: The Daily Reset (Runs exactly at Midnight every single day 0 0 * * *)
 cron.schedule('* * * * *', async () => {
     console.log("🕛 Daily Reset: Wiping daily challenge progress...");
     try {
-        await UserQuest.updateMany(
+        // We capture the "result" of the update
+        const result = await UserQuest.updateMany(
             { challengeType: 'daily' }, 
             { 
                 $set: { 
                     progress: 0, 
-                    currentProgress: 0, 
                     isCompleted: false 
                 } 
             }
         );
-        console.log("✅ Daily checkboxes have been unchecked for the new day!");
+        // And print exactly how many documents were changed!
+        console.log(`✅ Daily reset complete! Modified ${result.modifiedCount} challenges in the database.`);
     } catch (error) {
         console.error("🔥 Error resetting daily challenges:", error);
     }
 });
 
-// 📅 ALARM 2: The Weekly Reset (Runs at Midnight on Sunday)
-// The text '0 0 * * 0' means: Minute 0, Hour 0, Any Day, Any Month, Day of Week 0 (Sunday)
-cron.schedule('* * * * *', async () => {
+// ALARM 2: The Weekly Reset (Runs exactly at Midnight on Sunday 0 0 * * 0)
+cron.schedule('* * * * * ', async () => {
     console.log("📅 Weekly Reset: Emptying weekly progress bars...");
     try {
         await UserQuest.updateMany(
@@ -149,6 +125,7 @@ cron.schedule('* * * * *', async () => {
         console.error("🔥 Error resetting weekly challenges:", error);
     }
 });
+
 // ==================== Start Server ====================
 const PORT = process.env.PORT || 8001;
 
