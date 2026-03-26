@@ -195,50 +195,7 @@ export default function SignUp() {
               maxLength={100}
             />
           </div>
-
-          {/* NEW: Health Program Toggle Buttons (Only visible if Patient is selected) */}
-          {formData.role === 'patient' && (
-            <div className="input-group">
-              <label style={{ display: 'block', marginBottom: '8px' }}>Health Program:</label>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  type="button"
-                  onClick={() => handleProgramChange('wellbeing')}
-                  style={{
-                    flex: 1,
-                    padding: '10px',
-                    borderRadius: '20px',
-                    border: '2px solid #28a745',
-                    backgroundColor: formData.healthProgram === 'wellbeing' ? '#28a745' : 'transparent',
-                    color: formData.healthProgram === 'wellbeing' ? '#fff' : '#28a745',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    transition: '0.3s'
-                  }}
-                >
-                  Wellbeing
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleProgramChange('fitness')}
-                  style={{
-                    flex: 1,
-                    padding: '10px',
-                    borderRadius: '20px',
-                    border: '2px solid #28a745',
-                    backgroundColor: formData.healthProgram === 'fitness' ? '#28a745' : 'transparent',
-                    color: formData.healthProgram === 'fitness' ? '#fff' : '#28a745',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    transition: '0.3s'
-                  }}
-                >
-                  Fitness
-                </button>
-              </div>
-            </div>
-          )}
-
+          
           <div className="input-group">
             <label>Password</label>
             <input

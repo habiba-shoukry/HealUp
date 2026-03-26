@@ -48,11 +48,6 @@ const userSchema = new mongoose.Schema({
     default: 'patient'
   },
 // --- PATIENT-ONLY ATTRIBUTES ---
-  healthProgram: {
-    type: String,
-    // Only required if the user is a patient
-    required: function() { return this.role === 'patient'; } 
-  },
   hasDoctor: {
     type: Boolean,
     default: false
