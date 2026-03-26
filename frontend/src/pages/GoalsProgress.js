@@ -1,9 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import '../styles/GoalsProgress.css';
+import '../styles/Challenges.css';
 
 const Img = ({ src, size = 24 }) => (
   <img src={src} alt="" style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }} />
 );
+
+// ─── Shared Goal Memory ─────────────────────────────────────────────
+const loadClaimedGoals = () => { try { const s = localStorage.getItem('healup_goals_claimed'); return s ? JSON.parse(s) : {}; } catch { return {}; } };
+const saveClaimedGoals = (v) => { try { localStorage.setItem('healup_goals_claimed', JSON.stringify(v)); } catch {} };
 
 const PROGRAMS = [
   { value: 'general', label: 'General' },
@@ -26,7 +31,7 @@ const GOAL_TYPE_ICON = {
 
 const FALLBACK_GOALS = [
   { id: 'g1', icon: '/training.png',       title: 'Run 50km this month',      current: 34, target: 50,  unit: 'km',       deadline: 'Mar 31', status: 'on-track',  xp: 300, coins: 50, programType: 'endurance' },
-  { id: 'g2', icon: '/plastic-bottle.png', title: 'Drink 2L water daily',     current: 18, target: 30,  unit: 'days',     deadline: 'Mar 31', status: 'on-track',  xp: 150, coins: 25, programType: 'general' },
+  { id: 'g2', icon: '/plastic-bottle.png', title: 'Drink 2L water daily',     current: 30, target: 30,  unit: 'days',     deadline: 'Mar 31', status: 'on-track',  xp: 150, coins: 25, programType: 'general' },
   { id: 'g3', icon: '/sleeping-mask.png',  title: 'Sleep 8hrs for 21 nights', current: 9,  target: 21,  unit: 'nights',   deadline: 'Mar 31', status: 'at-risk',   xp: 200, coins: 35, programType: 'sleep' },
   { id: 'g4', icon: '/healthy-food.png',   title: 'Log meals for 30 days',    current: 6,  target: 30,  unit: 'days',     deadline: 'Mar 31', status: 'behind',    xp: 120, coins: 20, programType: 'weight-loss' },
   { id: 'g5', icon: '/workout.png',        title: 'Complete 20 workouts',     current: 20, target: 20,  unit: 'sessions', deadline: 'Mar 20', status: 'completed', xp: 400, coins: 75, programType: 'muscle-gain' },
@@ -62,56 +67,67 @@ const normalizeGoal = (goal) => {
 };
 
 const FALLBACK_WEEKLY_DATA = [
-  { day: 'Mon', steps: 8.2, cals: 320 },
-  { day: 'Tue', steps: 11.4, cals: 480 },
-  { day: 'Wed', steps: 7.8, cals: 290 },
-  { day: 'Thu', steps: 13.1, cals: 560 },
-  { day: 'Fri', steps: 9.6, cals: 410 },
-  { day: 'Sat', steps: 15.2, cals: 620 },
-  { day: 'Sun', steps: 6.4, cals: 240 },
+  { day: 'Mon', steps: 8.2, cals: 1020 },
+  { day: 'Tue', steps: 11.4, cals: 1556 },
+  { day: 'Wed', steps: 7.8, cals: 3522 },
+  { day: 'Thu', steps: 13.1, cals: 1260 },
+  { day: 'Fri', steps: 9.6, cals: 2234 },
+  { day: 'Sat', steps: 15.2, cals: 2620 },
+  { day: 'Sun', steps: 6.4, cals: 1940 },
 ];
 
-const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDevice = 'apple' }) => {
+// ─── Flying Particles Component ─────────────────────────────────────────────
+const FlyingParticle = ({ particle }) => (
+  <div
+    className="fly-particle"
+    style={{
+      '--start-x': `${particle.x}px`,
+      '--start-y': `${particle.y}px`,
+      '--tx': `${particle.tx}px`,
+      '--ty': `${particle.ty}px`,
+      '--delay': `${particle.delay}s`,
+      '--color': particle.color,
+      animationDelay: `${particle.delay}s`,
+    }}
+  >
+    <img src={particle.icon} alt="" style={{ width: 24, height: 24, objectFit: 'contain', filter: `drop-shadow(0 0 4px ${particle.color})` }} />
+  </div>
+);
+
+const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDevice = 'apple', onGoalComplete }) => {
  const [selectedProgram, setSelectedProgram] = useState('general');
  const [goals, setGoals] = useState(FALLBACK_GOALS.filter(g => g.programType === 'general'));
  const [weeklyData, setWeeklyData] = useState(FALLBACK_WEEKLY_DATA);
  const [totalXp, setTotalXp] = useState(0);
  const [dayStreak, setDayStreak] = useState(0);
  const [bestStreak, setBestStreak] = useState(0);
+ 
+ // The New States for Claiming
+ const [claimedGoals, setClaimedGoals] = useState(loadClaimedGoals);
+ const [particles, setParticles] = useState([]);
+ const processingRef = useRef({});
 
  useEffect(() => {
    let user = null;
-   try {
-     user = JSON.parse(localStorage.getItem('user') || 'null');
-   } catch {
-     user = null;
-   }
+   try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch { user = null; }
+   
    if (!user?.id) {
-     setGoals(FALLBACK_GOALS.filter(g => g.programType === selectedProgram));
+     setGoals(FALLBACK_GOALS.filter(g => g.programType === selectedProgram || g.programType === 'general'));
      return;
    }
 
-   fetch(`http://localhost:8001/api/goals?userId=${user.id}&programType=${selectedProgram}&device=${encodeURIComponent(activeDevice)}`)
+   fetch(`http://localhost:8001/api/goals?userId=${user.id}&programType=${selectedProgram}&device=${encodeURIComponent(activeDevice)}`, { cache: 'no-store' })
      .then(res => res.json())
      .then(data => {
-       if (Array.isArray(data) && data.length > 0) {
-         setGoals(data.map(normalizeGoal));
-       } else {
-         setGoals(FALLBACK_GOALS.filter(g => g.programType === selectedProgram));
-       }
+       if (Array.isArray(data) && data.length > 0) setGoals(data.map(normalizeGoal));
+       else setGoals(FALLBACK_GOALS.filter(g => g.programType === selectedProgram || g.programType === 'general'));
      })
-     .catch(() => {
-       setGoals(FALLBACK_GOALS.filter(g => g.programType === selectedProgram));
-     });
+     .catch(() => setGoals(FALLBACK_GOALS.filter(g => g.programType === selectedProgram || g.programType === 'general')));
  }, [selectedProgram, activeDevice]);
 
  useEffect(() => {
    let user = null;
-   try {
-     user = JSON.parse(localStorage.getItem('user') || 'null');
-   } catch {
-     user = null;
-   }
+   try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch { user = null; }
    if (!user?.id) return;
 
    fetch(`http://localhost:8001/api/stats/${user.id}`)
@@ -127,11 +143,7 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
 
  useEffect(() => {
    let user = null;
-   try {
-     user = JSON.parse(localStorage.getItem('user') || 'null');
-   } catch {
-     user = null;
-   }
+   try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch { user = null; }
 
    if (!user?.id) {
      setWeeklyData(FALLBACK_WEEKLY_DATA);
@@ -154,6 +166,81 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
      })
      .catch(() => setWeeklyData(FALLBACK_WEEKLY_DATA));
  }, [activeDevice]);
+
+ // ─── Particle Animation Function ─────────────────────────────────────────────
+ const spawnParticles = useCallback((originEl, xp, coins) => {
+    const rect = originEl.getBoundingClientRect();
+    const originX = rect.left + rect.width / 2;
+    const originY = rect.top  + rect.height / 2;
+
+    const xpChip   = document.getElementById('xp-chip');
+    const coinChip = document.getElementById('coins-chip');
+
+    const getCenter = (el) => {
+      if (!el) return { x: window.innerWidth / 2, y: 40 };
+      const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    };
+
+    const xpPos   = getCenter(xpChip);
+    const coinPos = getCenter(coinChip);
+    const now = Date.now();
+    const newParticles = [];
+
+    for (let i = 0; i < 6; i++) {
+      newParticles.push({ id: `${now}-xp-${i}`, x: originX, y: originY, tx: xpPos.x - originX + (Math.random() - 0.5) * 20, ty: xpPos.y - originY, icon: '/star.png', color: '#34d399', delay: i * 0.07 });
+    }
+    if (coins > 0) {
+      for (let i = 0; i < 6; i++) {
+        newParticles.push({ id: `${now}-coin-${i}`, x: originX, y: originY, tx: coinPos.x - originX + (Math.random() - 0.5) * 20, ty: coinPos.y - originY, icon: '/profit.png', color: '#fbbf24', delay: 0.1 + i * 0.07 });
+      }
+    }
+
+    setParticles(prev => [...prev, ...newParticles]);
+    setTimeout(() => {
+      setParticles(prev => prev.filter(p => !newParticles.find(n => n.id === p.id)));
+    }, 3500);
+  }, []);
+
+ // ─── Claim Goal Logic ─────────────────────────────────────────────
+const handleClaimGoal = (goal, event) => {
+    // 1. Prevent double clicks
+    if (claimedGoals[goal.id] || processingRef.current[goal.id]) return;
+    
+    const originEl = event.currentTarget; 
+    processingRef.current[goal.id] = true;
+    setTimeout(() => { processingRef.current[goal.id] = false; }, 1000);
+
+    // 🌟 2. INSTANT VISUALS! Trigger popup and particles immediately!
+   // 🌟 2. INSTANT VISUALS! Trigger popup and particles immediately!
+    showPopup({
+        burst: '/star.png',
+        title: 'Goal Complete!',
+        xp: goal.xp,        // 👉 FIXED: Pass XP directly
+        coins: goal.coins   // 👉 FIXED: Pass Coins directly
+    });
+    
+    // Safely shoot particles
+    try { spawnParticles(originEl, goal.xp, goal.coins); } catch (e) {}
+
+    // 3. Update the UI button to "✓ Claimed"
+    const nextClaimed = { ...claimedGoals, [goal.id]: true };
+    setClaimedGoals(nextClaimed);
+    saveClaimedGoals(nextClaimed);
+
+    // 4. Update the Top Nav Stats
+    if (onGoalComplete) onGoalComplete(goal.xp, goal.coins, null);
+
+    // 5. Quietly sync to backend (No 'await' so it doesn't freeze the screen)
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (user?.id) {
+        fetch('http://localhost:8001/api/stats/rewards', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id, xp: goal.xp, coins: goal.coins })
+        }).catch(() => {});
+    }
+ };
 
  const achievements = [
    { icon: '/throphy.png',   name: 'First Goal',     desc: 'Completed your first goal',                     unlocked: true  },
@@ -243,6 +330,11 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
 
  return (
   <div className="page-container">
+
+    {/* Flying Particles Container */}
+    <div className="particles-root" style={{ pointerEvents: 'none', position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 9999 }}>
+      {particles.map(p => <FlyingParticle key={p.id} particle={p} />)}
+    </div>
 
     {/* ── PAGE HEADER ── */}
     <div className="gp-page-header">
@@ -356,13 +448,38 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
                 <div className="gp-goal-track">
                   <div className={`gp-goal-fill ${fc}`} style={{ width: `${pct}%` }} />
                 </div>
-                <div className="gp-goal-footer">
-                  <span className={`gp-goal-pct ${fc}`}>{pct}%</span>
-                  <span className="gp-goal-reward">
-                    <img src="/star.png" alt="XP" style={{ width: 14, height: 14, objectFit: 'contain', verticalAlign: 'middle' }} />
-                    {' '}+{g.xp} XP · +{g.coins}{' '}
-                    <img src="/profit.png" alt="Coins" style={{ width: 14, height: 14, objectFit: 'contain', verticalAlign: 'middle' }} />
-                  </span>
+                {/* 👉 FIXED: Keeps the XP/Coins visible and pushes the button to the right! */}
+                <div className="gp-goal-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                  
+                  {/* Left Side: Percentage and Rewards */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span className={`gp-goal-pct ${fc}`}>{pct}%</span>
+                    <span className="gp-goal-reward">
+                      <img src="/star.png" alt="XP" style={{ width: 14, height: 14, objectFit: 'contain', verticalAlign: 'middle' }} />
+                      {' '}+{g.xp} XP · +{g.coins}{' '}
+                      <img src="/profit.png" alt="Coins" style={{ width: 14, height: 14, objectFit: 'contain', verticalAlign: 'middle' }} />
+                    </span>
+                  </div>
+                  
+                  {/* Right Side: The Claim Button (Only shows if 100%) */}
+                  {pct >= 100 && (
+                    claimedGoals[g.id] ? (
+                      <span style={{ color: '#34d399', fontWeight: 'bold', fontSize: '0.95rem' }}>✓ Claimed</span>
+                    ) : (
+                      <button
+                        onClick={(e) => handleClaimGoal(g, e)}
+                        style={{
+                          backgroundColor: '#fbbf24', color: '#000', border: 'none',
+                          fontWeight: 'bold', padding: '5px 15px', borderRadius: '8px',
+                          cursor: 'pointer', transition: 'all 0.3s ease',
+                          marginLeft: 'auto' // Pushes button to the right
+                        }}
+                      >
+                        Claim Reward!
+                      </button>
+                    )
+                  )}
+
                 </div>
               </div>
             );
@@ -394,7 +511,6 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
             ))}
           </div>
 
-          {/* ── Weekly Summary Stats ── */}
           <div className="gp-weekly-stats">
             <div className="gp-weekly-stat">
               <img src="/training.png" alt="" style={{ width: 30, height: 30, objectFit: 'contain' }} />
@@ -421,7 +537,6 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
             </div>
           </div>
 
-          {/* ── Best / Worst Day ── */}
           <div className="gp-best-worst">
             <div className="gp-bw-card best">
               <div className="gp-bw-label">
@@ -436,7 +551,6 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
               <div className="gp-bw-label">
                 <img src="/rise.png" alt="" style={{ width: 13, height: 13, objectFit: 'contain', verticalAlign: 'middle', marginRight: 4 }} />
                  Needs Work
-    
               </div>
               <div className="gp-bw-day">{weeklyData.reduce((a, b) => a.steps < b.steps ? a : b).day}</div>
               <div className="gp-bw-val">{weeklyData.reduce((a, b) => a.steps < b.steps ? a : b).steps}k steps</div>
@@ -444,8 +558,7 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
             </div>
           </div>
 
-          {/* ── Daily Breakdown Table ── */}
-          <div className="gp-breakdown">
+          {/* <div className="gp-breakdown">
             <div className="gp-breakdown-title">Daily Breakdown</div>
             {weeklyData.map(d => {
               const stepPct = Math.round((d.steps / maxSteps) * 100);
@@ -465,7 +578,7 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
                 </div>
               );
             })}
-          </div>
+          </div> */}
 
         </div>
       </div>
@@ -477,8 +590,6 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
           <div className="gp-badge orange">+{streakBonusPct}% XP Bonus</div>
         </div>
         <div className="gp-streak-body">
-
-          {/* Top row: big number + bonus chip */}
           <div className="gp-streak-row">
             <div>
               <div className="gp-streak-num">{dayStreak}</div>
@@ -491,8 +602,6 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
               <div className="gp-streak-bonus-lbl">Streak Bonus</div>
             </div>
           </div>
-
-          {/* Day pills */}
           <div className="gp-streak-days">
             {streakDays.map((d, i) => (
               <div key={i} className={`gp-streak-day${i < todayStreakIdx ? ' done' : ''}${i === todayStreakIdx ? ' today' : ''}`}>
@@ -500,8 +609,6 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
               </div>
             ))}
           </div>
-
-          {/* Progress to next milestone */}
           <div className="gp-streak-milestone">
             <div className="gp-streak-milestone-top">
               <span className="gp-streak-milestone-label">
@@ -514,8 +621,6 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
               <div className="gp-streak-milestone-fill" style={{ width: `${Math.min(100, Math.round((dayStreak / 10) * 100))}%` }} />
             </div>
           </div>
-
-          {/* Quick stats row */}
           <div className="gp-streak-stats">
             <div className="gp-streak-stat">
               <div className="gp-streak-stat-val">{dayStreak}</div>
@@ -537,8 +642,6 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
               <div className="gp-streak-stat-label">XP Boost</div>
             </div>
           </div>
-
-          {/* Milestone history */}
           <div className="gp-streak-history-label">Milestone History</div>
           <div className="gp-streak-history">
             {[
@@ -561,7 +664,6 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
               </div>
             ))}
           </div>
-
         </div>
       </div>
 
@@ -587,28 +689,37 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
         </div>
       </div>
 
-    </div>{/* /gp-main-grid */}
-
+    </div>
 
     {/* ── REWARD POPUP ── */}
+    {/* ── REWARD POPUP ── */}
     {popup && (
-      <div className="gp-popup-overlay">
-        <div className="gp-popup">
-          <div className="gp-popup-burst">
-            <img src={popup.burst} alt="" style={{ width: 52, height: 52, objectFit: 'contain', animation: 'gp-burst 0.85s cubic-bezier(0.34,1.56,0.64,1)' }} />
+      <div className="reward-popup-overlay" style={{ zIndex: 10000 }}>
+        <div className="reward-popup">
+          <div className="reward-popup-burst">
+            <img src={popup.burst} alt="" style={{ width: 48, height: 48, objectFit: 'contain', animation: 'burstSpin 0.6s ease' }} />
           </div>
-          <div className="gp-popup-title">{popup.title}</div>
-          {popup.rewards && (
-            <div className="gp-popup-rewards">
-              {popup.rewards.map(r => (
-                <div key={r.type} className={`gp-popup-item ${r.type}`}>
-                  <img src={r.icon} alt="" style={{ width: 16, height: 16, objectFit: 'contain' }} />
-                  <span>{r.value}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          {popup.message && <p className="gp-popup-msg">{popup.message}</p>}
+          <div className="reward-popup-title">{popup.title}</div>
+          
+          {/* If there are rewards, show them! */}
+          <div className="reward-popup-rewards" style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '10px' }}>
+            {popup.xp > 0 && (
+              <div className="reward-popup-item xp">
+                <img src="/star.png" alt="XP" className="rp-icon-img" />
+                <span className="rp-val">+{popup.xp} XP</span>
+              </div>
+            )}
+            
+            {popup.coins > 0 && (
+              <div className="reward-popup-item coins">
+                <img src="/profit.png" alt="Coins" className="rp-icon-img" />
+                <span className="rp-val">+{popup.coins} Coins</span>
+              </div>
+            )}
+          </div>
+
+          {/* If it's the "Coming Soon" popup, show the message! */}
+          {popup.message && <div style={{marginTop: '10px', color: '#9ca3af', fontSize: '0.9rem'}}>{popup.message}</div>}
         </div>
       </div>
     )}

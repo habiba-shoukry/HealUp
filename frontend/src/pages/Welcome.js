@@ -28,14 +28,14 @@ export default function LandingPage() {
           Get Started
         </button>
 
-        <div className="download-section">
+        {/* <div className="download-section">
           <p className="download-text">Download our app!</p>
           <img 
             src="https://via.placeholder.com/60x60/FFFFFF/4b637a/?text=M" 
             alt="HealUp App Icon" 
             className="app-icon" 
           />
-        </div>
+        </div> */}
         
       </div>
     </div>

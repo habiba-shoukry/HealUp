@@ -14,4 +14,14 @@ activityDB.on('error', (err) => {
   process.exit(1);
 });
 
-module.exports = { userDB, activityDB };
+// GridFS buckets for file storage
+let userDBGridFSBucket = null;
+
+userDB.once('open', () => {
+  const GridFSBucket = require('mongodb').GridFSBucket;
+  userDBGridFSBucket = new GridFSBucket(userDB.getClient().db(process.env.MONGO_USER_DB_NAME || 'healup_users'), {
+    bucketName: 'avatarImages'
+  });
+});
+
+module.exports = { userDB, activityDB, getUserGridFSBucket: () => userDBGridFSBucket };

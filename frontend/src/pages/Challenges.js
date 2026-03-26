@@ -4,7 +4,7 @@ import '../styles/Challenges.css';
 const parseReward = (rewardStr) => {
   const xpMatch = rewardStr.match(/(\d+)\s*XP/);
   const xp = xpMatch ? parseInt(xpMatch[1]) : 0;
-  const coins = Math.max(5, Math.round(xp * 0.2));
+  const coins = Math.round(xp * 0.2);
   return { xp, coins };
 };
 
@@ -12,6 +12,15 @@ const parseReward = (rewardStr) => {
 const getTodayKey  = () => `healup_daily_checked_${new Date().toISOString().slice(0,10)}`;
 const loadChecked  = () => { try { const s = localStorage.getItem(getTodayKey()); return s ? JSON.parse(s) : {}; } catch { return {}; } };
 const saveChecked  = (v) => { try { localStorage.setItem(getTodayKey(), JSON.stringify(v)); } catch {} };
+
+
+const loadWeeklyClaimed = () => { try { const s = localStorage.getItem(getWeeklyKey()); return s ? JSON.parse(s) : {}; } catch { return {}; } };
+const saveWeeklyClaimed = (v) => { try { localStorage.setItem(getWeeklyKey(), JSON.stringify(v)); } catch {} };
+const getWeeklyKey = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - d.getDay()); // Shifts the date to the most recent Sunday
+  return `healup_weekly_claimed_${d.toISOString().slice(0,10)}`;
+};
 
 const Img = ({ src, size = 28 }) => (
   <img src={src} alt="" style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }} />
@@ -66,10 +75,12 @@ const FALLBACK_DAILY_CHALLENGES = [
 ];
 
 const FALLBACK_WEEKLY_CHALLENGES = [
-  { id: 'w1', programType: 'endurance', title: 'Run a total distance of 20 km in a week', progress: 40,  reward: '150 XP +50 Energy', icon: '/training.png' },
-  { id: 'w2', programType: 'general', title: 'Share progress with a friend',            progress: 100, reward: '60 XP +20 Energy',  icon: '/collaborative-growth.png' },
-  { id: 'w3', programType: 'sleep', title: 'Sleep 7-8 hours per night for 5 nights', progress: 70,  reward: '120 XP +40 Energy', icon: '/sleeping-mask.png' },
-  { id: 'w4', programType: 'general', title: 'Drink 14L water total this week',         progress: 60,  reward: '100 XP +30 Energy', icon: '/plastic-bottle.png' },
+  { id: 'w1', programType: 'endurance', title: 'Run a total distance of 20 km in a week', progress: 100,  reward: '150 XP +50 Energy +20 Discipline', barEffects: { energy: 50, discipline: +20 }, icon: '/training.png' },
+  { id: 'w2', programType: 'general', title: 'Share progress with a friend',            progress: 100, reward: '60 XP +20 Energy',  barEffects: { energy: 20 }, icon: '/collaborative-growth.png' },
+  { id: 'w3', programType: 'sleep', title: 'Sleep 7-8 hours per night for 5 nights', progress: 70,  reward: '120 XP +40 Energy', barEffects: { energy: 40 }, icon: '/sleeping-mask.png' },
+  { id: 'w4', programType: 'general', title: 'Drink 14L water total this week',         progress: 60,  reward: '100 XP +30 Energy', barEffects: { energy: 30 }, icon: '/plastic-bottle.png' },
+  // { id: 'w1-xt', programType: 'all', title: 'Run a total distance of 20 km in a week', progress: 100,  reward: '150 XP +50 Energy', barEffects: { energy: 50 }, icon: '/training.png' },
+
 ];
 
 const statMeta = {
@@ -94,8 +105,8 @@ const mapChallenge = (c) => {
   const effects = {};
   if ((c.rewardEnergy || 0) > 0) effects.energy = c.rewardEnergy;
   if ((c.rewardDiscipline || 0) > 0) effects.discipline = c.rewardDiscipline;
-  const coins = Math.max(5, Math.round((c.rewardXp || 0) * 0.2));
-  const tags = [
+    const coins = Math.round((c.rewardXp || 0) * 0.2); 
+     const tags = [
     { label: `${c.rewardXp || 0} XP`, type: 'xp' },
     ...(effects.energy ? [{ label: `+${effects.energy} Energy`, type: 'energy' }] : []),
     ...(effects.discipline ? [{ label: `+${effects.discipline} Discipline`, type: 'disc' }] : []),
@@ -108,7 +119,7 @@ const mapChallenge = (c) => {
     reward: `${c.rewardXp || 0} XP${effects.energy ? ` +${effects.energy} Energy` : ''}${effects.discipline ? ` +${effects.discipline} Discipline` : ''}`,
     barEffects: Object.keys(effects).length ? effects : null,
     icon: c.challengeType === 'weekly' ? '/training.png' : '/rpg-game.png',
-    progress: c.progress || 0,
+    progress: c.currentProgress || c.progress || 0,    
     isCompleted: Boolean(c.isCompleted),
     rewardXp: c.rewardXp || 0,
     rewardEnergy: c.rewardEnergy || 0,
@@ -147,16 +158,21 @@ const RewardPopup = ({ popup }) => {
             <img src="/star.png" alt="XP" className="rp-icon-img" />
             <span className="rp-val">+{popup.xp} XP</span>
           </div>
-          <div className="reward-popup-item coins">
-            <img src="/profit.png" alt="Coins" className="rp-icon-img" />
-            <span className="rp-val">+{popup.coins} Coins</span>
-          </div>
-          {popup.stat && (
-            <div className="reward-popup-item stat">
-              <img src={popup.stat.icon} alt={popup.stat.label} className="rp-icon-img" />
-              <span className="rp-val">+{popup.stat.val} {popup.stat.label}</span>
+          
+          {/* 👉 FIX 1: Only show coins if the reward is greater than 0 */}
+          {popup.coins > 0 && (
+            <div className="reward-popup-item coins">
+              <img src="/profit.png" alt="Coins" className="rp-icon-img" />
+              <span className="rp-val">+{popup.coins} Coins</span>
             </div>
           )}
+
+          {popup.stats && popup.stats.map((stat, idx) => (
+            <div key={idx} className="reward-popup-item stat">
+              <img src={stat.icon} alt={stat.label} className="rp-icon-img" />
+              <span className="rp-val">+{stat.val} {stat.label}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -173,12 +189,16 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
   });
   const [remoteChallenges, setRemoteChallenges] = useState({ daily: [], weekly: [] });
   const [checked, setChecked]     = useState(loadChecked);
+  const [weeklyClaimed, setWeeklyClaimed] = useState(loadWeeklyClaimed); 
   const [justDone, setJustDone]   = useState({});
   const [particles, setParticles] = useState([]);
   const [popup, setPopup]         = useState(null);
   const itemRefs                  = useRef({});
+  const weeklyItemRefs            = useRef({});
   let particleId                  = useRef(0);
+  const processingRef             = useRef({});
   const hasRemoteDaily = remoteChallenges.daily.length > 0;
+  
 
   useEffect(() => {
     const sync = () => {
@@ -203,7 +223,10 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
       setRemoteChallenges({ daily: [], weekly: [] });
       return;
     }
-    fetch(`http://localhost:8001/api/challenges?userId=${user.id}&programType=${selectedProgram}`)
+    // 👉 FIX 1: Add the comma and { cache: 'no-store' } right here!
+    fetch(`http://localhost:8001/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
+      cache: 'no-store'
+    })
       .then((res) => res.json())
       .then((data) => {
         if (!Array.isArray(data) || data.length === 0) {
@@ -227,12 +250,20 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
       });
   }, [selectedProgram]);
 
-  const dailyChallenges = remoteChallenges.daily.length
+  // 🟢 We added `|| c.programType === 'all'` so the general ones never disappear!
+  const dailyChallenges = (remoteChallenges.daily.length
     ? remoteChallenges.daily
-    : FALLBACK_DAILY_CHALLENGES.filter(c => c.programType === selectedProgram);
-  const weeklyChallenges = remoteChallenges.weekly.length
+    : FALLBACK_DAILY_CHALLENGES.filter(c => c.programType === selectedProgram || c.programType === 'all')
+  ).slice(0, 3); // Limits it to exactly 3 daily
+
+  const weeklyChallenges = (remoteChallenges.weekly.length
     ? remoteChallenges.weekly
-    : FALLBACK_WEEKLY_CHALLENGES.filter(c => c.programType === selectedProgram);
+    : FALLBACK_WEEKLY_CHALLENGES.filter(c => c.programType === selectedProgram || c.programType === 'all')
+  ).slice(0, 3).map(c => ({ 
+    ...c,
+    // 👉 FIX 2: If we have real DB data, strictly trust the DB. Otherwise, use local memory.
+    isCompleted: remoteChallenges.weekly.length > 0 ? c.isCompleted : (c.isCompleted || weeklyClaimed[c.id]) 
+  }));
 
   const challengeKey = (c, index) => c.id || String(index);
   const isDone = (c, index) => {
@@ -282,15 +313,18 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
     }
 
     // 6 Coin particles → Coins element in navbar
-    for (let i = 0; i < 6; i++) {
-      newParticles.push({
-        id: `${now}-coin-${i}`,
-        x: originX, y: originY,
-        tx: coinPos.x - originX + (Math.random() - 0.5) * 20,
-        ty: coinPos.y - originY,
-        icon: '/profit.png', color: '#fbbf24',
-        delay: 0.1 + i * 0.07,
-      });
+  // 👉 FIX 2: Only shoot coin particles if coins > 0
+    if (coins > 0) {
+      for (let i = 0; i < 6; i++) {
+        newParticles.push({
+          id: `${now}-coin-${i}`,
+          x: originX, y: originY,
+          tx: coinPos.x - originX + (Math.random() - 0.5) * 20,
+          ty: coinPos.y - originY,
+          icon: '/profit.png', color: '#fbbf24',
+          delay: 0.1 + i * 0.07,
+        });
+      }
     }
 
     // Stat particles → fly to stat bars on the page
@@ -335,10 +369,42 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
     }
   }, []);
 
-  const handleCheck = (index) => {
+//  sends the rewards to our new backend bank route
+  const syncRewardsToDatabase = async (xp, coins, barEffects, isUndo = false) => {
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user?.id) return;
+
+    // If it's an undo action, flip the numbers to negative!
+    const multiplier = isUndo ? -1 : 1;
+
+    const payload = {
+      userId: user.id,
+      xp: xp * multiplier,
+      coins: coins * multiplier,
+      energy: (barEffects?.energy || 0) * multiplier,
+      discipline: (barEffects?.discipline || 0) * multiplier,
+      hp: (barEffects?.hp || 0) * multiplier
+    };
+
+    try {
+      await fetch('http://localhost:8001/api/stats/rewards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (error) {
+      console.error("Failed to sync rewards to database:", error);
+    }
+  };
+
+const handleCheck = (index) => {
     const c = dailyChallenges[index];
     const key = challengeKey(c, index);
-    if (isDone(c, index)) return;
+    
+    // 👉 FIX 1: The Double-Click Lock! Prevents the DB from being hit twice.
+    if (isDone(c, index) || processingRef.current[key]) return;
+    processingRef.current[key] = true;
+    setTimeout(() => { processingRef.current[key] = false; }, 1000); // Unlocks after 1 second
 
     const next = { ...checked, [key]: true };
     setChecked(next);
@@ -353,7 +419,19 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
     setJustDone(prev => ({ ...prev, [key]: true }));
     setTimeout(() => setJustDone(prev => ({ ...prev, [key]: false })), 700);
 
-    const { xp, coins } = parseReward(c.reward);
+    let { xp, coins } = parseReward(c.reward);
+    
+    // 👉 FIX 2: Apply the Streak Bonus! (e.g. +30% XP if streak is 3)
+    if (streak && streak.count >= 3) {
+      const bonusPct = Math.min(streak.count * 10, 100);
+      const multiplier = 1 + (bonusPct / 100);
+      xp = Math.round(xp * multiplier);
+      coins = Math.round(xp * 0.2); // Recalculate coins based on the new boosted XP!
+    }
+    
+    // Sends TRUE rewards to the backend!
+    syncRewardsToDatabase(xp, coins, c.barEffects, false);
+
     if (hasRemoteDaily && c.id) {
       fetch(`http://localhost:8001/api/challenges/${c.id}`, {
         method: 'PATCH',
@@ -361,16 +439,20 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
         body: JSON.stringify({ progress: 100, isCompleted: true }),
       }).catch(() => {});
     }
+    
+    // Updates the UI instantly
     if (onChallengeComplete) onChallengeComplete(xp, coins, c.barEffects);
 
-    let statInfo = null;
+    let statsInfo = [];
     if (c.barEffects) {
-      const [key, val] = Object.entries(c.barEffects)[0];
-      const meta = statMeta[key];
-      if (meta) statInfo = { icon: meta.icon, label: meta.label, val };
+      Object.entries(c.barEffects).forEach(([statKey, val]) => {
+        const meta = statMeta[statKey];
+        if (meta) statsInfo.push({ icon: meta.icon, label: meta.label, val });
+      });
     }
 
-    setPopup({ xp, coins, stat: statInfo });
+    // Popup now proudly shows the boosted XP and Coins!
+    setPopup({ xp, coins, stats: statsInfo }); 
     setTimeout(() => setPopup(null), 2800);
 
     const el = itemRefs.current[index];
@@ -380,6 +462,12 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
   const handleUndo = (index) => {
     const c = dailyChallenges[index];
     const key = challengeKey(c, index);
+    
+    // Double-Click Lock
+    if (processingRef.current[key]) return;
+    processingRef.current[key] = true;
+    setTimeout(() => { processingRef.current[key] = false; }, 1000);
+
     const next = { ...checked, [key]: false };
     setChecked(next);
     if (!hasRemoteDaily) saveChecked(next);
@@ -395,41 +483,90 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
       }).catch(() => {});
     }
 
-    const { xp, coins } = parseReward(c.reward);
+    let { xp, coins } = parseReward(c.reward);
+    
+    // Exact same Streak Math to ensure perfect deduction
+    if (streak && streak.count >= 3) {
+      const bonusPct = Math.min(streak.count * 10, 100);
+      const multiplier = 1 + (bonusPct / 100);
+      xp = Math.round(xp * multiplier);
+      coins = Math.round(xp * 0.2);
+    }
+    
+    syncRewardsToDatabase(xp, coins, c.barEffects, true);
+
     if (onChallengeComplete) onChallengeComplete(
       -xp, -coins,
       c.barEffects ? Object.fromEntries(Object.entries(c.barEffects).map(([k,v]) => [k, -v])) : null
     );
   };
 
-  const handleWeeklyProgress = (challenge) => {
-    if (!challenge?.id || challenge.isCompleted) return;
-    const nextProgress = Math.min(100, (challenge.progress || 0) + 10);
-    const justCompleted = nextProgress >= 100 && !challenge.isCompleted;
+  const handleClaimWeekly = async (challenge, index) => {
+    // 👉 FIX: Added the processingRef lock here too!
+    if (!challenge?.id || challenge.isCompleted || challenge.progress < 100 || processingRef.current[challenge.id]) return;
+    
+    processingRef.current[challenge.id] = true;
+    setTimeout(() => { processingRef.current[challenge.id] = false; }, 1000);
 
+    const nextClaimed = { ...weeklyClaimed, [challenge.id]: true };
+// ... the rest of the function stays exactly the same
+    setWeeklyClaimed(nextClaimed);
+    saveWeeklyClaimed(nextClaimed);
+    // 1. Instantly update the UI to show it as completed
     setRemoteChallenges(prev => ({
       ...prev,
-      weekly: prev.weekly.map((w) => w.id === challenge.id
-        ? { ...w, progress: nextProgress, isCompleted: nextProgress >= 100 }
-        : w),
+      weekly: weeklyChallenges.map((w) => w.id === challenge.id ? { ...w, isCompleted: true } : w),
     }));
 
-    fetch(`http://localhost:8001/api/challenges/${challenge.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ progress: nextProgress, isCompleted: nextProgress >= 100 }),
-    }).catch(() => {});
-
-    if (justCompleted && onChallengeComplete) {
-      const coins = Math.max(5, Math.round((challenge.rewardXp || 0) * 0.2));
-      const barEffects = {
-        ...(challenge.rewardEnergy ? { energy: challenge.rewardEnergy } : {}),
-        ...(challenge.rewardDiscipline ? { discipline: challenge.rewardDiscipline } : {}),
-      };
-      onChallengeComplete(challenge.rewardXp || 0, coins, Object.keys(barEffects).length ? barEffects : null);
+    // 2. Tell the backend to officially lock it as completed
+    try {
+      await fetch(`http://localhost:8001/api/challenges/${challenge.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isCompleted: true }),
+      });
+    } catch (error) {
+      console.error("Failed to mark weekly challenge complete");
     }
-  };
 
+    // 🌟 3. THE REWARD LOGIC 🌟
+    // Use parseReward to safely extract XP and Coins from the string just like Daily Challenges do!
+    // 🌟 3. THE REWARD LOGIC 🌟
+    // Use parseReward to safely extract XP, but force coins to 0 for Weekly challenges!
+    const { xp } = parseReward(challenge.reward);
+    const coins = 0; // 👉 FIX 3: Explicitly set to 0
+    
+    // Grab the barEffects from the fallback, OR build them if coming from the DB
+    const barEffects = challenge.barEffects || {
+      ...(challenge.rewardEnergy ? { energy: challenge.rewardEnergy } : {}),
+      ...(challenge.rewardDiscipline ? { discipline: challenge.rewardDiscipline } : {}),
+    };
+
+    // Save it to your UserStats database using the helper we built earlier!
+    syncRewardsToDatabase(xp, coins, barEffects, false);
+
+    // Tell the parent component to update the UI bars
+    if (onChallengeComplete) {
+      onChallengeComplete(xp, coins, Object.keys(barEffects).length ? barEffects : null);
+    }
+
+    // Show the Celebration Popup
+    // 👉 FIX 3: Build an array of ALL stats to send to the popup
+    let statsInfo = [];
+    if (barEffects) {
+      Object.entries(barEffects).forEach(([statKey, val]) => {
+        const meta = statMeta[statKey];
+        if (meta) statsInfo.push({ icon: meta.icon, label: meta.label, val });
+      });
+    }
+
+    setPopup({ xp, coins, stats: statsInfo }); // Changed 'stat' to 'stats'
+    setTimeout(() => setPopup(null), 2800);
+
+    // Shoot the particles!
+    const el = weeklyItemRefs.current[index];
+    if (el) spawnParticles(el, xp, coins, barEffects);
+  };
   return (
     <>
       <div className="particles-root">
@@ -586,21 +723,46 @@ const Challenges = ({ onChallengeComplete, bars = { hp: 65, energy: 80, discipli
                     <div className="ch-weekly-track">
                       <div className={`ch-weekly-fill ${c.progress === 100 ? 'complete' : ''}`} style={{ width: `${c.progress}%` }} />
                     </div>
-                    <div className="ch-weekly-bottom">
+                   <div className="ch-weekly-bottom">
                       <div className="ch-weekly-reward">
                         <img src="/lighting.png" alt="" style={{width:16,height:16,objectFit:'contain'}} />
                         <span className="ch-weekly-reward-text">{c.reward}</span>
                       </div>
-                      {remoteChallenges.weekly.length > 0 && (
+                      
+                      {/* 👉 NEW: The Claim Button Logic */}
+                      {c.isCompleted ? (
+                        <span style={{ color: '#34d399', fontWeight: 'bold', fontSize: '0.9rem' }}>✓ Claimed</span>
+                      ) : c.progress >= 100 ? (
                         <button
                           className="ch-undo-btn"
-                          onClick={() => handleWeeklyProgress(c)}
-                          disabled={Boolean(c.isCompleted)}
-                          style={{ opacity: c.isCompleted ? 0.6 : 1, cursor: c.isCompleted ? 'default' : 'pointer' }}
+                          onClick={() => {
+                            // Double-check to prevent accidental double clicks
+                            if (!c.isCompleted) {
+                              handleClaimWeekly(c, i);
+                            }
+                          }}
+                          // 1. Natively disable the HTML button so it can't be clicked anymore
+                          disabled={c.isCompleted}
+                          
+                          // 2. Make it physically look locked and greyed out if it's completed
+                          style={{ 
+                            backgroundColor: c.isCompleted ? '#374151' : '#fbbf24', 
+                            color: c.isCompleted ? '#9ca3af' : '#000', 
+                            border: 'none', 
+                            fontWeight: 'bold', 
+                            padding: '5px 15px',
+                            cursor: c.isCompleted ? 'not-allowed' : 'pointer',
+                            opacity: c.isCompleted ? 0.7 : 1,
+                            transition: 'all 0.3s ease' // Adds a smooth fade effect
+                          }}
                         >
-                          {c.isCompleted ? 'Completed' : '+10%'}
+                          {/* 3. Change the text so the user knows it worked */}
+                          {c.isCompleted ? '✓ Claimed' : 'Claim Reward!'}
                         </button>
+                      ) : (
+                        <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>Keep going!</span>
                       )}
+
                     </div>
                   </div>
                 ))}

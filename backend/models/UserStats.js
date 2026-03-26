@@ -23,15 +23,15 @@ const userStatsSchema = new mongoose.Schema({
   },
   totalEnergy: {
     type: Number,
-    default: 0
+    default: 80
   },
   totalDiscipline: {
     type: Number,
-    default: 0
+    default: 70
   },
   hp: {
     type: Number,
-    default: 100
+    default: 80
   },
   level: {
     type: Number,
