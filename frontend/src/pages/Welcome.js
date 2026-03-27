@@ -10,7 +10,7 @@ export default function LandingPage() {
       <div className="welcome-content">
         
         <img 
-          src="https://via.placeholder.com/80x80/000000/FFFFFF/?text=M" 
+          src="" 
           alt="HealUp Logo Icon" 
           className="logo-icon" 
         />

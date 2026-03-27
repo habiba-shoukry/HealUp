@@ -26,62 +26,62 @@ const Img = ({ src, size = 28 }) => (
   <img src={src} alt="" style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }} />
 );
 
-const FALLBACK_DAILY_CHALLENGES = [
-  {
-    id: 'd1',
-    programType: 'endurance',
-    title: 'Walk 10,000 steps today',
-    tags: [{ label: '50 XP', type: 'xp' }, { label: '+5 Energy', type: 'energy' }, { label: '+10 Coins', type: 'coins' }],
-    reward: '50 XP +5 Energy',
-    barEffects: { energy: 5 },
-    icon: '/footprint.png',
-  },
-  {
-    id: 'd2',
-    programType: 'general',
-    title: 'Drink 2L of water',
-    tags: [{ label: '20 XP', type: 'xp' }, { label: '+3 HP', type: 'hp' }, { label: '+4 Coins', type: 'coins' }],
-    reward: '20 XP +3 HP',
-    barEffects: { hp: 3 },
-    icon: '/plastic-bottle.png',
-  },
-  {
-    id: 'd3',
-    programType: 'weight-loss',
-    title: 'No Sugary snacks',
-    tags: [{ label: '30 XP', type: 'xp' }, { label: '+3 Discipline', type: 'disc' }, { label: '+6 Coins', type: 'coins' }],
-    reward: '30 XP +3 Discipline',
-    barEffects: { discipline: 3 },
-    icon: '/no-sugar.png',
-  },
-  {
-    id: 'd4',
-    programType: 'stress',
-    title: 'Morning Stretch',
-    tags: [{ label: '15 XP', type: 'xp' }, { label: '+2 Energy', type: 'energy' }, { label: '+3 Coins', type: 'coins' }],
-    reward: '15 XP +2 Energy',
-    barEffects: { energy: 2 },
-    icon: '/exercising.png',
-  },
-  {
-    id: 'd5',
-    programType: 'muscle-gain',
-    title: 'Daily Workout Complete',
-    tags: [{ label: '50 XP', type: 'xp' }, { label: '+5 Energy', type: 'energy' }, { label: '+2 Discipline', type: 'disc' }, { label: '+10 Coins', type: 'coins' }],
-    reward: '50 XP +5 Energy +2 Discipline',
-    barEffects: { energy: 5, discipline: 2 },
-    icon: '/workout.png',
-  },
-];
+  const FALLBACK_DAILY_CHALLENGES = [
+    {
+      id: 'd1',
+      programType: 'endurance',
+      title: 'Walk 10,000 steps today',
+      tags: [{ label: '50 XP', type: 'xp' }, { label: '+5 Energy', type: 'energy' }, { label: '+10 Coins', type: 'coins' }],
+      reward: '50 XP +5 Energy',
+      barEffects: { energy: 5 },
+      icon: '/footprint.png',
+    },
+    {
+      id: 'd2',
+      programType: 'general',
+      title: 'Drink 2L of water',
+      tags: [{ label: '20 XP', type: 'xp' }, { label: '+3 HP', type: 'hp' }, { label: '+4 Coins', type: 'coins' }],
+      reward: '20 XP +3 HP',
+      barEffects: { hp: 3 },
+      icon: '/plastic-bottle.png',
+    },
+    {
+      id: 'd3',
+      programType: 'weight-loss',
+      title: 'No Sugary snacks',
+      tags: [{ label: '30 XP', type: 'xp' }, { label: '+3 Discipline', type: 'disc' }, { label: '+6 Coins', type: 'coins' }],
+      reward: '30 XP +3 Discipline',
+      barEffects: { discipline: 3 },
+      icon: '/no-sugar.png',
+    },
+    {
+      id: 'd4',
+      programType: 'stress',
+      title: 'Morning Stretch',
+      tags: [{ label: '15 XP', type: 'xp' }, { label: '+2 Energy', type: 'energy' }, { label: '+3 Coins', type: 'coins' }],
+      reward: '15 XP +2 Energy',
+      barEffects: { energy: 2 },
+      icon: '/exercising.png',
+    },
+    {
+      id: 'd5',
+      programType: 'muscle-gain',
+      title: 'Daily Workout Complete',
+      tags: [{ label: '50 XP', type: 'xp' }, { label: '+5 Energy', type: 'energy' }, { label: '+2 Discipline', type: 'disc' }, { label: '+10 Coins', type: 'coins' }],
+      reward: '50 XP +5 Energy +2 Discipline',
+      barEffects: { energy: 5, discipline: 2 },
+      icon: '/workout.png',
+    },
+  ];
 
-const FALLBACK_WEEKLY_CHALLENGES = [
-  { id: 'w1', programType: 'endurance', title: 'Run a total distance of 20 km in a week', progress: 100,  reward: '150 XP +50 Energy +20 Discipline', barEffects: { energy: 50, discipline: +20 }, icon: '/training.png' },
-  { id: 'w2', programType: 'general', title: 'Share progress with a friend',            progress: 100, reward: '60 XP +20 Energy',  barEffects: { energy: 20 }, icon: '/collaborative-growth.png' },
-  { id: 'w3', programType: 'sleep', title: 'Sleep 7-8 hours per night for 5 nights', progress: 70,  reward: '120 XP +40 Energy', barEffects: { energy: 40 }, icon: '/sleeping-mask.png' },
-  { id: 'w4', programType: 'general', title: 'Drink 14L water total this week',         progress: 60,  reward: '100 XP +30 Energy', barEffects: { energy: 30 }, icon: '/plastic-bottle.png' },
-  // { id: 'w1-xt', programType: 'all', title: 'Run a total distance of 20 km in a week', progress: 100,  reward: '150 XP +50 Energy', barEffects: { energy: 50 }, icon: '/training.png' },
+  const FALLBACK_WEEKLY_CHALLENGES = [
+    { id: 'w1', programType: 'endurance', title: 'Run a total distance of 20 km in a week', progress: 100,  reward: '150 XP +50 Energy +20 Discipline', barEffects: { energy: 50, discipline: +20 }, icon: '/training.png' },
+    { id: 'w2', programType: 'general', title: 'Share progress with a friend',            progress: 100, reward: '60 XP +20 Energy',  barEffects: { energy: 20 }, icon: '/collaborative-growth.png' },
+    { id: 'w3', programType: 'sleep', title: 'Sleep 7-8 hours per night for 5 nights', progress: 70,  reward: '120 XP +40 Energy', barEffects: { energy: 40 }, icon: '/sleeping-mask.png' },
+    { id: 'w4', programType: 'general', title: 'Drink 14L water total this week',         progress: 60,  reward: '100 XP +30 Energy', barEffects: { energy: 30 }, icon: '/plastic-bottle.png' },
+    // { id: 'w1-xt', programType: 'all', title: 'Run a total distance of 20 km in a week', progress: 100,  reward: '150 XP +50 Energy', barEffects: { energy: 50 }, icon: '/training.png' },
 
-];
+  ];
 
 const statMeta = {
   energy:     { icon: '/lighting.png',      label: 'Energy',     color: '#60a5fa' },
@@ -96,7 +96,6 @@ const PROGRAMS = [
   { value: 'endurance', label: 'Endurance' },
   { value: 'sleep', label: 'Sleep' },
   { value: 'stress', label: 'Stress' },
-  { value: 'custom', label: 'Custom' },
 ];
 
 const PROGRAM_STORAGE_KEY = 'healup_selected_program';
@@ -266,7 +265,7 @@ useEffect(() => {
       });
   }, [selectedProgram]);
 
-  // 🔄 NEW AUTO-REFRESH: Paste this right below the one above!
+  
   useEffect(() => {
     const interval = setInterval(() => {
       const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -285,7 +284,6 @@ useEffect(() => {
           
           setRemoteChallenges({ daily, weekly });
           
-          // Also update the checked state so the UI checkmarks disappear!
           if (daily.length > 0) {
              const persistedChecked = daily.reduce((acc, c) => {
                acc[c.id] = Boolean(c.isCompleted);

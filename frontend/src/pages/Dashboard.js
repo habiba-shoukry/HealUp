@@ -1670,6 +1670,29 @@ const Dashboard = ({ avatarSelections, avatarName, bars = { hp:65, energy:80, di
     };
   }, [activeDevice]);
 
+  const handleLogout = () => {
+    // Add the confirmation check here
+    const confirmLogout = window.confirm("Are you sure you want to log out?");
+    
+    if (confirmLogout) {
+      // Clear all session data
+      localStorage.removeItem('user');
+      localStorage.removeItem(PROGRAM_STORAGE_KEY);
+      
+      // Clear metrics cache for this specific user
+      const userId = getStoredUserId();
+      if (userId) {
+        localStorage.removeItem(`healup_metrics_cache_${userId}_apple`);
+        localStorage.removeItem(`healup_metrics_cache_${userId}_google`);
+      }
+
+      // Send back to login page
+      navigate('/login');
+      
+      // Force a reload to ensure all states are reset
+      window.location.reload();
+    }
+  };
   return (
     <div className="page-container">
       <div className="dashboard-grid">
@@ -1755,11 +1778,18 @@ const Dashboard = ({ avatarSelections, avatarName, bars = { hp:65, energy:80, di
           )}
         </div>
 
-        {/* Action buttons */}
-        <button className="dashboard-action-btn doctor-btn" onClick={() => setShowDoctor(true)}>
-          <img src="/doctor.png" alt="" style={{width:18,height:18,objectFit:'contain',verticalAlign:'middle',marginRight:6}}/>
-          View Doctor
-        </button>
+       {/* Stacked Action Buttons in the bottom-right slot */}
+        <div className="dashboard-footer-actions">
+          <button className="dashboard-action-btn doctor-btn" onClick={() => setShowDoctor(true)}>
+            <img src="/doctor.png" alt="" style={{width:18,height:18,objectFit:'contain',verticalAlign:'middle',marginRight:6}}/>
+            View Doctor
+          </button>
+
+          <button className="dashboard-action-btn logout-btn" onClick={handleLogout}>
+            <span style={{ marginRight: '8px' }}>🏃</span>
+            Logout
+          </button>
+        </div>
       </div>
 
       {/* Metric detail popups */}

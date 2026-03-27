@@ -222,7 +222,7 @@ const seedInitialHealthData = async (userId) => {
 
     await Promise.all([
         Goal.insertMany(goals),
-        Challenge.insertMany(challenges),
+        // Challenge.insertMany(challenges),
         ActivityLog.insertMany(activities),
         FoodIntake.insertMany(foods)
     ]);
@@ -363,8 +363,7 @@ exports.signup = async (req, res) => {
             username, 
             email, 
             password, 
-            role: role || 'patient', 
-            healthProgram: role === 'doctor' ? null : healthProgram 
+            role: role || 'patient',  
         });
 
         // Create initial UserStats document for the new user
@@ -372,7 +371,8 @@ exports.signup = async (req, res) => {
         await Promise.all([
             seedInitialHealthData(user.id),
             seedInitialWeeklyMetrics(user.id),
-            initializeUserAvatar(user.id)
+            initializeUserAvatar(user.id),
+            assignStarterChallenges(user.id)
         ]);
 
         const token = generateToken(user.id);
@@ -468,4 +468,45 @@ exports.login = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Server error. Please try again.' });
     }
+};
+
+
+
+const assignStarterChallenges = async (userId) => {
+    const challengePool = {
+        'endurance': [
+            { title: 'Walk 10,000 steps today', rewardXp: 50, rewardEnergy: 5, rewardDiscipline: 0, challengeType: 'daily' },
+            { title: 'Run a total distance of 20 km in a week', rewardXp: 150, rewardEnergy: 50, rewardDiscipline: 20, challengeType: 'weekly' }
+        ],
+        'weight-loss': [
+            { title: 'No Sugary snacks', rewardXp: 30, rewardEnergy: 0, rewardDiscipline: 3, challengeType: 'daily' }
+        ],
+        'general': [
+            { title: 'Drink 2L of water', rewardXp: 20, rewardEnergy: 0, rewardDiscipline: 0, rewardHp: 3, challengeType: 'daily' },
+            { title: 'Share progress with a friend', rewardXp: 60, rewardEnergy: 20, rewardDiscipline: 0, challengeType: 'weekly' },
+            { title: 'Drink 14L water total this week', rewardXp: 100, rewardEnergy: 30, rewardDiscipline: 0, challengeType: 'weekly' }
+        ],
+        'stress': [
+            { title: 'Morning Stretch', rewardXp: 15, rewardEnergy: 2, rewardDiscipline: 0, challengeType: 'daily' }
+        ],
+        'muscle-gain': [
+            { title: 'Daily Workout Complete', rewardXp: 50, rewardEnergy: 5, rewardDiscipline: 2, challengeType: 'daily' }
+        ],
+        'sleep': [
+            { title: 'Sleep 7-8 hours per night for 5 nights', rewardXp: 120, rewardEnergy: 40, rewardDiscipline: 0, challengeType: 'weekly' }
+        ]
+    };
+
+    // Flatten the entire pool so the user owns ALL challenges from the start
+    const allChallenges = Object.entries(challengePool).flatMap(([program, challenges]) => 
+        challenges.map(ch => ({
+            ...ch,
+            userId: userId,
+            programType: program, // Assigns the correct category (e.g., 'stress')
+            progress: 0,
+            isCompleted: false
+        }))
+    );
+
+    await Challenge.insertMany(allChallenges);
 };
