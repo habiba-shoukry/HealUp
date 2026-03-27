@@ -10,7 +10,7 @@ export default function LandingPage() {
       <div className="welcome-content">
         
         <img 
-          src="" 
+          src="\logo-transparent.png" 
           alt="HealUp Logo Icon" 
           className="logo-icon" 
         />
