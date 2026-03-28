@@ -86,8 +86,8 @@ const cron = require('node-cron');
 const UserQuest = require('./models/Challenges'); 
 
 // ALARM 1: The Daily Reset (Runs exactly at Midnight every single day 0 0 * * *)
-cron.schedule('* * * * *', async () => {
-    console.log("🕛 Daily Reset: Wiping daily challenge progress...");
+cron.schedule('0 0 * * *', async () => {
+    console.log("Daily Reset: Wiping daily challenge progress...");
     try {
         // We capture the "result" of the update
         const result = await UserQuest.updateMany(
@@ -100,15 +100,15 @@ cron.schedule('* * * * *', async () => {
             }
         );
         // And print exactly how many documents were changed!
-        console.log(`✅ Daily reset complete! Modified ${result.modifiedCount} challenges in the database.`);
+        console.log(`Daily reset complete! Modified ${result.modifiedCount} challenges in the database.`);
     } catch (error) {
         console.error("🔥 Error resetting daily challenges:", error);
     }
 });
 
 // ALARM 2: The Weekly Reset (Runs exactly at Midnight on Sunday 0 0 * * 0)
-cron.schedule('* * * * * ', async () => {
-    console.log("📅 Weekly Reset: Emptying weekly progress bars...");
+cron.schedule('0 0 * * 0 ', async () => {
+    console.log(" Weekly Reset: Emptying weekly progress bars...");
     try {
         await UserQuest.updateMany(
             { challengeType: 'weekly' }, 
@@ -120,7 +120,7 @@ cron.schedule('* * * * * ', async () => {
                 } 
             }
         );
-        console.log("✅ Weekly progress bars have been reset to 0% for the new week!");
+        console.log(" Weekly progress bars have been reset to 0% for the new week!");
     } catch (error) {
         console.error("🔥 Error resetting weekly challenges:", error);
     }
