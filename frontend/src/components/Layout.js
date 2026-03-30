@@ -305,30 +305,40 @@ const ConnectMethodPicker = ({ dev, onConnect, onBack, custom }) => {
 };
 
 // ─── Sync Modal ───────────────────────────────────────────────────────────────
-const SyncModal = ({ onClose }) => {
+const SyncModal = ({ onClose, onDeviceSwitch, devices, setDevices }) => {
   const [tab, setTab]         = useState('my');
-  const [devices, setDevices] = useState(INIT_DEVICES);
   const [syncing, setSyncing] = useState(null);
   const [picking, setPicking] = useState(null);
 
   const handleToggle = (id) => {
     const dev = devices.find(d => d.id === id);
     if (dev.connected) {
+      // Disconnect this device only
       setDevices(prev => prev.map(d => d.id===id ? {...d, connected:false, method:null} : d));
     } else {
+      // Disconnect all other devices, then connect this one
       setSyncing(id);
-      setTimeout(() => { setDevices(prev => prev.map(d => d.id===id ? {...d, connected:true} : d)); setSyncing(null); }, 1800);
+      setTimeout(() => {
+        setDevices(prev => prev.map(d =>
+          d.id===id ? {...d, connected:true} : {...d, connected:false, method:null}
+        ));
+        setSyncing(null);
+        if (onDeviceSwitch) onDeviceSwitch(id);
+      }, 1800);
     }
   };
 
   const handleRemove = (id) => setDevices(prev => prev.filter(d => d.id !== id));
   const handlePickMethod = (dev) => setPicking(dev);
   const handleConnect = (dev, method) => {
+    // Disconnect all existing devices, then connect the new one
     setDevices(prev => {
-      const exists = prev.find(d => d.id === dev.id);
-      if (exists) return prev.map(d => d.id===dev.id ? {...d, connected:true, method} : d);
-      return [...prev, {...dev, connected:true, method}];
+      const allDisconnected = prev.map(d => ({...d, connected:false, method:null}));
+      const exists = allDisconnected.find(d => d.id === dev.id);
+      if (exists) return allDisconnected.map(d => d.id===dev.id ? {...d, connected:true, method} : d);
+      return [...allDisconnected, {...dev, connected:true, method}];
     });
+    if (onDeviceSwitch) onDeviceSwitch(dev.id);
     setPicking(null);
     setTab('my');
   };
@@ -538,11 +548,15 @@ const SyncModal = ({ onClose }) => {
 };
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
-const Layout = ({ children, stats = { xp: 0, coins: 0 } }) => {
+const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [notifOpen, setNotifOpen] = useState(false);
   const [syncOpen,  setSyncOpen]  = useState(false);
+  const [devices,   setDevices]   = useState(() => {
+    const active = localStorage.getItem('healup_active_device') || 'apple';
+    return INIT_DEVICES.map(d => ({ ...d, connected: d.id === active }));
+  });
   const [read, setRead]           = useState({});
   const notifRef = useRef(null);
   const unread   = NOTIFICATIONS.filter(n => !read[n.id]).length;
@@ -559,23 +573,13 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 } }) => {
   const handleViewAll = () => { markAll(); setNotifOpen(false); navigate('/notifications'); };
 
   const menuItems = [
-<<<<<<< HEAD
-    { path:'/',              icon:'/dashboard.png',         label:'Dashboard' },
+    { path:'/dashboard',     icon:'/dashboard.png',         label:'Dashboard' },
     { path:'/program',       icon:'/user.png',              label:'Program and Avatar customization' },
     { path:'/challenges',    icon:'/rpg-game.png',          label:'Challenges' },
     { path:'/goals',         icon:'/dart.png',              label:'Goals and Progress' },
     { path:'/activity-food', icon:'/healthy-food.png',      label:'Daily Health Log' },
     { path:'/notifications', icon:'/notification-bell.png', label:'Notifications and Report' },
     { path:'/chatbot',       icon:'/robot (1).png',         label:'Chatbot' },
-=======
-    { path: '/dashboard', icon: '📊', label: 'Dashboard' },
-    { path: '/program', icon: '👤', label: 'Program and Avatar customization' },
-    { path: '/challenges', icon: '🏆', label: 'Challenges' },
-    { path: '/goals', icon: '📈', label: 'Goals and Progress' },
-    { path: '/activity-food', icon: '🍴', label: 'Activity and Food Log' },
-    { path: '/notifications', icon: '📋', label: 'Notifications and Report' },
-    { path: '/chatbot', icon: '💬', label: 'Chatbot' }
->>>>>>> 6e5e852d0642ea4cf449851088218ed2a345af31
   ];
 
   return (
@@ -756,7 +760,7 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 } }) => {
         <main className="main-content">{children}</main>
       </div>
 
-      {syncOpen && <SyncModal onClose={() => setSyncOpen(false)} />}
+      {syncOpen && <SyncModal onClose={() => setSyncOpen(false)} onDeviceSwitch={onDeviceSwitch} devices={devices} setDevices={setDevices} />}
 
       <style>{SHARED_STYLES}</style>
     </div>

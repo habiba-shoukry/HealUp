@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "./styles.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 
 // Components
 import Layout from "./components/Layout";
@@ -18,14 +18,33 @@ import Welcome from "./pages/Welcome";
 import LogIn from './pages/LogIn'; 
 import SignUp from './pages/SignUp'; 
 
-
 const DEFAULT_SELECTIONS = {
   skin: 's1', hairStyle: 'hs1', hairColor: 'hc1',
   animalEars: 'ae1', armour: 'ar1', pets: null,
 };
 
+const toFrontendSelections = (backendSelections = {}) => ({
+  ...DEFAULT_SELECTIONS,
+  ...backendSelections,
+  hairStyle: backendSelections.hairStyle
+    ? backendSelections.hairStyle.replace(/^h(\d+)$/, 'hs$1')
+    : DEFAULT_SELECTIONS.hairStyle,
+  animalEars: backendSelections.animalEars
+    ? backendSelections.animalEars.replace(/^e(\d+)$/, 'ae$1')
+    : DEFAULT_SELECTIONS.animalEars,
+  pets: backendSelections.pet ?? backendSelections.pets ?? null,
+});
+
+const toBackendSelections = (frontendSelections = {}) => ({
+  skin: frontendSelections.skin ?? DEFAULT_SELECTIONS.skin,
+  hairStyle: (frontendSelections.hairStyle ?? DEFAULT_SELECTIONS.hairStyle).replace(/^hs(\d+)$/, 'h$1'),
+  hairColor: frontendSelections.hairColor ?? DEFAULT_SELECTIONS.hairColor,
+  animalEars: (frontendSelections.animalEars ?? DEFAULT_SELECTIONS.animalEars).replace(/^ae(\d+)$/, 'e$1'),
+  armour: frontendSelections.armour ?? DEFAULT_SELECTIONS.armour,
+  pet: frontendSelections.pets ?? null,
+});
+
 const DECAY_PER_DAY = { hp: 8, energy: 10, discipline: 6 };
-const STREAK_BONUS_PER_DAY = 0.1;
 
 const load = (key, fallback) => {
   try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback; }
@@ -37,11 +56,16 @@ const save = (key, val) => {
 
 const loadSelections = () => load('healup_avatar_selections', DEFAULT_SELECTIONS);
 const loadAvatarName = () => { try { return localStorage.getItem('healup_avatar_name') || ''; } catch { return ''; } };
-const loadStats      = () => load('healup_stats', { xp: 0, coins: 0 });
+const loadStats      = () => {
+  const raw = load('healup_stats', { xp: 0, coins: 0 });
+  return {
+    xp: raw?.xp ?? raw?.totalXp ?? 0,
+    coins: raw?.coins ?? 0,
+  };
+};
 const loadBars       = () => load('healup_bars',  { hp: 65, energy: 80, discipline: 45 });
 const loadStreak     = () => load('healup_streak', { count: 0, lastCompletedDate: null, todayDone: false });
 const loadLastActive = () => load('healup_last_active', { date: null });
-const loadDailyReset = () => load('healup_daily_reset', { date: null });
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -64,17 +88,139 @@ function App() {
   const [avatarSelections, setAvatarSelections] = useState(loadSelections);
   const [avatarName, setAvatarName]             = useState(loadAvatarName);
   const [stats, setStats]                       = useState(loadStats);
+  const [activeDevice, setActiveDevice]         = useState(() => localStorage.getItem('healup_active_device') || 'apple');
+  const handleDeviceSwitch = useCallback((deviceId) => {
+    setActiveDevice(deviceId);
+    localStorage.setItem('healup_active_device', deviceId);
+  }, []);
   const [bars, setBars]                         = useState(() => {
     const defaultBars = { hp: 65, energy: 80, discipline: 45 };
-    const saved = load('healup_bars', defaultBars);
-    return saved;
+    return load('healup_bars', defaultBars);
   });
   const [streak, setStreak]                     = useState(loadStreak);
   const [decayAlert, setDecayAlert]             = useState(null);
+  const [avatarSyncReady, setAvatarSyncReady]   = useState(false);
   const [dailyChallengesKey] = useState(() => {
     localStorage.removeItem('healup_daily_checked');
     return 'challenges';
   });
+
+  const getCurrentUserId = useCallback(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      return user?.id || null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const patchUserStats = useCallback(async (payload) => {
+    const userId = getCurrentUserId();
+    if (!userId) return null;
+    try {
+      const res = await fetch(`http://localhost:8001/api/stats/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }, [getCurrentUserId]);
+
+  useEffect(() => {
+    const userId = getCurrentUserId();
+    if (!userId) return;
+    fetch(`http://localhost:8001/api/stats/${userId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data || data.error) return;
+        const mappedStats = { xp: data.totalXp ?? 0, coins: data.coins ?? 0 };
+        const mappedBars = {
+          hp: data.hp ?? 100,
+          energy: data.totalEnergy ?? 0,
+          discipline: data.totalDiscipline ?? 0,
+        };
+        const mappedStreak = {
+          count: data.dayStreak ?? 0,
+          lastCompletedDate: data.streakLastCompletedDate || null,
+          todayDone: Boolean(data.streakTodayDone),
+        };
+        setStats(mappedStats);
+        setBars(mappedBars);
+        setStreak(mappedStreak);
+        save('healup_stats', mappedStats);
+        save('healup_bars', mappedBars);
+        save('healup_streak', mappedStreak);
+      })
+      .catch(() => {});
+  }, [getCurrentUserId]);
+
+  useEffect(() => {
+    const userId = getCurrentUserId();
+    if (!userId) {
+      setAvatarSyncReady(true);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadAvatarProfile = async () => {
+      try {
+        const res = await fetch(`http://localhost:8001/api/avatars/profile/${userId}`);
+        if (!res.ok) {
+          setAvatarSyncReady(true);
+          return;
+        }
+
+        const payload = await res.json();
+        const profileSelections = payload?.data?.selections;
+        if (!cancelled && profileSelections) {
+          const mapped = toFrontendSelections(profileSelections);
+          setAvatarSelections(mapped);
+          save('healup_avatar_selections', mapped);
+        }
+      } catch {
+        // Keep local fallback selections if backend is unavailable.
+      } finally {
+        if (!cancelled) setAvatarSyncReady(true);
+      }
+    };
+
+    loadAvatarProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getCurrentUserId]);
+
+  useEffect(() => {
+    const userId = getCurrentUserId();
+    if (!userId || !avatarSyncReady) return;
+
+    const controller = new AbortController();
+
+    const persistSelections = async () => {
+      try {
+        await fetch(`http://localhost:8001/api/avatars/profile/${userId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            selections: toBackendSelections(avatarSelections),
+          }),
+          signal: controller.signal,
+        });
+      } catch {
+        // Keep UI responsive even if persistence fails.
+      }
+    };
+
+    persistSelections();
+
+    return () => controller.abort();
+  }, [avatarSelections, avatarSyncReady, getCurrentUserId]);
 
   useEffect(() => {
     const lastActive = loadLastActive();
@@ -148,11 +294,19 @@ function App() {
         return next;
       });
     }
-  }, []);
+
+    patchUserStats({
+      hpDelta: -(penalties.hp || 0),
+      energyDelta: -(penalties.energy || 0),
+      disciplineDelta: -(penalties.discipline || 0),
+      xpDelta: -(penalties.xpPenalty || 0),
+    });
+  }, [patchUserStats]);
 
   const handleChallengeComplete = useCallback((xpGain, coinGain, barEffects) => {
     const today = todayStr();
     let newStreak = streak;
+    
     setStreak(prev => {
       let next;
       if (prev.lastCompletedDate === today) {
@@ -173,12 +327,11 @@ function App() {
       return next;
     });
 
-    const streakBonus = 1 + Math.min(newStreak.count * STREAK_BONUS_PER_DAY, 1);
-    const finalXP    = Math.round(xpGain    * streakBonus);
-    const finalCoins = Math.round(coinGain  * streakBonus);
-
     setStats(prev => {
-      const next = { xp: prev.xp + finalXP, coins: prev.coins + finalCoins };
+      const next = {
+        xp: Math.max(0, prev.xp + xpGain),
+        coins: Math.max(0, prev.coins + coinGain),
+      };
       save('healup_stats', next);
       return next;
     });
@@ -195,14 +348,22 @@ function App() {
       });
     }
 
-    return { finalXP, finalCoins, streakCount: newStreak.count, streakBonus };
-  }, [streak]);
+    patchUserStats({
+      dayStreak: newStreak.count,
+      bestStreak: Math.max(streak.count || 0, newStreak.count || 0),
+      streakLastCompletedDate: newStreak.lastCompletedDate || null,
+      streakTodayDone: Boolean(newStreak.todayDone),
+    });
+
+    return { finalXP: xpGain, finalCoins: coinGain, streakCount: newStreak.count };
+  }, [streak, patchUserStats]);
 
   const handleSetSelections = (updater) => {
     setAvatarSelections(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      save('healup_avatar_selections', next);
-      return next;
+      const safeNext = next || DEFAULT_SELECTIONS; 
+      save('healup_avatar_selections', safeNext);
+      return safeNext;
     });
   };
 
@@ -251,77 +412,64 @@ function App() {
 
   return (
     <BrowserRouter>
-<<<<<<< HEAD
-      <DecayAlert />
-      <Layout stats={stats} streak={streak}>
-        <Routes>
-          <Route path="/" element={
-            <Dashboard
-              avatarSelections={avatarSelections}
-              avatarName={avatarName}
-              bars={bars}
-              streak={streak}
-              onChallengeComplete={handleChallengeComplete}
-            />
-          } />
-          <Route path="/program" element={
-            <ProgramAvatar
-              avatarSelections={avatarSelections}
-              setAvatarSelections={handleSetSelections}
-              avatarName={avatarName}
-              setAvatarName={handleSetAvatarName}
-            />
-          } />
-          <Route path="/challenges" element={
-            <Challenges
-              key={dailyChallengesKey}
-              onChallengeComplete={handleChallengeComplete}
-              bars={bars}
-              streak={streak}
-            />
-          } />
-          <Route path="/goals"         element={<GoalsProgress bars={bars} />} />
-          <Route path="/activity-food" element={<ActivityFoodLog onBadHabit={handleBadHabit} />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/chatbot"       element={<Chatbot />} />
-        </Routes>
-        <ChatboxButton />
-      </Layout>
-=======
+      <DecayAlert /> 
+      
       <Routes>
-        {/* ----------------------------------------------- */}
-        {/* GROUP 1:  No Sidebar, No Layout                 */}
-        {/* ----------------------------------------------- */}
+        {/* GROUP 1: No Sidebar, No Layout */}
         <Route path="/" element={<Welcome />} />
         <Route path="/LogIn" element={<LogIn />} />   
         <Route path="/SignUp" element={<SignUp />} />
 
-        {/* ----------------------------------------------- */}
-        {/* GROUP 2: app pages (With Sidebar & Chatbox)     */}
-        {/* use "/*" to catch all other links and apply  */}
-        {/* the Layout to them.                             */}
-        {/* ----------------------------------------------- */}
-        <Route
-          path="/*"
-          element={
-            <Layout>
-              <Routes>
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="program" element={<ProgramAvatar />} />
-                <Route path="challenges" element={<Challenges />} />
-                <Route path="goals" element={<GoalsProgress />} />
-                <Route path="activity-food" element={<ActivityFoodLog />} />
-                <Route path="notifications" element={<Notifications />} />
-                <Route path="chatbot" element={<Chatbot />} />
-              </Routes>
-              
-              
-              <ChatboxButton />
-            </Layout>
-          }
-        />
+        {/* GROUP 2: App pages (With Sidebar & Chatbox) */}
+        {/* 👉 FIXED: Replaced the hidden AppShell bug by directly rendering the Layout component! */}
+        <Route element={
+          <Layout stats={stats} streak={streak} onDeviceSwitch={handleDeviceSwitch}>
+            <Outlet />
+            <ChatboxButton />
+          </Layout>
+        }>
+          <Route
+            path="/dashboard"
+            element={
+              <Dashboard
+                avatarSelections={avatarSelections}
+                avatarName={avatarName}
+                bars={bars}
+                streak={streak}
+                onChallengeComplete={handleChallengeComplete}
+                activeDevice={activeDevice}
+              />
+            }
+          />
+          <Route
+            path="/program"
+            element={
+              <ProgramAvatar
+                avatarSelections={avatarSelections}
+                setAvatarSelections={handleSetSelections}
+                avatarName={avatarName}
+                setAvatarName={handleSetAvatarName}
+              />
+            }
+          />
+          <Route
+            path="/challenges"
+            element={
+              <Challenges
+                key={dailyChallengesKey}
+                onBadHabit={handleBadHabit}
+                onChallengeComplete={handleChallengeComplete}
+                bars={bars}
+                streak={streak}
+              />
+            }
+          />
+          <Route path="/goals" element={<GoalsProgress bars={bars} onGoalComplete={handleChallengeComplete} activeDevice={activeDevice} />} />
+          <Route path="/activity-food" element={<ActivityFoodLog onBadHabit={handleBadHabit} />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/chatbot" element={<Chatbot />} />
+        </Route>
       </Routes>
->>>>>>> 6e5e852d0642ea4cf449851088218ed2a345af31
     </BrowserRouter>
   );
 }

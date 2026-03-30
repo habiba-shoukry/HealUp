@@ -3,32 +3,42 @@ const { activityDB } = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
 const challengeSchema = new mongoose.Schema({
-  id: {
+title: {
     type: String,
-    default: uuidv4,
-    unique: true
-  },
-  userId: {
-    type: String,
-    required: [true, 'User ID is required']
-  },
-  title: {
-    type: String,
-    required: [true, 'Challenge title is required'],
+    required: true,
     trim: true
   },
   description: {
     type: String,
-    required: [true, 'Challenge description is required']
+    required: true
   },
-  challengeType: {
+  category: {
     type: String,
-    required: [true, 'Challenge type is required'],
-    enum: ['daily', 'weekly', 'milestone', 'special']
+    enum: ['fitness', 'wellbeing'], // Groups them on the frontend
+    required: true
   },
-  rewardXp: {
+  frequency: {
+    type: String,
+    enum: ['daily', 'weekly'],      // Controls the auto-renew timeframe
+    required: true
+  },
+  trackingType: {
+    type: String,
+    enum: ['auto', 'manual'],       // Auto (reads health data) vs Manual (user clicks checkbox)
+    required: true
+  },
+  metricToTrack: {
+    type: String,
+    default: 'none'                 // e.g., 'steps', 'calories', 'sleep_hours', 'water_glasses'
+  },
+  targetValue: {
     type: Number,
-    default: 0
+    required: true                  // e.g., 10000 (steps), 8 (hours of sleep)
+  },
+  xpReward: {
+    type: Number,
+    required: true,
+    default: 50                     // How much XP the user gets for finishing it
   },
   rewardEnergy: {
     type: Number,
@@ -41,6 +51,10 @@ const challengeSchema = new mongoose.Schema({
   isCompleted: {
     type: Boolean,
     default: false
+  },
+  completedAt: {
+    type: Date,
+    default: null
   },
   progress: {
     type: Number,
@@ -60,5 +74,6 @@ const challengeSchema = new mongoose.Schema({
 
 challengeSchema.index({ userId: 1, challengeType: 1 });
 challengeSchema.index({ userId: 1, isCompleted: 1 });
+challengeSchema.index({ userId: 1, programType: 1 });
 
 module.exports = activityDB.model('Challenge', challengeSchema);
