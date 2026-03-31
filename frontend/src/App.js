@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import "./styles.css";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 
+
 // Components
 import Layout from "./components/Layout";
 import ChatboxButton from "./components/ChatboxButton";
@@ -15,8 +16,12 @@ import ActivityFoodLog from "./pages/ActivityFoodLog";
 import Notifications from "./pages/Notifications";
 import Chatbot from "./pages/Chatbot";
 import Welcome from "./pages/Welcome";
-import LogIn from './pages/LogIn'; 
-import SignUp from './pages/SignUp'; 
+import LogIn from './pages/LogIn';
+import SignUp from './pages/SignUp';
+import DoctorDashboard from "./pages/DoctorDashboard";
+import Reports from "./pages/Reports";
+import Patients from "./pages/Patients";
+import PatientDetail from "./pages/PatientDetail";
 
 const DEFAULT_SELECTIONS = {
   skin: 's1', hairStyle: 'hs1', hairColor: 'hc1',
@@ -51,20 +56,20 @@ const load = (key, fallback) => {
   catch { return fallback; }
 };
 const save = (key, val) => {
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch { }
 };
 
 const loadSelections = () => load('healup_avatar_selections', DEFAULT_SELECTIONS);
 const loadAvatarName = () => { try { return localStorage.getItem('healup_avatar_name') || ''; } catch { return ''; } };
-const loadStats      = () => {
+const loadStats = () => {
   const raw = load('healup_stats', { xp: 0, coins: 0 });
   return {
     xp: raw?.xp ?? raw?.totalXp ?? 0,
     coins: raw?.coins ?? 0,
   };
 };
-const loadBars       = () => load('healup_bars',  { hp: 65, energy: 80, discipline: 45 });
-const loadStreak     = () => load('healup_streak', { count: 0, lastCompletedDate: null, todayDone: false });
+const loadBars = () => load('healup_bars', { hp: 65, energy: 80, discipline: 45 });
+const loadStreak = () => load('healup_streak', { count: 0, lastCompletedDate: null, todayDone: false });
 const loadLastActive = () => load('healup_last_active', { date: null });
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -86,20 +91,20 @@ function App() {
   document.head.appendChild(link);
 
   const [avatarSelections, setAvatarSelections] = useState(loadSelections);
-  const [avatarName, setAvatarName]             = useState(loadAvatarName);
-  const [stats, setStats]                       = useState(loadStats);
-  const [activeDevice, setActiveDevice]         = useState(() => localStorage.getItem('healup_active_device') || 'apple');
+  const [avatarName, setAvatarName] = useState(loadAvatarName);
+  const [stats, setStats] = useState(loadStats);
+  const [activeDevice, setActiveDevice] = useState(() => localStorage.getItem('healup_active_device') || 'apple');
   const handleDeviceSwitch = useCallback((deviceId) => {
     setActiveDevice(deviceId);
     localStorage.setItem('healup_active_device', deviceId);
   }, []);
-  const [bars, setBars]                         = useState(() => {
+  const [bars, setBars] = useState(() => {
     const defaultBars = { hp: 65, energy: 80, discipline: 45 };
     return load('healup_bars', defaultBars);
   });
-  const [streak, setStreak]                     = useState(loadStreak);
-  const [decayAlert, setDecayAlert]             = useState(null);
-  const [avatarSyncReady, setAvatarSyncReady]   = useState(false);
+  const [streak, setStreak] = useState(loadStreak);
+  const [decayAlert, setDecayAlert] = useState(null);
+  const [avatarSyncReady, setAvatarSyncReady] = useState(false);
   const [dailyChallengesKey] = useState(() => {
     localStorage.removeItem('healup_daily_checked');
     return 'challenges';
@@ -155,7 +160,7 @@ function App() {
         save('healup_bars', mappedBars);
         save('healup_streak', mappedStreak);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [getCurrentUserId]);
 
   useEffect(() => {
@@ -231,15 +236,15 @@ function App() {
 
       if (missedDays > 0) {
         const losses = {
-          hp:         Math.min(40, DECAY_PER_DAY.hp         * missedDays),
-          energy:     Math.min(50, DECAY_PER_DAY.energy     * missedDays),
+          hp: Math.min(40, DECAY_PER_DAY.hp * missedDays),
+          energy: Math.min(50, DECAY_PER_DAY.energy * missedDays),
           discipline: Math.min(30, DECAY_PER_DAY.discipline * missedDays),
         };
 
         setBars(prev => {
           const next = {
-            hp:         clamp(prev.hp         - losses.hp),
-            energy:     clamp(prev.energy     - losses.energy),
+            hp: clamp(prev.hp - losses.hp),
+            energy: clamp(prev.energy - losses.energy),
             discipline: clamp(prev.discipline - losses.discipline),
           };
           save('healup_bars', next);
@@ -254,8 +259,8 @@ function App() {
             const streakPenalty = Math.min(20, prev.count * 2);
             setBars(b => {
               const penalised = {
-                hp:         clamp(b.hp         - streakPenalty),
-                energy:     clamp(b.energy     - streakPenalty),
+                hp: clamp(b.hp - streakPenalty),
+                energy: clamp(b.energy - streakPenalty),
                 discipline: clamp(b.discipline - streakPenalty),
               };
               save('healup_bars', penalised);
@@ -280,8 +285,8 @@ function App() {
   const handleBadHabit = useCallback((penalties) => {
     setBars(prev => {
       const next = {
-        hp:         clamp(prev.hp         - (penalties.hp         || 0)),
-        energy:     clamp(prev.energy     - (penalties.energy     || 0)),
+        hp: clamp(prev.hp - (penalties.hp || 0)),
+        energy: clamp(prev.energy - (penalties.energy || 0)),
         discipline: clamp(prev.discipline - (penalties.discipline || 0)),
       };
       save('healup_bars', next);
@@ -306,7 +311,7 @@ function App() {
   const handleChallengeComplete = useCallback((xpGain, coinGain, barEffects) => {
     const today = todayStr();
     let newStreak = streak;
-    
+
     setStreak(prev => {
       let next;
       if (prev.lastCompletedDate === today) {
@@ -339,8 +344,8 @@ function App() {
     if (barEffects) {
       setBars(prev => {
         const next = {
-          hp:         clamp(prev.hp         + (barEffects.hp         || 0)),
-          energy:     clamp(prev.energy     + (barEffects.energy     || 0)),
+          hp: clamp(prev.hp + (barEffects.hp || 0)),
+          energy: clamp(prev.energy + (barEffects.energy || 0)),
           discipline: clamp(prev.discipline + (barEffects.discipline || 0)),
         };
         save('healup_bars', next);
@@ -361,7 +366,7 @@ function App() {
   const handleSetSelections = (updater) => {
     setAvatarSelections(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      const safeNext = next || DEFAULT_SELECTIONS; 
+      const safeNext = next || DEFAULT_SELECTIONS;
       save('healup_avatar_selections', safeNext);
       return safeNext;
     });
@@ -412,12 +417,12 @@ function App() {
 
   return (
     <BrowserRouter>
-      <DecayAlert /> 
-      
+      <DecayAlert />
+
       <Routes>
         {/* GROUP 1: No Sidebar, No Layout */}
         <Route path="/" element={<Welcome />} />
-        <Route path="/LogIn" element={<LogIn />} />   
+        <Route path="/LogIn" element={<LogIn />} />
         <Route path="/SignUp" element={<SignUp />} />
 
         {/* GROUP 2: App pages (With Sidebar & Chatbox) */}
@@ -468,6 +473,13 @@ function App() {
           <Route path="/activity-food" element={<ActivityFoodLog onBadHabit={handleBadHabit} />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/chatbot" element={<Chatbot />} />
+
+          {/* DOCTOR ROUTES (ADD HERE) */}
+          <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
+          <Route path="/patients" element={<Patients />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/patient-details" element={<PatientDetail />} />
+          
         </Route>
       </Routes>
     </BrowserRouter>

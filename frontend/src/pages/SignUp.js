@@ -29,7 +29,7 @@ export default function SignUp() {
       role: selectedRole,
       // If they switch to doctor, we don't need a health program. 
       // If they switch back to patient, default to wellbeing.
-      healthProgram: selectedRole === 'doctor' ? '' : 'wellbeing' 
+      healthProgram: selectedRole === 'doctor' ? '' : 'wellbeing'
     }));
   };
 
@@ -90,7 +90,11 @@ export default function SignUp() {
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       if (data.stats) localStorage.setItem('stats', JSON.stringify(data.stats));
-      navigate('/dashboard');
+      if (data.user.role === 'doctor') {
+        navigate('/doctor-dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch {
       setError('Could not connect to the server. Please try again.');
     } finally {
@@ -195,7 +199,7 @@ export default function SignUp() {
               maxLength={100}
             />
           </div>
-          
+
           <div className="input-group">
             <label>Password</label>
             <input

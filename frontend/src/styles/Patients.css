@@ -1,0 +1,126 @@
+.patients-page {
+  padding: 2rem;
+  color: #e2e8f0;
+}
+
+/* HEADER */
+.patients-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.patients-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.patients-controls input,
+.patients-controls select {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: white;
+}
+
+/* LIST */
+.patients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.patient-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(145deg,#0f172a,#1e293b);
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.05);
+  transition: 0.2s;
+}
+
+.patient-row:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.1);
+}
+
+/* INFO */
+.patient-info h3 {
+  margin: 0;
+}
+
+.patient-info p {
+  margin: 2px 0 0;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+/* RISK BADGE */
+.patient-risk {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.patient-risk.critical {
+  background: rgba(239,68,68,0.2);
+  color: #ef4444;
+}
+
+.patient-risk.high {
+  background: rgba(251,191,36,0.2);
+  color: #fbbf24;
+}
+
+.patient-risk.stable {
+  background: rgba(34,197,94,0.2);
+  color: #22c55e;
+}
+
+/* ACTIONS */
+.patient-actions button {
+  margin-left: 8px;
+  background: #1e293b;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+}
+
+.patient-actions button:hover {
+  background: #334155;
+}
+
+.profile-card {
+  background: linear-gradient(145deg,#0f172a,#1e293b);
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 25px;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  justify-content: space-between;
+}
+
+.profile-grid {
+  margin-top: 15px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.security-badge {
+  background: #0ea5e9;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
