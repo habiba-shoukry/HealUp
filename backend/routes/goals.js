@@ -7,35 +7,14 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const { userId, programType, isCompleted, device } = req.query;
-    const filter = {};
-    if (userId) filter.userId = userId;
+    const { userId, programType } = req.query;
+    const filter = { userId }; 
     if (programType && programType !== 'all') filter.programType = programType;
-    if (typeof isCompleted !== 'undefined') filter.isCompleted = isCompleted === 'true';
 
-    const goals = await Goal.find(filter).sort({ createdAt: -1 });
-
-    if (!userId) return res.json(goals);
-
-    const deviceId = String(device || 'apple');
-    const weekly = await WeeklyHealthMetrics.findOne({ userId, deviceId });
-    const weeklySteps = Array.isArray(weekly?.steps)
-      ? weekly.steps.reduce((sum, s) => sum + (Number(s) || 0), 0)
-      : 0;
-
-    const withEffectiveProgress = goals.map((goal) => {
-      const g = goal.toObject();
-      const isStepGoal = g.goalType === 'fitness' && String(g.unit || '').toLowerCase() === 'steps';
-      if (!isStepGoal) return g;
-
-      const baseCurrent = Number(g.currentValue) || 0;
-      g.effectiveCurrentValue = Math.min(Number(g.targetValue) || 0, baseCurrent + weeklySteps);
-      return g;
-    });
-
-    return res.json(withEffectiveProgress);
+    const goals = await Goal.find(filter);
+    res.json(goals);
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to fetch goals.' });
+    res.status(500).json({ error: error.message });
   }
 });
 
