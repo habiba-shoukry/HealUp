@@ -71,4 +71,4 @@ goalSchema.index({ userId: 1, goalType: 1 });
 goalSchema.index({ userId: 1, isCompleted: 1 });
 goalSchema.index({ userId: 1, programType: 1 });
 
-module.exports = mongoose.model('Goal', goalSchema);
+module.exports = activityDB.model('Goal', goalSchema);

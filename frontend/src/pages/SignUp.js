@@ -5,6 +5,9 @@ import '../styles/LogIn.css';
 
 export default function SignUp() {
   const navigate = useNavigate();
+  const apiBaseUrl =
+    process.env.REACT_APP_API_BASE_URL ||
+    `${window.location.protocol}//${window.location.hostname}:8001`;
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -67,7 +70,7 @@ export default function SignUp() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8001/api/auth/signup', {
+      const response = await fetch(`${apiBaseUrl}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -80,7 +83,12 @@ export default function SignUp() {
         })
       });
 
-      const data = await response.json();
+      let data = {};
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
 
       if (!response.ok) {
         setError(data.error || 'Sign up failed. Please try again.');

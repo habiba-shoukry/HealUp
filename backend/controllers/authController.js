@@ -345,6 +345,14 @@ exports.signup = async (req, res) => {
         if (password.length < 8) {
             return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
         }
+
+        const emailPrefix = (email || '').split('@')[0].replace(/[^A-Za-z0-9_]/g, '_');
+        if (emailPrefix.length < 3) {
+            return res.status(400).json({
+                error: 'The part before @ in the email must be at least 3 characters long.'
+            });
+        }
+
         //vlidates to ensure patients select a health program
         if (role === 'patient' && !healthProgram) {
             return res.status(400).json({ error: 'A health program is required for patients.' });
@@ -366,14 +374,11 @@ exports.signup = async (req, res) => {
             role: role || 'patient',  
         });
 
-        // Create initial UserStats document for the new user
-        const stats = await UserStats.create({ userId: user.id });
-        await Promise.all([
-            seedInitialHealthData(user.id),
-            seedInitialWeeklyMetrics(user.id),
-            initializeUserAvatar(user.id),
-            assignStarterChallenges(user.id)
-        ]);
+        // Create initial UserStats document for the new user (or reuse if it already exists)
+        let stats = await UserStats.findOne({ userId: user.id });
+        if (!stats) {
+            stats = await UserStats.create({ userId: user.id });
+        }
 
         const token = generateToken(user.id);
 
@@ -399,10 +404,30 @@ exports.signup = async (req, res) => {
                 totalDistance: stats.totalDistance
             }
         });
+
+        // Run non-critical setup after response so signup never blocks on seeding.
+        setImmediate(async () => {
+            const setupResults = await Promise.allSettled([
+                seedInitialHealthData(user.id),
+                seedInitialWeeklyMetrics(user.id),
+                initializeUserAvatar(user.id),
+                assignStarterChallenges(user.id)
+            ]);
+            setupResults.forEach((result, index) => {
+                if (result.status === 'rejected') {
+                    console.error(`⚠️ Signup setup task ${index + 1} failed for user ${user.id}:`, result.reason);
+                }
+            });
+        });
     } catch (error) {
         console.error("🔥 SIGNUP CRASHED:", error);
         if (error.name === 'ValidationError') {
             const messages = Object.values(error.errors).map((e) => e.message);
+            if (messages[0] && messages[0].includes('Username must be at least 3 characters long')) {
+                return res.status(400).json({
+                    error: 'The part before @ in the email must be at least 3 characters long.'
+                });
+            }
             return res.status(400).json({ error: messages[0] });
         }
         res.status(500).json({ error: 'Server error. Please try again.' });
