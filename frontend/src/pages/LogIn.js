@@ -51,7 +51,11 @@ export default function LoginPage() {
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       if (data.stats) localStorage.setItem('stats', JSON.stringify(data.stats));
-      navigate('/dashboard');
+      if (data.user.role === 'doctor') {
+        navigate('/doctor-dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch {
       setError('Could not connect to the server. Please try again.');
     } finally {
