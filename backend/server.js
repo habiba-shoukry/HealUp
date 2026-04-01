@@ -150,4 +150,19 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
 
+
+const cron = require('node-cron');
+const UserStats = require('./models/UserStats');
+
+// every night at midnight
+cron.schedule('0 0 * * *', async () => {
+  console.log('Resetting daily streak status for all users...');
+  try {
+    // resets streakTodayDone to false
+    await UserStats.updateMany({}, { $set: { streakTodayDone: false } });
+  } catch (err) {
+    console.error('Failed to reset streak status:', err);
+  }
+});
+
 module.exports = app;

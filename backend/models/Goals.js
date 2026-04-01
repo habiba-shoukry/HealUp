@@ -67,6 +67,12 @@ const goalSchema = new mongoose.Schema({
   }
 });
 
+
+goalSchema.virtual('percentage').get(function() {
+    return Math.min(Math.round((this.currentValue / this.targetValue) * 100), 100);
+});
+goalSchema.set('toJSON', { virtuals: true });
+
 goalSchema.index({ userId: 1, goalType: 1 });
 goalSchema.index({ userId: 1, isCompleted: 1 });
 goalSchema.index({ userId: 1, programType: 1 });
