@@ -151,7 +151,7 @@ app.listen(PORT, () => {
 });
 
 
-const cron = require('node-cron');
+
 const UserStats = require('./models/UserStats');
 
 // every night at midnight
