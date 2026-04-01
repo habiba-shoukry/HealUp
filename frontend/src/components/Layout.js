@@ -872,17 +872,6 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
                     );
                   })}
                 </div>
-
-                <div style={{ padding: '1rem 1.1rem', borderTop: '1px solid rgba(91,184,255,0.1)', background: 'rgba(91,184,255,0.02)' }}>
-                  <button onClick={handleViewAll} style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg,#1e3a5f,#1b2f4b)', border: '1px solid rgba(91,184,255,0.25)', borderRadius: 18, color: '#e6f1ff', fontFamily: F, fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', letterSpacing: '0.04em', transition: 'all 0.25s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', boxShadow: '0 8px 25px rgba(0,0,0,0.4)', position: 'relative', overflow: 'hidden' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#2563eb,#7c3aed)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 35px rgba(59,130,246,0.35)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#1e3a5f,#1b2f4b)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.4)'; }}
-                  >
-                    <span style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '2px', background: 'linear-gradient(90deg,transparent,#5bb8ff,#a78bfa,transparent)', opacity: 0.7 }} />
-                    {JSON.parse(localStorage.getItem("user"))?.role === "doctor" ? "View Reports" : "View All Notifications"}
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
-                  </button>
-                </div>
               </div>
             )}
           </div>
