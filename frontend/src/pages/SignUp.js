@@ -117,7 +117,7 @@ export default function SignUp() {
       <div className="login-brand-section">
         <div className="brand-content">
           <img
-            src="https://via.placeholder.com/150/4dabf7/FFFFFF?text=M"
+            src="\logo-transparent.png"
             alt="HealUp Logo"
             className="brand-logo"
           />
