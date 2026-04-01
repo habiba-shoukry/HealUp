@@ -1507,7 +1507,6 @@ const BIOMARKERS = [
   {key:'steps',    label:'Steps',      icon:'/football.png'},
   {key:'calories', label:'Calories',   icon:'/fire.png'},
   {key:'stress',   label:'Stress',     icon:'/stress-relief.png'},
-  {key:'hydration',label:'Hydration',  icon:'/dollar.png'},
 ];
 const ViewDoctorModal = ({ onClose }) => {
   const [enabled,setEnabled]=useState(Object.fromEntries(BIOMARKERS.map(b=>[b.key,true])));
@@ -1782,7 +1781,7 @@ const Dashboard = ({ avatarSelections, avatarName, bars = { hp:65, energy:80, di
         <div className="dashboard-footer-actions">
           <button className="dashboard-action-btn doctor-btn" onClick={() => setShowDoctor(true)}>
             <img src="/doctor.png" alt="" style={{width:18,height:18,objectFit:'contain',verticalAlign:'middle',marginRight:6}}/>
-            View Doctor
+            Hydrationctor
           </button>
 
           <button className="dashboard-action-btn logout-btn" onClick={handleLogout}>
