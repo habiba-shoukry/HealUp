@@ -43,13 +43,13 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 .doctor-page {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 20px 60px; 
   min-height: 100vh;
-  background: linear-gradient(135deg, #0b1a27 0%, #0f2236 50%, #0b1a27 100%);
-  padding: 32px 36px 48px;
-  font-family: var(--font-body);
-  font-weight: 400;
-  color: var(--db-text);
   position: relative;
+  float: none;
 }
 
 .doctor-page::before {
@@ -62,6 +62,41 @@
   pointer-events: none; z-index: 0;
 }
 
+.doctor-layout-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.main-content-full {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+.layout-container {
+  display: flex;
+  justify-content: center; 
+  width: 100%;
+  min-height: calc(100vh - 80px); 
+}
+
+.layout-container:has(.role-doctor) {
+  display: flex;
+  justify-content: center; 
+  align-items: flex-start;
+  width: 100%;
+}
+
+.main-content-full.role-doctor {
+  flex: 1;
+  width: 100%;
+  max-width: 1400px; 
+  margin: 0 auto !important; 
+  padding: 0 !important;   
+  display: flex;
+  justify-content: center;
+}
+
 /* ═══════════════════════════════════════════════════════
    PAGE HEADER
    ═══════════════════════════════════════════════════════ */
@@ -71,8 +106,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 24px;
-  padding-bottom: 20px;
+  margin-bottom: 32px; /* Increased margin */
+  padding-bottom: 24px;
   border-bottom: 1px solid var(--db-border);
 }
 
@@ -111,7 +146,7 @@
 
 .doc-header-title {
   font-family: var(--font-display);
-  font-size: 1.6rem;
+  font-size: 2.2rem; /* Increased from 1.6rem for full-screen impact */
   font-weight: 800;
   color: var(--db-text);
   letter-spacing: -0.02em;
@@ -257,12 +292,11 @@
 .doc-patient-card {
   background: var(--db-bg-card-alt);
   border-radius: var(--db-radius);
-  padding: 18px 20px 16px;
-  border: 1px solid;
-  box-shadow: 0 2px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.018);
-  animation: docFadeUp 0.28s ease;
-  transition: box-shadow 0.2s;
+  padding: 24px; /* Increased padding */
+  border: 1px solid var(--db-border);
+  margin-bottom: 8px;
 }
+
 .doc-patient-card:hover {
   box-shadow: 0 6px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.028);
 }
@@ -412,7 +446,9 @@
 
 /* Metric cards row */
 .doc-metrics-row {
-  display: flex; gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
+  gap: 12px;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -710,6 +746,7 @@
 /* ═══════════════════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════════════════ */
+   
 @media (max-width: 1200px) {
   .doc-metrics-row { flex-wrap: wrap; }
   .doc-metric-card { min-width: calc(50% - 4px); }

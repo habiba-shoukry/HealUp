@@ -713,9 +713,6 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
     role === "doctor"
       ? [
         { path: '/doctor-dashboard', icon: '/dashboard.png', label: 'Doctor Dashboard' },
-        { path: '/patients', icon: '/user.png', label: 'Patients' },
-        { path: '/reports', icon: '/notification-bell.png', label: 'Reports' },
-        { label: "Patient Details", path: "/patient-details", icon: "/details.png" },
       ]
       : [
         { path: '/dashboard', icon: '/dashboard.png', label: 'Dashboard' },
@@ -878,20 +875,31 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
         </div>
       </header>
 
+      
       <div className="layout-container">
-        <aside className="sidebar">
-          <nav className="sidebar-nav">
-            {menuItems.map(item => (
-              <Link key={item.path} to={item.path}
-                className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
-                data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                <img src={item.icon} alt={item.label} className="sidebar-icon-img" />
-                <span className="sidebar-label">{item.label}</span>
-              </Link>
-            ))}
-          </nav>
-        </aside>
-        <main className="main-content">{children}</main>
+        {role !== "doctor" && (
+          <aside className="sidebar">
+            <nav className="sidebar-nav">
+              {menuItems.map(item => (
+                <Link 
+                  key={item.path} 
+                  to={item.path}
+                  className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
+                  data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                >
+                  <img src={item.icon} alt={item.label} className="sidebar-icon-img" />
+                  <span className="sidebar-label">{item.label}</span>
+                </Link>
+              ))}
+            </nav>
+          </aside>
+        )}
+    
+        <main className={`${role === "doctor" ? "main-content-full" : "main-content"} ${role === "doctor" ? "role-doctor" : ""}`}>
+          <div className={role === "doctor" ? "doctor-layout-wrapper" : ""}>
+            {children}
+          </div>
+        </main>
       </div>
 
       {syncOpen && <SyncModal onClose={() => setSyncOpen(false)} onDeviceSwitch={onDeviceSwitch} devices={devices} setDevices={setDevices} />}
