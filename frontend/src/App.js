@@ -22,6 +22,9 @@ import DoctorDashboard from "./pages/DoctorDashboard";
 import Reports from "./pages/Reports";
 import Patients from "./pages/Patients";
 import PatientDetail from "./pages/PatientDetail";
+import socket from './socket';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'; 
 
 const DEFAULT_SELECTIONS = {
   skin: 's1', hairStyle: 'hs1', hairColor: 'hc1',
@@ -82,6 +85,24 @@ const daysBetween = (dateStrA, dateStrB) => {
 
 const clamp = (val, min = 0, max = 100) => Math.max(min, Math.min(max, val));
 
+const NotificationListener = ({ currentUser }) => {
+  useEffect(() => {
+    if (currentUser?._id) {
+    
+      socket.emit('join_room', currentUser._id);
+      socket.on('receive_notification', (data) => {
+        toast.info(`New message: ${data.message}`, {
+          position: "top-right",
+          autoClose: 5000,
+        });
+      });
+    }
+
+    return () => socket.off('receive_notification');
+  }, [currentUser]); 
+};
+
+
 function App() {
   document.title = "HealUp!- Your Personal Health Companion";
   const link = document.querySelector("link[rel='icon']") || document.createElement('link');
@@ -123,7 +144,7 @@ function App() {
     const userId = getCurrentUserId();
     if (!userId) return null;
     try {
-      const res = await fetch(`http://localhost:8001/api/stats/${userId}`, {
+      const res = await fetch(`http://localhost:5000/api/stats/${userId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -138,7 +159,7 @@ function App() {
   useEffect(() => {
     const userId = getCurrentUserId();
     if (!userId) return;
-    fetch(`http://localhost:8001/api/stats/${userId}`)
+    fetch(`http://localhost:5000/api/stats/${userId}`)
       .then((res) => res.json())
       .then((data) => {
         if (!data || data.error) return;
@@ -174,7 +195,7 @@ function App() {
 
     const loadAvatarProfile = async () => {
       try {
-        const res = await fetch(`http://localhost:8001/api/avatars/profile/${userId}`);
+        const res = await fetch(`http://localhost:5000/api/avatars/profile/${userId}`);
         if (!res.ok) {
           setAvatarSyncReady(true);
           return;
@@ -209,7 +230,7 @@ function App() {
 
     const persistSelections = async () => {
       try {
-        await fetch(`http://localhost:8001/api/avatars/profile/${userId}`, {
+        await fetch(`http://localhost:5000/api/avatars/profile/${userId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
+const socketIo = require('socket.io');
 require('dotenv').config();
 require('./utils/goalScheduler');
 
@@ -7,6 +9,7 @@ require('./utils/goalScheduler');
 const { userDB, activityDB } = require('./config/database');
 
 const app = express();
+const server = http.createServer(app);
 
 // ==================== Middleware ====================
 const allowedOrigins = (process.env.CORS_ORIGINS || '')
@@ -31,6 +34,18 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// ==================== Socket & Server Setup ====================
+// We define 'io' here so it exists BEFORE the routes below try to use it
+const io = socketIo(server, {
+  cors: { 
+    origin: "http://localhost:3000", // our React URL
+    credentials: true 
+  }
+});
+
+// Pass 'io' to the socket manager
+require('./sockets/socketManager')(io); 
 
 // ==================== Routes ====================
 app.get('/', (req, res) => {
@@ -64,10 +79,11 @@ app.use('/api/notifications', notificationRoutes);
 const avatarRoutes = require('./routes/avatars');
 app.use('/api/avatars', avatarRoutes);
 
+// NOW this line works because 'io' is initialized above
 const messageRoutes = require('./routes/messages')(io);
 app.use('/api/messages', messageRoutes);
 
-// Import models (registers them against their respective connections)
+// ==================== Models ====================
 require('./models/User');
 require('./models/UserStats');
 require('./models/Reward');
@@ -77,17 +93,16 @@ require('./models/FoodIntake');
 require('./models/WeeklyHealthMetrics');
 require('./models/Notification');
 require('./models/AvatarItem');
-require('./models/UserAvatarSelection'); // Registers UserAvatarProfile
+require('./models/UserAvatarSelection');
 
-// Drop legacy single-field unique index on userId if it still exists, so the new
-// compound (userId, deviceId) index can allow multiple docs per user.
+// Drop legacy single-field unique index
 activityDB.once('open', async () => {
   try {
     const WeeklyHealthMetrics = activityDB.model('WeeklyHealthMetrics');
     await WeeklyHealthMetrics.collection.dropIndex('userId_1');
     console.log('Dropped legacy WeeklyHealthMetrics.userId_1 index');
   } catch {
-    // Index already gone — nothing to do.
+    // Index already gone
   }
 });
 
@@ -102,86 +117,53 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-
+// ==================== Cron Jobs ====================
 const cron = require('node-cron');
 const UserQuest = require('./models/Challenges'); 
+const UserStats = require('./models/UserStats');
 
-// ALARM 1: The Daily Reset (Runs exactly at Midnight every single day 0 0 * * *)
+// Daily Challenge Reset
 cron.schedule('0 0 * * *', async () => {
     console.log("Daily Reset: Wiping daily challenge progress...");
     try {
-        // We capture the "result" of the update
         const result = await UserQuest.updateMany(
             { challengeType: 'daily' }, 
-            { 
-                $set: { 
-                    progress: 0, 
-                    isCompleted: false 
-                } 
-            }
+            { $set: { progress: 0, isCompleted: false } }
         );
-        // And print exactly how many documents were changed!
-        console.log(`Daily reset complete! Modified ${result.modifiedCount} challenges in the database.`);
+        console.log(`Daily reset complete! Modified ${result.modifiedCount} challenges.`);
     } catch (error) {
         console.error("🔥 Error resetting daily challenges:", error);
     }
 });
 
-// ALARM 2: The Weekly Reset (Runs exactly at Midnight on Sunday 0 0 * * 0)
-cron.schedule('0 0 * * 0 ', async () => {
-    console.log(" Weekly Reset: Emptying weekly progress bars...");
+// Weekly Challenge Reset
+cron.schedule('0 0 * * 0', async () => {
     try {
         await UserQuest.updateMany(
             { challengeType: 'weekly' }, 
-            { 
-                $set: { 
-                    progress: 0, 
-                    currentProgress: 0, 
-                    isCompleted: false 
-                } 
-            }
+            { $set: { progress: 0, currentProgress: 0, isCompleted: false } }
         );
-        console.log(" Weekly progress bars have been reset to 0% for the new week!");
+        console.log("Weekly progress bars reset!");
     } catch (error) {
         console.error("🔥 Error resetting weekly challenges:", error);
     }
 });
 
-// ==================== Start Server ====================
-const UserStats = require('./models/UserStats');
-
-// every night at midnight
+// Daily Streak Reset
 cron.schedule('0 0 * * *', async () => {
   console.log('Resetting daily streak status for all users...');
   try {
-    // resets streakTodayDone to false
     await UserStats.updateMany({}, { $set: { streakTodayDone: false } });
   } catch (err) {
     console.error('Failed to reset streak status:', err);
   }
 });
 
-module.exports = app;
-
-
-// ==================== Socket & Server Setup ====================
-const http = require('http');
-const socketIo = require('socket.io');
-
-const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: { 
-    origin: allowedOrigins, 
-    credentials: true 
-  }
-});
-
-// pass 'io' to the socket manager
-require('./socketManager')(io); 
-
-// uses the PORT from the .env or default to 5000
+// ==================== Start Server ====================
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
+module.exports = app;
