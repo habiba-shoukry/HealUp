@@ -60,8 +60,12 @@ app.use('/api/report', reportRoutes);
 
 const notificationRoutes = require('./routes/notifications');
 app.use('/api/notifications', notificationRoutes);
+
 const avatarRoutes = require('./routes/avatars');
 app.use('/api/avatars', avatarRoutes);
+
+const messageRoutes = require('./routes/messages')(io);
+app.use('/api/messages', messageRoutes);
 
 // Import models (registers them against their respective connections)
 require('./models/User');
@@ -144,14 +148,6 @@ cron.schedule('0 0 * * 0 ', async () => {
 });
 
 // ==================== Start Server ====================
-const PORT = process.env.PORT || 8001;
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
-
-
-
 const UserStats = require('./models/UserStats');
 
 // every night at midnight
@@ -166,3 +162,26 @@ cron.schedule('0 0 * * *', async () => {
 });
 
 module.exports = app;
+
+
+// ==================== Socket & Server Setup ====================
+const http = require('http');
+const socketIo = require('socket.io');
+
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: { 
+    origin: allowedOrigins, 
+    credentials: true 
+  }
+});
+
+// pass 'io' to the socket manager
+require('./socketManager')(io); 
+
+// uses the PORT from the .env or default to 5000
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
