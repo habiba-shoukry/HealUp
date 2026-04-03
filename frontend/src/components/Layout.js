@@ -843,6 +843,9 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
                         style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', padding: '1rem 1.1rem', borderRadius: 18, background: isRead ? 'rgba(255,255,255,0.02)' : 'rgba(91,184,255,0.07)', border: `1px solid ${isRead ? 'rgba(255,255,255,0.05)' : 'rgba(91,184,255,0.2)'}`, marginBottom: idx < notifications.length - 1 ? '0.55rem' : 0, transition: 'transform 0.18s', opacity: isRead ? 0.6 : 1 }}
                         onMouseEnter={e => { if (!isRead) e.currentTarget.style.transform = 'translateX(4px)'; }}
                         onMouseLeave={e => { e.currentTarget.style.transform = 'translateX(0)'; }}
+                        onClick={() => {
+                          markAsRead(n._id);
+                        }}
                       >
                         <div style={{ width: 42, height: 42, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} onClick={() => { const role = JSON.parse(localStorage.getItem("user"))?.role; markAsRead(n._id); if (role === "doctor") { navigate("/reports", { state: { report: n } }); } }}>
                           <img src={`/icons/${n.icon}.png`} alt={n.icon} style={{ width: 36, height: 36, objectFit: 'contain', opacity: isRead ? 0.25 : 1, filter: isRead ? 'grayscale(1) opacity(0.3)' : 'brightness(0) saturate(100%) invert(53%) sepia(96%) saturate(400%) hue-rotate(180deg) brightness(105%)' }} />

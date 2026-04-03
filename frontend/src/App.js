@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "./styles.css";
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import { Routes, Route, Outlet, useLocation } from "react-router-dom";
 
 
 // Components
@@ -89,6 +89,7 @@ function App() {
   link.type = 'image/png';
   link.href = '/logo-transparent.png';
   document.head.appendChild(link);
+  const location = useLocation();
 
   const [avatarSelections, setAvatarSelections] = useState(loadSelections);
   const [avatarName, setAvatarName] = useState(loadAvatarName);
@@ -228,6 +229,10 @@ function App() {
   }, [avatarSelections, avatarSyncReady, getCurrentUserId]);
 
   useEffect(() => {
+    const publicRoutes = ["/", "/login", "/signup"];
+
+    if (publicRoutes.includes(location.pathname)) return;
+
     const lastActive = loadLastActive();
     const today = todayStr();
 
@@ -280,7 +285,7 @@ function App() {
     }
 
     save('healup_last_active', { date: today });
-  }, []);
+  }, [location.pathname]);
 
   const handleBadHabit = useCallback((penalties) => {
     setBars(prev => {
@@ -416,7 +421,7 @@ function App() {
   };
 
   return (
-    <BrowserRouter>
+    <>
       <DecayAlert />
 
       <Routes>
@@ -482,7 +487,7 @@ function App() {
           
         </Route>
       </Routes>
-    </BrowserRouter>
+    </>
   );
 }
 
