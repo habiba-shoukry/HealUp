@@ -482,12 +482,34 @@ export default function DoctorDashboard() {
   const [sent, setSent] = useState(false);
   const [filter, setFilter] = useState('all');
 
-  const handleSend = () => {
-    if (message.trim()) {
-      setSent(true);
-      setTimeout(() => { setSent(false); setMessage(''); }, 2000);
-    }
+  const userJson = localStorage.getItem('user');
+  const currentUser = userJson ? JSON.parse(userJson) : null;
+
+const handleSend = async () => {
+  if (!message.trim() || !selectedPatient) return;
+
+  const payload = {
+    senderId: currentUser?.id || currentUser?._id, 
+    receiverId: selectedPatient.id, 
+    content: message          
   };
+
+  try {
+    const response = await fetch('http://localhost:5000/api/messages/send', { 
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (response.ok) {
+      setSent(true);
+      setMessage('');
+      setTimeout(() => setSent(false), 2000);
+    }
+  } catch (error) {
+    console.error("Failed to send message:", error);
+  }
+};
 
   const criticalCount = patients.filter(p => getRiskScore(p) >= 7).length;
   const highCount     = patients.filter(p => { const s = getRiskScore(p); return s >= 4 && s < 7; }).length;
