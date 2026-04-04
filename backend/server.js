@@ -37,6 +37,13 @@ app.use(express.json());
 
 // ==================== Socket & Server Setup ====================
 // We define 'io' here so it exists BEFORE the routes below try to use it
+app.use(cors({
+  origin: "http://localhost:3000", 
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"], 
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
 const io = socketIo(server, {
   cors: { 
     origin: "http://localhost:3000", // our React URL

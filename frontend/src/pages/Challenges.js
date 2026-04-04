@@ -236,6 +236,8 @@ useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || 'null');
     const userId = user?.id || user?._id; // Check for both id and _id
 
+  const baseUrl = "http://localhost:5000";
+
     if (!userId) {
       setRemoteChallenges({ daily: [], weekly: [] });
       return;
