@@ -248,10 +248,10 @@
   text-align: center;
 }
 
-/* ===== BOTTOM: 6 category cards in a row ===== */
+/* ===== BOTTOM: 6 category cards in rows ===== */
 .categories-panel {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(3, 2fr);
   gap: 0.85rem;
 }
 
