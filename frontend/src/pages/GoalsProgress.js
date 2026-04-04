@@ -281,8 +281,29 @@ const handleClaimGoal = (goal, event) => {
    setTimeout(() => setPopup(null), 2700);
  };
 
- const handleAddGoal = () => {
-   showPopup({ burst: '/hourglass.png', title: 'Coming Soon!', message: 'Custom goal creation will be available in the next update.' });
+ const [showAddGoal, setShowAddGoal] = useState(false);
+const [newGoal, setNewGoal] = useState({
+  title: '', goalType: 'fitness', targetValue: '', unit: '',
+  currentValue: 0, deadline: '', programType: selectedProgram,
+});
+
+const handleAddGoal = () => setShowAddGoal(true);
+
+const handleSubmitGoal = async () => {
+  if (!newGoal.title || !newGoal.targetValue) return;
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user?.id) return;
+
+  await fetch('http://localhost:8001/api/goals', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...newGoal, userId: user.id }),
+  });
+
+  setShowAddGoal(false);
+  setNewGoal({ title: '', goalType: 'fitness', targetValue: '', unit: '', currentValue: 0, deadline: '', programType: selectedProgram });
+  // Re-fetch goals to show the new one
+  setSelectedProgram(p => p); // trigger useEffect
  };
 
  const deliverBotReply = (userText) => {
@@ -783,7 +804,72 @@ const handleClaimGoal = (goal, event) => {
         <button className="gp-chat-send" onClick={handleChatSend}>➤</button>
       </div>
     </div>
+{showAddGoal && (
+  <div className="modal-overlay" onClick={() => setShowAddGoal(false)}>
+    <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
+      <div className="modal-header">
+        <h2 className="modal-title">
+          <img src="/icons/target_1.png" alt="goal" style={{ width: 20, height: 20, verticalAlign: 'middle', marginRight: 6 }} />
+          Add New Goal
+        </h2>
+        <button className="modal-close-btn" onClick={() => setShowAddGoal(false)}>✕</button>
+      </div>
 
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem' }}>
+        {/* Goal Type */}
+        <div>
+          <label style={{ color: 'rgba(180,210,240,0.6)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Goal Type</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginTop: 8 }}>
+            {[
+              ['fitness',   '/icons/running_1.png',      'Fitness'],
+              ['nutrition', '/icons/salad.png',           'Nutrition'],
+              ['hydration', '/icons/drop.png',            'Hydration'],
+              ['sleep',     '/icons/sleeping-mask_1.png', 'Sleep'],
+              ['weight',    '/icons/slim.png',            'Weight'],
+              ['custom',    '/icons/customize.png',       'Custom'],
+            ].map(([val, icon, lbl]) => (
+              <button key={val} onClick={() => setNewGoal(p => ({...p, goalType: val}))}
+                style={{ background: newGoal.goalType === val ? 'rgba(91,184,255,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${newGoal.goalType === val ? 'rgba(91,184,255,0.5)' : 'rgba(91,184,255,0.12)'}`, borderRadius: 10, padding: '10px 6px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <img src={icon} alt={lbl} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                <span style={{ color: newGoal.goalType === val ? '#5bb8ff' : 'rgba(180,210,240,0.6)', fontSize: 11 }}>{lbl}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="field">
+          <label>Goal Title</label>
+          <input className="avatar-name-input" placeholder='e.g. "Run 50km this month"'
+            value={newGoal.title} onChange={e => setNewGoal(p => ({...p, title: e.target.value}))} />
+        </div>
+
+        {/* Target / Unit / Start */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px', gap: 12 }}>
+          <div className="field"><label>Target</label>
+            <input className="avatar-name-input" type="number" placeholder="50" value={newGoal.targetValue}
+              onChange={e => setNewGoal(p => ({...p, targetValue: e.target.value}))} /></div>
+          <div className="field"><label>Unit</label>
+            <input className="avatar-name-input" placeholder="km, days…" value={newGoal.unit}
+              onChange={e => setNewGoal(p => ({...p, unit: e.target.value}))} /></div>
+          <div className="field"><label>Start</label>
+            <input className="avatar-name-input" type="number" placeholder="0" value={newGoal.currentValue}
+              onChange={e => setNewGoal(p => ({...p, currentValue: e.target.value}))} /></div>
+        </div>
+
+        {/* Deadline */}
+        <div className="field"><label>Deadline</label>
+          <input className="avatar-name-input" type="date" value={newGoal.deadline}
+            onChange={e => setNewGoal(p => ({...p, deadline: e.target.value}))} /></div>
+      </div>
+
+      <div className="modal-footer">
+        <button className="unlock-cancel-btn" onClick={() => setShowAddGoal(false)}>Cancel</button>
+        <button className="create-button" style={{ flex: 2 }} onClick={handleSubmitGoal}>+ Add Goal</button>
+      </div>
+    </div>
+  </div>
+)}
   </div>
  );
 };

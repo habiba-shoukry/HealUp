@@ -11,8 +11,8 @@ export default function SignUp() {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'patient',             // Default role
-    healthProgram: 'wellbeing'   // Default health program
+    role: 'patient',
+    healthProgram: 'wellbeing'
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,13 +22,10 @@ export default function SignUp() {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  // Custom handlers for our new toggle buttons
   const handleRoleChange = (selectedRole) => {
     setFormData((prev) => ({
       ...prev,
       role: selectedRole,
-      // If they switch to doctor, we don't need a health program. 
-      // If they switch back to patient, default to wellbeing.
       healthProgram: selectedRole === 'doctor' ? '' : 'wellbeing'
     }));
   };
@@ -39,29 +36,19 @@ export default function SignUp() {
 
   const validate = () => {
     const { fullName, email, password, confirmPassword } = formData;
-
     if (!fullName.trim()) return 'Full name is required.';
-    if (!/^[A-Za-z\s]+$/.test(fullName))
-      return 'Full name can only contain letters and spaces.';
-
+    if (!/^[A-Za-z\s]+$/.test(fullName)) return 'Full name can only contain letters and spaces.';
     if (!email.trim()) return 'Email is required.';
-    if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email))
-      return 'Please enter a valid email address.';
-
+    if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) return 'Please enter a valid email address.';
     if (!password) return 'Password is required.';
     if (password.length < 8) return 'Password must be at least 8 characters long.';
-
     if (password !== confirmPassword) return 'Passwords do not match.';
-
-    return null; // Health program is handled by default toggles, so no text validation needed!
+    return null;
   };
 
   const handleSubmit = async () => {
     const validationError = validate();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    if (validationError) { setError(validationError); return; }
 
     setLoading(true);
     setError('');
@@ -105,83 +92,76 @@ export default function SignUp() {
   return (
     <div className="login-container">
 
-      {/* left side brand */}
+      {/* ── LEFT: Brand panel ── */}
       <div className="login-brand-section">
         <div className="brand-content">
-          <img
-            src="https://via.placeholder.com/150/4dabf7/FFFFFF?text=M"
-            alt="HealUp Logo"
-            className="brand-logo"
-          />
-          <h1 className="brand-name">HealUP!</h1>
+
+          <div className="brand-logo-row">
+            <img
+              src="/logo-transparent.png"
+              alt="HealUp Logo"
+              className="brand-logo"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <h1 className="brand-name">Heal<span>UP</span>!</h1>
+          </div>
+
+          <p className="brand-tagline">
+            Join thousands already tracking<br />
+            their health journey with HealUp.
+          </p>
+
 
           <div className="social-icons">
-            <a href="#" className="icon"><FaInstagram /></a>
-            <a href="#" className="icon"><FaFacebookF /></a>
-            <a href="#" className="icon"><FaTwitter /></a>
+            <a href="#" className="icon" aria-label="Instagram"><FaInstagram /></a>
+            <a href="#" className="icon" aria-label="Facebook"><FaFacebookF /></a>
+            <a href="#" className="icon" aria-label="Twitter"><FaTwitter /></a>
           </div>
+
         </div>
       </div>
 
-      {/* right side form */}
+      {/* ── RIGHT: Form card ── */}
       <div className="login-form-section">
         <div className="login-card">
-          <h2 className="welcome-title">CREATE ACCOUNT</h2>
+
+          <h2 className="welcome-title">Create Account</h2>
 
           {error && <p className="auth-error">{error}</p>}
 
-          {/* NEW: Role Toggle Buttons */}
+          {/* Role toggle */}
           <div className="input-group">
-            <label style={{ display: 'block', marginBottom: '8px' }}>I am a:</label>
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <label>I am a</label>
+            <div className="role-toggle">
               <button
                 type="button"
+                className={`role-btn ${formData.role === 'patient' ? 'active' : ''}`}
                 onClick={() => handleRoleChange('patient')}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  borderRadius: '20px',
-                  border: '2px solid #4dabf7',
-                  backgroundColor: formData.role === 'patient' ? '#4dabf7' : 'transparent',
-                  color: formData.role === 'patient' ? '#fff' : '#4dabf7',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  transition: '0.3s'
-                }}
               >
+                <img src="/user.png" alt="Patient" className="role-icon" />
                 Patient / User
               </button>
               <button
                 type="button"
+                className={`role-btn ${formData.role === 'doctor' ? 'active' : ''}`}
                 onClick={() => handleRoleChange('doctor')}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  borderRadius: '20px',
-                  border: '2px solid #4dabf7',
-                  backgroundColor: formData.role === 'doctor' ? '#4dabf7' : 'transparent',
-                  color: formData.role === 'doctor' ? '#fff' : '#4dabf7',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  transition: '0.3s'
-                }}
               >
+                <img src="/doctor.png" alt="Doctor" className="role-icon" />
                 Doctor
               </button>
             </div>
           </div>
 
           <div className="input-group">
-            <label>Full Name</label>
+            <label htmlFor="fullName">Full Name</label>
             <input
+              id="fullName"
               type="text"
               name="fullName"
-              placeholder="Name"
+              placeholder="Your full name"
               value={formData.fullName}
               onChange={handleChange}
               maxLength={50}
-              pattern="[A-Za-z\s]*"
-              title="Letters and spaces only"
               onKeyDown={(e) => {
                 if (!/[A-Za-z\s]/.test(e.key) && e.key.length === 1) e.preventDefault();
               }}
@@ -189,8 +169,9 @@ export default function SignUp() {
           </div>
 
           <div className="input-group">
-            <label>Email</label>
+            <label htmlFor="email">Email</label>
             <input
+              id="email"
               type="email"
               name="email"
               placeholder="user@example.com"
@@ -201,8 +182,9 @@ export default function SignUp() {
           </div>
 
           <div className="input-group">
-            <label>Password</label>
+            <label htmlFor="password">Password</label>
             <input
+              id="password"
               type="password"
               name="password"
               placeholder="Min. 8 characters"
@@ -214,11 +196,12 @@ export default function SignUp() {
           </div>
 
           <div className="input-group">
-            <label>Confirm Password</label>
+            <label htmlFor="confirmPassword">Confirm Password</label>
             <input
+              id="confirmPassword"
               type="password"
               name="confirmPassword"
-              placeholder="Repeat password"
+              placeholder="Repeat your password"
               value={formData.confirmPassword}
               onChange={handleChange}
               minLength={8}
@@ -231,8 +214,10 @@ export default function SignUp() {
             onClick={handleSubmit}
             disabled={loading}
           >
-            {loading ? 'Creating account...' : 'Sign Up'}
+            {loading ? 'Creating account…' : 'Sign Up →'}
           </button>
+
+          <div className="auth-divider">or</div>
 
           <div className="signup-prompt">
             <p>Already have an account?</p>
@@ -244,6 +229,7 @@ export default function SignUp() {
           >
             Log In instead
           </button>
+
         </div>
       </div>
 

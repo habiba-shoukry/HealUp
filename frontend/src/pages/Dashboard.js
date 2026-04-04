@@ -13,12 +13,14 @@ const AVATAR_IMAGES = {
   hair: {
     hs1_black:null, hs2_black:'/Avatars/hair-spiky-black.png', hs3_black:'/Avatars/hair-long-black.png', hs4_black:'/Avatars/hair-wavy-black.png',
     hs1_brown:null, hs2_brown:'/Avatars/hair-spiky.png', hs3_brown:'/Avatars/hair-long.png', hs4_brown:'/Avatars/hair-wavy.png',
-    hs1_blonde:null, hs2_blonde:'/Avatars/hair-spiky-blonde.png', hs3_blonde:'/Avatars/hair-long-blonde.png', hs4_blonde:'/Avatars/hair-wavy-blonde.png',
+    hs1_blonde:null, hs2_blonde:'/Avatars/hair-spiky-blonde.png', hs3_blonde:'/Avatars/hair-long-blonde.png', hs4_blonde:'/Avatars/hair-wavy-blonde.png',  hs5_brown:'/Avatars/hair-twintails.png',
+  hs5_black:'/Avatars/hair-twintails-black.png',
+  hs5_blonde:'/Avatars/hair-twintails-blonde.png',
   },
-  ears: { ae1:null, ae2:'/Avatars/ears-cat.png', ae3:'/Avatars/ears-bunny.png', ae4:'/Avatars/ears-fox.png', ae5:null, ae6:null, ae7:null, ae8:null },
-  pets: { p1:'/Avatars/pet-fire-dragon.png', p2:'/Avatars/pet-ice-dragon.png', p3:null, p4:'/Avatars/pet-golden-wyvern.png', p5:null, p6:null },
+  ears: { ae1:null, ae2:'/Avatars/ears-cat.png', ae3:'/Avatars/ears-bunny.png', ae4:'/Avatars/ears-fox.png', ae5:null, ae6:null, ae7:null,   ae8:'/Avatars/ears-demon.png' },
+  pets: { p1:'/Avatars/pet-fire-dragon.png', p2:'/Avatars/pet-ice-dragon.png', p3:'/Avatars/pet-shadow-drake.png', p4:'/Avatars/pet-golden-wyvern.png', p5:null, p6:null },
 };
-
+  
 const PET_INFO = {};
 
 const STAT_META = {

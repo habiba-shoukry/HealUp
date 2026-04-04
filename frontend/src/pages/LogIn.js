@@ -23,10 +23,7 @@ export default function LoginPage() {
 
   const handleSubmit = async () => {
     const validationError = validate();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    if (validationError) { setError(validationError); return; }
 
     setLoading(true);
     setError('');
@@ -66,37 +63,51 @@ export default function LoginPage() {
   return (
     <div className="login-container">
 
-      {/* left side brand, socials */}
+      {/* ── LEFT: Brand panel ── */}
       <div className="login-brand-section">
         <div className="brand-content">
-          {/* <img
-            src=""
-            alt="HealUp Logo"
-            className="brand-logo"
-          /> */}
-          <h1 className="brand-name">HealUP!</h1>
+
+          <div className="brand-logo-row">
+            <img
+              src="/logo-transparent.png"
+              alt="HealUp Logo"
+              className="brand-logo"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <h1 className="brand-name">Heal<span>UP</span>!</h1>
+          </div>
+
+          <p className="brand-tagline">
+            Your personal guide to better habits,<br />
+            smarter choices, and healthier living.
+          </p>
+
+        
 
           <div className="social-icons">
-            <a href="#" className="icon"><FaInstagram /></a>
-            <a href="#" className="icon"><FaFacebookF /></a>
-            <a href="#" className="icon"><FaTwitter /></a>
+            <a href="#" className="icon" aria-label="Instagram"><FaInstagram /></a>
+            <a href="#" className="icon" aria-label="Facebook"><FaFacebookF /></a>
+            <a href="#" className="icon" aria-label="Twitter"><FaTwitter /></a>
           </div>
+
         </div>
       </div>
 
-      {/* right side (the white card) */}
+      {/* ── RIGHT: Form card ── */}
       <div className="login-form-section">
         <div className="login-card">
-          <h2 className="welcome-title">WELCOME BACK!</h2>
+
+          <h2 className="welcome-title">Welcome Back</h2>
 
           {error && <p className="auth-error">{error}</p>}
 
           <div className="input-group">
-            <label>Username or Email</label>
+            <label htmlFor="identifier">Username or Email</label>
             <input
+              id="identifier"
               type="text"
               name="identifier"
-              placeholder="Username or email"
+              placeholder="Enter your username or email"
               value={formData.identifier}
               onChange={handleChange}
               maxLength={100}
@@ -105,11 +116,12 @@ export default function LoginPage() {
           </div>
 
           <div className="input-group">
-            <label>Password</label>
+            <label htmlFor="password">Password</label>
             <input
+              id="password"
               type="password"
               name="password"
-              placeholder="........"
+              placeholder="Enter your password"
               value={formData.password}
               onChange={handleChange}
               maxLength={100}
@@ -122,8 +134,10 @@ export default function LoginPage() {
             onClick={handleSubmit}
             disabled={loading}
           >
-            {loading ? 'Logging in...' : 'Log-in'}
+            {loading ? 'Logging in…' : 'Log In →'}
           </button>
+
+          <div className="auth-divider">or</div>
 
           <div className="signup-prompt">
             <p>Don't have an account?</p>
@@ -134,8 +148,9 @@ export default function LoginPage() {
             className="action-btn signup-btn"
             onClick={() => navigate('/signup')}
           >
-            Sign-up
+            Create Account
           </button>
+
         </div>
       </div>
 
