@@ -7,7 +7,7 @@ export default function SignUp() {
   const navigate = useNavigate();
   const apiBaseUrl =
     process.env.REACT_APP_API_BASE_URL ||
-    `${window.location.protocol}//${window.location.hostname}:5000`;
+    `${window.location.protocol}//${window.location.hostname}:8001`;
 
   const [formData, setFormData] = useState({
     fullName: '',
