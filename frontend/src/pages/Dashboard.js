@@ -2,6 +2,172 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/Dashboard.css';
 
+const PRIVACY_CONSENT_KEY = 'healup_privacy_consent_accepted';
+
+const PrivacyConsentModal = ({ onAccept, onDecline }) => {
+  const [scrolled, setScrolled] = useState(false);
+  const [activeTab, setActiveTab] = useState('privacy');
+  const bodyRef = useRef(null);
+
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 20) setScrolled(true);
+    };
+    el.addEventListener('scroll', handleScroll);
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [activeTab]);
+
+  useEffect(() => { setScrolled(false); }, [activeTab]);
+
+  const TABS = [
+    { id: 'privacy', label: 'Privacy Policy' },
+    { id: 'terms',   label: 'Terms of Use' },
+    { id: 'hipaa',   label: 'Data Rights' },
+  ];
+
+  const content = {
+    privacy: (
+      <>
+        <section className="consent-section">
+          <h3 className="consent-section-title">1. Data Collection</h3>
+          <p>HealUp collects biometric and health data including heart rate, sleep patterns, step counts, caloric intake, and stress indices solely to deliver personalised health insights within the platform. All data is encrypted at rest and in transit.</p>
+        </section>
+        <section className="consent-section">
+          <h3 className="consent-section-title">2. Healthcare Disclosures</h3>
+          <p>Your health data will only be shared with licensed healthcare providers you explicitly authorise through the View Doctor feature. Sharing is opt-in, revocable at any time, and limited to the specific biomarkers you select. HealUp does not sell or transfer your health data to any third party.</p>
+        </section>
+        <section className="consent-section">
+          <h3 className="consent-section-title">3. Data Retention</h3>
+          <p>Your data is retained for a maximum of 36 months from the date of collection or until account deletion, whichever comes first. Upon deletion, all personal health records are permanently erased from our servers within 30 days.</p>
+        </section>
+        <section className="consent-section">
+          <h3 className="consent-section-title">4. Third-Party Integrations</h3>
+          <p>Device integrations such as Apple Health and Google Fit operate under secure authorisation protocols. HealUp requests only the minimum necessary data. You may revoke device access at any time through your device settings or within the HealUp application.</p>
+        </section>
+        <section className="consent-section">
+          <h3 className="consent-section-title">5. Your Rights</h3>
+          <p>You have the right to access, correct, export, or permanently delete any data HealUp holds about you. Requests can be submitted via the Settings panel and will be fulfilled within 30 calendar days in compliance with applicable data protection regulations.</p>
+        </section>
+      </>
+    ),
+    terms: (
+      <>
+        <section className="consent-section">
+          <h3 className="consent-section-title">1. Acceptance of Terms</h3>
+          <p>By accessing or using HealUp, you agree to be bound by these Terms of Use and all applicable laws and regulations. These terms apply to all users, visitors, and others who access the service.</p>
+        </section>
+        <section className="consent-section">
+          <h3 className="consent-section-title">2. Medical Disclaimer</h3>
+          <p>HealUp is a wellness and self-improvement platform. The information, metrics, and insights provided do <strong>not</strong> constitute medical advice, diagnosis, or treatment. Always consult a qualified healthcare professional before making any health-related decisions.</p>
+        </section>
+        <section className="consent-section">
+          <h3 className="consent-section-title">3. Permitted Use</h3>
+          <p>HealUp is licensed for personal, non-commercial use only. Automated data scraping, credential sharing, or any attempt to circumvent security measures is strictly prohibited and may result in immediate account termination.</p>
+        </section>
+        <section className="consent-section">
+          <h3 className="consent-section-title">4. Intellectual Property</h3>
+          <p>All platform content including avatars, gamification systems, challenge structures, icons, and interface designs is the exclusive intellectual property of HealUp and its licensors. Your personal health data remains your property at all times.</p>
+        </section>
+        <section className="consent-section">
+          <h3 className="consent-section-title">5. Limitation of Liability</h3>
+          <p>To the maximum extent permitted by law, HealUp shall not be liable for any indirect or consequential damages arising from the use of or inability to use the platform. Our aggregate liability shall not exceed the amount paid by you to HealUp in the preceding 12 months.</p>
+        </section>
+      </>
+    ),
+    hipaa: (
+      <>
+        <section className="consent-section">
+          <h3 className="consent-section-title">1. Protected Health Information</h3>
+          <p>HealUp treats all identifiable health data as Protected Health Information under HIPAA standards, regardless of your location. Your biometric records, health metrics, and usage patterns are handled under strict confidentiality requirements.</p>
+        </section>
+        <section className="consent-section">
+          <h3 className="consent-section-title">2. Healthcare Provider Sharing</h3>
+          <p>When you share data with a healthcare provider through the View Doctor feature, that sharing constitutes a Treatment Disclosure under HIPAA. You may withdraw consent at any time by revoking the provider's access within the platform.</p>
+        </section>
+        <section className="consent-section">
+          <h3 className="consent-section-title">3. Third-Party Obligations</h3>
+          <p>Any third-party service providers who may handle your data on HealUp's behalf are bound by agreements that impose the same security obligations as HealUp itself. Your data is never processed by a third party without proper agreements in place.</p>
+        </section>
+        <section className="consent-section">
+          <h3 className="consent-section-title">4. Breach Notification</h3>
+          <p>In the unlikely event of a data breach, HealUp will notify you within 60 calendar days of discovery. Notification will include the nature of the breach, types of data involved, and steps taken to address it.</p>
+        </section>
+        <section className="consent-section">
+          <h3 className="consent-section-title">5. Right to Access and Amend</h3>
+          <p>You have the right to access your health data held by HealUp, request corrections to inaccurate records, and receive an accounting of disclosures made over the past six years. All requests are fulfilled within 30 days at no cost to you.</p>
+        </section>
+      </>
+    ),
+  };
+
+  return (
+    <div className="consent-overlay">
+      <div className="consent-modal">
+        {/* Header */}
+        <div className="consent-modal-header">
+          <div className="consent-header-badge">
+            <img src="/health.png" alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+            <span>HealUp Health Platform</span>
+          </div>
+          <h2 className="consent-modal-title">Privacy & Data Agreement</h2>
+          <p className="consent-modal-subtitle">
+            Please review and accept our terms before accessing your health dashboard. Your data is fully encrypted and shared only with healthcare providers you authorise.
+          </p>
+          <div className="consent-encryption-row">
+            <div className="consent-enc-badge">
+              <span className="consent-enc-dot" style={{ background: '#34d399' }} />
+              Encrypted
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="consent-tabs">
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              className={`consent-tab ${activeTab === t.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Scrollable Body */}
+        <div className="consent-body" ref={bodyRef}>
+          {content[activeTab]}
+        </div>
+
+        {/* Scroll hint */}
+        {!scrolled && (
+          <div className="consent-scroll-hint">
+            Scroll to read the full document ↓
+          </div>
+        )}
+
+        {/* Footer actions */}
+        <div className="consent-footer">
+          <div className="consent-footer-note">
+            <img src="/roman-helmet.png" alt="" style={{ width: 14, height: 14, objectFit: 'contain', opacity: 0.7 }} />
+            By accepting, you confirm you are 18+ and authorise HealUp to process your health data as described above.
+          </div>
+          <div className="consent-footer-btns">
+            <button className="consent-btn-decline" onClick={onDecline}>
+              Decline & Exit
+            </button>
+            <button className="consent-btn-accept" onClick={onAccept}>
+              I Accept All Terms
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AVATAR_IMAGES = {
   base: { s1: '/Avatars/sittingavatar.jpg', s2: '/Avatars/skin-brown.png' },
   skinArmour: {
@@ -13,12 +179,14 @@ const AVATAR_IMAGES = {
   hair: {
     hs1_black:null, hs2_black:'/Avatars/hair-spiky-black.png', hs3_black:'/Avatars/hair-long-black.png', hs4_black:'/Avatars/hair-wavy-black.png',
     hs1_brown:null, hs2_brown:'/Avatars/hair-spiky.png', hs3_brown:'/Avatars/hair-long.png', hs4_brown:'/Avatars/hair-wavy.png',
-    hs1_blonde:null, hs2_blonde:'/Avatars/hair-spiky-blonde.png', hs3_blonde:'/Avatars/hair-long-blonde.png', hs4_blonde:'/Avatars/hair-wavy-blonde.png',
+    hs1_blonde:null, hs2_blonde:'/Avatars/hair-spiky-blonde.png', hs3_blonde:'/Avatars/hair-long-blonde.png', hs4_blonde:'/Avatars/hair-wavy-blonde.png',  hs5_brown:'/Avatars/hair-twintails.png',
+  hs5_black:'/Avatars/hair-twintails-black.png',
+  hs5_blonde:'/Avatars/hair-twintails-blonde.png',
   },
-  ears: { ae1:null, ae2:'/Avatars/ears-cat.png', ae3:'/Avatars/ears-bunny.png', ae4:'/Avatars/ears-fox.png', ae5:null, ae6:null, ae7:null, ae8:null },
-  pets: { p1:'/Avatars/pet-fire-dragon.png', p2:'/Avatars/pet-ice-dragon.png', p3:null, p4:'/Avatars/pet-golden-wyvern.png', p5:null, p6:null },
+  ears: { ae1:null, ae2:'/Avatars/ears-cat.png', ae3:'/Avatars/ears-bunny.png', ae4:'/Avatars/ears-fox.png', ae5:null, ae6:null, ae7:null,   ae8:'/Avatars/ears-demon.png' },
+  pets: { p1:'/Avatars/pet-fire-dragon.png', p2:'/Avatars/pet-ice-dragon.png', p3:'/Avatars/pet-shadow-drake.png', p4:'/Avatars/pet-golden-wyvern.png', p5:null, p6:null },
 };
-
+  
 const PET_INFO = {};
 
 const STAT_META = {
@@ -1625,7 +1793,21 @@ const Dashboard = ({ avatarSelections, avatarName, bars = { hp:65, energy:80, di
     const userId = getStoredUserId();
     return readMetricsCache(userId, activeDevice);
   });
-  const [metricsReady,   setMetricsReady]   = useState(() => Boolean(getStoredUserId() && readMetricsCache(getStoredUserId(), activeDevice)));
+  const [metricsReady, setMetricsReady] = useState(() => Boolean(getStoredUserId() && readMetricsCache(getStoredUserId(), activeDevice)));
+  
+  const [showConsent, setShowConsent] = useState(() => {
+  try { return !localStorage.getItem(PRIVACY_CONSENT_KEY); }
+  catch { return true; }
+});
+
+const handleConsentAccept = () => {
+  try { localStorage.setItem(PRIVACY_CONSENT_KEY, 'true'); } catch {}
+  setShowConsent(false);
+};
+
+const handleConsentDecline = () => {
+  navigate('/login');
+};
 
   useEffect(() => {
     const userId = getStoredUserId();
@@ -1693,113 +1875,130 @@ const Dashboard = ({ avatarSelections, avatarName, bars = { hp:65, energy:80, di
     }
   };
   return (
-    <div className="page-container">
-      <div className="dashboard-grid">
+    <>
+      {showConsent && (
+        <PrivacyConsentModal
+          onAccept={handleConsentAccept}
+          onDecline={handleConsentDecline}
+        />
+      )}
+      <div className="page-container">
+        <div className="dashboard-grid">
 
-        {/* Large avatar card */}
-        <div className="card large-card">
-          <div className="avatar-section">
-            <div className="dashboard-avatar-scene">
-              <DashboardAvatar selections={avatarSelections}/>
-              {avatarName && <span className="dashboard-avatar-name">{avatarName}</span>}
-              <DashboardPet petId={petId}/>
-            </div>
-            <div className="stat-bars">
-              <div className="stat-bar">
-                <img src="/health.png" alt="HP" style={{width:28,height:28,objectFit:'contain',flexShrink:0}}/>
-                <div className="progress-bar">
-                  <div className="progress-fill red" style={{width:`${bars.hp}%`,transition:'width 0.6s ease'}}/>
-                  <span className="stat-bar-pct">{bars.hp}%</span>
-                </div>
-                <span className="stat-label">HP</span>
+          {/* Large avatar card */}
+          <div className="card large-card">
+            <div className="avatar-section">
+              <div className="dashboard-avatar-scene">
+                <DashboardAvatar selections={avatarSelections}/>
+                {avatarName && <span className="dashboard-avatar-name">{avatarName}</span>}
+                <DashboardPet petId={petId}/>
               </div>
-              <div className="stat-bar">
-                <img src="/lighting.png" alt="Energy" style={{width:28,height:28,objectFit:'contain',flexShrink:0}}/>
-                <div className="progress-bar">
-                  <div className="progress-fill blue" style={{width:`${bars.energy}%`,transition:'width 0.6s ease'}}/>
-                  <span className="stat-bar-pct">{bars.energy}%</span>
+              <div className="stat-bars">
+                <div className="stat-bar">
+                  <img src="/health.png" alt="HP" style={{width:28,height:28,objectFit:'contain',flexShrink:0}}/>
+                  <div className="progress-bar">
+                    <div className="progress-fill red" style={{width:`${bars.hp}%`,transition:'width 0.6s ease'}}/>
+                    <span className="stat-bar-pct">{bars.hp}%</span>
+                  </div>
+                  <span className="stat-label">HP</span>
                 </div>
-                <span className="stat-label">Energy</span>
-              </div>
-              <div className="stat-bar">
-                <img src="/roman-helmet.png" alt="Discipline" style={{width:28,height:28,objectFit:'contain',flexShrink:0}}/>
-                <div className="progress-bar">
-                  <div className="progress-fill green" style={{width:`${bars.discipline}%`,transition:'width 0.6s ease'}}/>
-                  <span className="stat-bar-pct">{bars.discipline}%</span>
+                <div className="stat-bar">
+                  <img src="/lighting.png" alt="Energy" style={{width:28,height:28,objectFit:'contain',flexShrink:0}}/>
+                  <div className="progress-bar">
+                    <div className="progress-fill blue" style={{width:`${bars.energy}%`,transition:'width 0.6s ease'}}/>
+                    <span className="stat-bar-pct">{bars.energy}%</span>
+                  </div>
+                  <span className="stat-label">Energy</span>
                 </div>
-                <span className="stat-label">Discipline</span>
+                <div className="stat-bar">
+                  <img src="/roman-helmet.png" alt="Discipline" style={{width:28,height:28,objectFit:'contain',flexShrink:0}}/>
+                  <div className="progress-bar">
+                    <div className="progress-fill green" style={{width:`${bars.discipline}%`,transition:'width 0.6s ease'}}/>
+                    <span className="stat-bar-pct">{bars.discipline}%</span>
+                  </div>
+                  <span className="stat-label">Discipline</span>
+                </div>
+                <button className="dashboard-action-btn avatar-btn" onClick={()=>navigate('/program')}>Customize Avatar</button>
               </div>
-              <button className="dashboard-action-btn avatar-btn" onClick={()=>navigate('/program')}>Customize Avatar</button>
             </div>
           </div>
+
+          {/* Bio metric cards */}
+          <div className="card small-card bio-card" data-testid="heart-rate-card">
+            {metricsReady && metricsData ? (
+              <HeartRateCard onClick={() => setActiveMetric('heartRate')} days={metricsData.heartRateDays} />
+            ) : (
+              <MetricsLoadingCard label="Syncing heart rate..." />
+            )}
+          </div>
+          <div className="card small-card bio-card" data-testid="sleep-card">
+            {metricsReady && metricsData ? (
+              <SleepCard onClick={() => setActiveMetric('sleep')} sleepDays={metricsData.sleepDays} />
+            ) : (
+              <MetricsLoadingCard label="Syncing sleep..." />
+            )}
+          </div>
+          <div className="card small-card bio-card" data-testid="steps-card">
+            {metricsReady && metricsData ? (
+              <StepsCard onClick={() => setActiveMetric('steps')} stepsDays={metricsData.stepsDays} />
+            ) : (
+              <MetricsLoadingCard label="Syncing steps..." />
+            )}
+          </div>
+          <div className="card small-card bio-card" data-testid="calories-card">
+            {metricsReady && metricsData ? (
+              <CaloriesCard onClick={() => setActiveMetric('calories')} calories={metricsData.calories} />
+            ) : (
+              <MetricsLoadingCard label="Syncing calories..." />
+            )}
+          </div>
+          <div className="card medium-card bio-card" data-testid="challenges-summary-card">
+            <ChallengesCard
+              onViewAll={() => navigate('/challenges')}
+              onChallengeComplete={onChallengeComplete}
+            />
+          </div>
+          <div className="card medium-card bio-card" data-testid="stress-card">
+            {metricsReady && metricsData ? (
+              <StressCard onClick={() => setActiveMetric('stress')} stressDays={metricsData.stressDays} />
+            ) : (
+              <MetricsLoadingCard label="Syncing stress..." />
+            )}
+          </div>
+
+          {/* Stacked Action Buttons */}
+          <div className="dashboard-footer-actions">
+            <button className="dashboard-action-btn doctor-btn" onClick={() => setShowDoctor(true)}>
+              <img src="/doctor.png" alt="" style={{width:18,height:18,objectFit:'contain',verticalAlign:'middle',marginRight:6}}/>
+              View Doctor
+            </button>
+            <button className="dashboard-action-btn logout-btn" onClick={handleLogout}>
+              <span style={{ marginRight: '8px' }}>🏃</span>
+              Logout
+            </button>
+          </div>
+
         </div>
 
-        {/* Bio metric cards — each gets an onClick to open its popup */}
-        <div className="card small-card bio-card" data-testid="heart-rate-card">
-          {metricsReady && metricsData ? (
-            <HeartRateCard onClick={() => setActiveMetric('heartRate')} days={metricsData.heartRateDays} />
-          ) : (
-            <MetricsLoadingCard label="Syncing heart rate..." />
-          )}
-        </div>
-        <div className="card small-card bio-card" data-testid="sleep-card">
-          {metricsReady && metricsData ? (
-            <SleepCard onClick={() => setActiveMetric('sleep')} sleepDays={metricsData.sleepDays} />
-          ) : (
-            <MetricsLoadingCard label="Syncing sleep..." />
-          )}
-        </div>
-        <div className="card small-card bio-card" data-testid="steps-card">
-          {metricsReady && metricsData ? (
-            <StepsCard onClick={() => setActiveMetric('steps')} stepsDays={metricsData.stepsDays} />
-          ) : (
-            <MetricsLoadingCard label="Syncing steps..." />
-          )}
-        </div>
-        <div className="card small-card bio-card" data-testid="calories-card">
-          {metricsReady && metricsData ? (
-            <CaloriesCard onClick={() => setActiveMetric('calories')} calories={metricsData.calories} />
-          ) : (
-            <MetricsLoadingCard label="Syncing calories..." />
-          )}
-        </div>
-        <div className="card medium-card bio-card" data-testid="challenges-summary-card">
-          <ChallengesCard
-            onViewAll={() => navigate('/challenges')}
-            onChallengeComplete={onChallengeComplete}
-          />
-        </div>
-        <div className="card medium-card bio-card" data-testid="stress-card">
-          {metricsReady && metricsData ? (
-            <StressCard onClick={() => setActiveMetric('stress')} stressDays={metricsData.stressDays} />
-          ) : (
-            <MetricsLoadingCard label="Syncing stress..." />
-          )}
-        </div>
+        {/* Metric detail popups */}
+        {metricsReady && metricsData && (
+          <MetricPopup type={activeMetric} onClose={() => setActiveMetric(null)} metrics={metricsData} />
+        )}
 
+<<<<<<< HEAD
+        {/* Doctor modal */}
+        {showDoctor && <ViewDoctorModal onClose={() => setShowDoctor(false)} />}
+=======
        {/* Stacked Action Buttons in the bottom-right slot */}
         <div className="dashboard-footer-actions">
           <button className="dashboard-action-btn doctor-btn" onClick={() => setShowDoctor(true)}>
             <img src="/doctor.png" alt="" style={{width:18,height:18,objectFit:'contain',verticalAlign:'middle',marginRight:6}}/>
             Hydrationctor
           </button>
+>>>>>>> d784f4eeecf135664221b900ea7a5e00a9da5ead
 
-          <button className="dashboard-action-btn logout-btn" onClick={handleLogout}>
-            <span style={{ marginRight: '8px' }}>🏃</span>
-            Logout
-          </button>
-        </div>
       </div>
-
-      {/* Metric detail popups */}
-      {metricsReady && metricsData && (
-        <MetricPopup type={activeMetric} onClose={() => setActiveMetric(null)} metrics={metricsData} />
-      )}
-
-      {/* Doctor modal */}
-      {showDoctor && <ViewDoctorModal onClose={() => setShowDoctor(false)} />}
-    </div>
+    </>
   );
 };
-
 export default Dashboard;
