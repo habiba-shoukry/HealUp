@@ -14,13 +14,8 @@ export default function SignUp() {
     email: '',
     password: '',
     confirmPassword: '',
-<<<<<<< HEAD
     role: 'patient',
     healthProgram: 'wellbeing'
-=======
-    role: 'patient',           
-    healthProgram: 'wellbeing'   
->>>>>>> d784f4eeecf135664221b900ea7a5e00a9da5ead
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -108,7 +103,6 @@ export default function SignUp() {
       {/* ── LEFT: Brand panel ── */}
       <div className="login-brand-section">
         <div className="brand-content">
-<<<<<<< HEAD
 
           <div className="brand-logo-row">
             <img
@@ -125,14 +119,6 @@ export default function SignUp() {
             their health journey with HealUp.
           </p>
 
-=======
-          <img
-            src="\logo-transparent.png"
-            alt="HealUp Logo"
-            className="brand-logo"
-          />
-          <h1 className="brand-name">HealUP!</h1>
->>>>>>> d784f4eeecf135664221b900ea7a5e00a9da5ead
 
           <div className="social-icons">
             <a href="#" className="icon" aria-label="Instagram"><FaInstagram /></a>

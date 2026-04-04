@@ -1985,17 +1985,8 @@ const handleConsentDecline = () => {
           <MetricPopup type={activeMetric} onClose={() => setActiveMetric(null)} metrics={metricsData} />
         )}
 
-<<<<<<< HEAD
         {/* Doctor modal */}
         {showDoctor && <ViewDoctorModal onClose={() => setShowDoctor(false)} />}
-=======
-       {/* Stacked Action Buttons in the bottom-right slot */}
-        <div className="dashboard-footer-actions">
-          <button className="dashboard-action-btn doctor-btn" onClick={() => setShowDoctor(true)}>
-            <img src="/doctor.png" alt="" style={{width:18,height:18,objectFit:'contain',verticalAlign:'middle',marginRight:6}}/>
-            Hydrationctor
-          </button>
->>>>>>> d784f4eeecf135664221b900ea7a5e00a9da5ead
 
       </div>
     </>
