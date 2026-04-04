@@ -1084,7 +1084,7 @@ const ChallengesCard = ({ onViewAll, onChallengeComplete }) => {
       return;
     }
 
-    fetch(`http://localhost:8001/api/challenges?userId=${userId}&programType=${encodeURIComponent(selectedProgram)}`)
+    fetch(`http://localhost:5000/api/challenges?userId=${userId}&programType=${encodeURIComponent(selectedProgram)}`)
       .then((res) => res.json())
       .then((data) => {
         if (!Array.isArray(data) || data.length === 0) {
@@ -1167,7 +1167,7 @@ const ChallengesCard = ({ onViewAll, onChallengeComplete }) => {
         ...prev,
         daily: prev.daily.map((d) => (d.id === c.id ? { ...d, isCompleted: true, progress: 100 } : d)),
       }));
-      fetch(`http://localhost:8001/api/challenges/${c.id}`, {
+      fetch(`http://localhost:5000/api/challenges/${c.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ progress: 100, isCompleted: true }),
@@ -1675,7 +1675,6 @@ const BIOMARKERS = [
   {key:'steps',    label:'Steps',      icon:'/football.png'},
   {key:'calories', label:'Calories',   icon:'/fire.png'},
   {key:'stress',   label:'Stress',     icon:'/stress-relief.png'},
-  {key:'hydration',label:'Hydration',  icon:'/dollar.png'},
 ];
 const ViewDoctorModal = ({ onClose }) => {
   const [enabled,setEnabled]=useState(Object.fromEntries(BIOMARKERS.map(b=>[b.key,true])));
@@ -1825,7 +1824,7 @@ const handleConsentDecline = () => {
 
     let isMounted = true;
     const fetchMetrics = () => {
-      fetch(`http://localhost:8001/api/metrics/weekly/${userId}?device=${encodeURIComponent(activeDevice)}`)
+      fetch(`http://localhost:5000/api/metrics/weekly/${userId}?device=${encodeURIComponent(activeDevice)}`)
         .then((r) => r.ok ? r.json() : null)
         .then((data) => {
           if (!isMounted || !data?.metrics) return;
@@ -1986,8 +1985,17 @@ const handleConsentDecline = () => {
           <MetricPopup type={activeMetric} onClose={() => setActiveMetric(null)} metrics={metricsData} />
         )}
 
+<<<<<<< HEAD
         {/* Doctor modal */}
         {showDoctor && <ViewDoctorModal onClose={() => setShowDoctor(false)} />}
+=======
+       {/* Stacked Action Buttons in the bottom-right slot */}
+        <div className="dashboard-footer-actions">
+          <button className="dashboard-action-btn doctor-btn" onClick={() => setShowDoctor(true)}>
+            <img src="/doctor.png" alt="" style={{width:18,height:18,objectFit:'contain',verticalAlign:'middle',marginRight:6}}/>
+            Hydrationctor
+          </button>
+>>>>>>> d784f4eeecf135664221b900ea7a5e00a9da5ead
 
       </div>
     </>

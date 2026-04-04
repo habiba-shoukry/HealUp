@@ -5,14 +5,22 @@ import '../styles/LogIn.css';
 
 export default function SignUp() {
   const navigate = useNavigate();
+  const apiBaseUrl =
+    process.env.REACT_APP_API_BASE_URL ||
+    `${window.location.protocol}//${window.location.hostname}:5000`;
 
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
     confirmPassword: '',
+<<<<<<< HEAD
     role: 'patient',
     healthProgram: 'wellbeing'
+=======
+    role: 'patient',           
+    healthProgram: 'wellbeing'   
+>>>>>>> d784f4eeecf135664221b900ea7a5e00a9da5ead
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -54,7 +62,7 @@ export default function SignUp() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8001/api/auth/signup', {
+      const response = await fetch(`${apiBaseUrl}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -67,7 +75,12 @@ export default function SignUp() {
         })
       });
 
-      const data = await response.json();
+      let data = {};
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
 
       if (!response.ok) {
         setError(data.error || 'Sign up failed. Please try again.');
@@ -95,6 +108,7 @@ export default function SignUp() {
       {/* ── LEFT: Brand panel ── */}
       <div className="login-brand-section">
         <div className="brand-content">
+<<<<<<< HEAD
 
           <div className="brand-logo-row">
             <img
@@ -111,6 +125,14 @@ export default function SignUp() {
             their health journey with HealUp.
           </p>
 
+=======
+          <img
+            src="\logo-transparent.png"
+            alt="HealUp Logo"
+            className="brand-logo"
+          />
+          <h1 className="brand-name">HealUP!</h1>
+>>>>>>> d784f4eeecf135664221b900ea7a5e00a9da5ead
 
           <div className="social-icons">
             <a href="#" className="icon" aria-label="Instagram"><FaInstagram /></a>

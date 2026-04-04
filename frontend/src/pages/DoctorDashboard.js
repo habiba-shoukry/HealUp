@@ -482,12 +482,40 @@ export default function DoctorDashboard() {
   const [sent, setSent] = useState(false);
   const [filter, setFilter] = useState('all');
 
-  const handleSend = () => {
-    if (message.trim()) {
-      setSent(true);
-      setTimeout(() => { setSent(false); setMessage(''); }, 2000);
-    }
+  const userJson = localStorage.getItem('user');
+  const currentUser = userJson ? JSON.parse(userJson) : null;
+
+const handleSend = async () => {
+  if (!message.trim() || !selectedPatient) return;
+
+  const payload = {
+    senderId: currentUser?.id || currentUser?._id, 
+    receiverId: selectedPatient.id, 
+    content: message          
   };
+
+    
+    // if (message.trim()) {
+    //   setSent(true);
+    //   setTimeout(() => { setSent(false); setMessage(''); }, 2000);
+    // }
+
+  try {
+    const response = await fetch('http://localhost:5000/api/messages/send', { 
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (response.ok) {
+      setSent(true);
+      setMessage('');
+      setTimeout(() => setSent(false), 2000);
+    }
+  } catch (error) {
+    console.error("Failed to send message:", error);
+  }
+};
 
   const criticalCount = patients.filter(p => getRiskScore(p) >= 7).length;
   const highCount     = patients.filter(p => { const s = getRiskScore(p); return s >= 4 && s < 7; }).length;
@@ -604,7 +632,7 @@ export default function DoctorDashboard() {
                       {risk.label}
                     </span>
                   </div>
-                  <div className="doc-patient-meta">
+                  {/* <div className="doc-patient-meta">
                     <span>{`Age ${patient.age}`}</span>
                     <span className="doc-patient-meta-sep">·</span>
                     <span>{patient.gender}</span>
@@ -612,7 +640,7 @@ export default function DoctorDashboard() {
                     <span>{`Blood ${patient.bloodType}`}</span>
                     <span className="doc-patient-meta-sep">·</span>
                     <span className="doc-patient-condition">{patient.condition}</span>
-                  </div>
+                  </div> */}
                 </div>
 
                 <div className="doc-card-spacer" />
@@ -630,8 +658,8 @@ export default function DoctorDashboard() {
                 <div className="doc-card-actions">
                   <div className="doc-card-action-row">
                     <div className="doc-card-visit">
-                      <div className="doc-card-visit-row">Last <span>{patient.lastVisit}</span></div>
-                      <div className="doc-card-visit-row">Next <span className="doc-next">{patient.nextVisit}</span></div>
+                      {/* <div className="doc-card-visit-row">Last <span>{patient.lastVisit}</span></div>
+                      <div className="doc-card-visit-row">Next <span className="doc-next">{patient.nextVisit}</span></div> */}
                     </div>
                     <button
                       className="doc-detail-btn"
@@ -736,9 +764,9 @@ export default function DoctorDashboard() {
                       {risk.label}
                     </span>
                   </div>
-                  <p className="doc-modal-meta">
+                  {/* <p className="doc-modal-meta">
                     Age {p.age} · {p.gender} · Blood Type {p.bloodType} · <span className="doc-condition">{p.condition}</span>
-                  </p>
+                  </p> */}
                 </div>
                 <div style={{ flex: 1 }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -803,75 +831,51 @@ export default function DoctorDashboard() {
                   <ModalChart key={key} metricKey={key} label={label} gradId={gradId} type={type} data={p.data} />
                 ))}
               </div>
-
-              {/* Bottom: info + message */}
-              <div className="doc-modal-bottom">
-                {/* Patient info */}
-                <div className="doc-modal-panel">
-                  <div className="doc-modal-panel-header">
-                    <Icon name="doctor" size={13} />
-                    <SectionLabel>Patient Info</SectionLabel>
-                  </div>
-                  {[
-                    ['Last Visit',  p.lastVisit,           T.blue   ],
-                    ['Next Visit',  p.nextVisit,           T.green  ],
-                    ['Condition',   p.condition,           T.yellow ],
-                    ['Blood Type',  p.bloodType,           T.red    ],
-                    ['Gender',      p.gender,              T.purple ],
-                    ['Avg Steps',   formatSteps(avgSteps), T.green  ],
-                  ].map(([k, v, c]) => (
-                    <div key={k} className="doc-info-row">
-                      <span className="doc-info-row-key">{k}</span>
-                      <span className="doc-info-row-val" style={{ color: c }}>{v}</span>
-                    </div>
-                  ))}
+            
+              {/* Message composer */}
+              <div className="doc-modal-panel" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className="doc-modal-panel-header">
+                  <Icon name="target" size={13} />
+                  <SectionLabel>Send Message</SectionLabel>
+                </div>
+                <div className="doc-message-row">
+                  <input
+                    className="doc-message-input"
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSend()}
+                    placeholder="Write a clinical note or message…"
+                  />
+                  <button
+                    className="doc-send-btn"
+                    onClick={handleSend}
+                    style={{
+                      background: sent
+                        ? T.green + '20'
+                        : `linear-gradient(135deg, ${p.avatarColor[0]}, ${p.avatarColor[1]})`,
+                      color: sent ? T.green : '#fff',
+                    }}
+                  >
+                    {sent ? '✓ Sent!' : 'Send →'}
+                  </button>
                 </div>
 
-                {/* Message composer */}
-                <div className="doc-modal-panel" style={{ display: 'flex', flexDirection: 'column' }}>
-                  <div className="doc-modal-panel-header">
-                    <Icon name="target" size={13} />
-                    <SectionLabel>Send Message</SectionLabel>
-                  </div>
-                  <div className="doc-message-row">
-                    <input
-                      className="doc-message-input"
-                      value={message}
-                      onChange={e => setMessage(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleSend()}
-                      placeholder="Write a clinical note or message…"
-                    />
+                <div className="doc-templates-label">Quick Templates</div>
+                <div className="doc-templates">
+                  {[
+                    "Great progress this week!",
+                    "Please schedule a follow-up.",
+                    "Stay hydrated & rest well.",
+                    "Stress levels are high, please rest.",
+                    "Your readings look improved!",
+                    "Try to hit 10,000 steps today!",
+                  ].map(t => (
                     <button
-                      className="doc-send-btn"
-                      onClick={handleSend}
-                      style={{
-                        background: sent
-                          ? T.green + '20'
-                          : `linear-gradient(135deg, ${p.avatarColor[0]}, ${p.avatarColor[1]})`,
-                        color: sent ? T.green : '#fff',
-                      }}
-                    >
-                      {sent ? '✓ Sent!' : 'Send →'}
-                    </button>
-                  </div>
-
-                  <div className="doc-templates-label">Quick Templates</div>
-                  <div className="doc-templates">
-                    {[
-                      "Great progress this week!",
-                      "Please schedule a follow-up.",
-                      "Stay hydrated & rest well.",
-                      "Stress levels are high, please rest.",
-                      "Your readings look improved!",
-                      "Try to hit 10,000 steps today!",
-                    ].map(t => (
-                      <button
-                        key={t}
-                        className="doc-template-btn"
-                        onClick={() => setMessage(t)}
-                      >{t}</button>
-                    ))}
-                  </div>
+                      key={t}
+                      className="doc-template-btn"
+                      onClick={() => setMessage(t)}
+                    >{t}</button>
+                  ))}
                 </div>
               </div>
             </div>

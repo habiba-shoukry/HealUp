@@ -599,8 +599,7 @@ const ProfileDropdown = ({ user, onClose, onLogout }) => {
 
         {/* Fields */}
         <div style={{ padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-          <Field label="First Name" value={user?.firstName || '—'} />
-          <Field label="Last Name" value={user?.lastName || '—'} />
+          <Field label="Full Name" value={user?.username || '—'} />
           <Field label="Email" value={user?.email || '—'} />
           <Field label="Password" value={user?.password || '—'} isPassword />
         </div>
@@ -650,7 +649,7 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
         const user = JSON.parse(localStorage.getItem("user") || "null");
         const userId = user?.id || user?._id;
         if (!userId) { setNotifications([]); return; }
-        const res = await fetch(`http://localhost:8001/api/notifications?userId=${userId}`);
+        const res = await fetch(`http://localhost:5000/api/notifications?userId=${userId}`);
         const data = await res.json();
         setNotifications(data);
       } catch (err) {
@@ -678,7 +677,7 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
     try {
       await Promise.all(
         notifications.map(n =>
-          fetch(`http://localhost:8001/api/notifications/${n._id}/read`, { method: "PATCH" })
+          fetch(`http://localhost:5000/api/notifications/${n._id}/read`, { method: "PATCH" })
         )
       );
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
@@ -688,14 +687,14 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
 
   const markAsRead = async (id) => {
     try {
-      await fetch(`http://localhost:8001/api/notifications/${id}/read`, { method: "PATCH" });
+      await fetch(`http://localhost:5000/api/notifications/${id}/read`, { method: "PATCH" });
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
     } catch (err) { console.error(err); }
   };
 
   const deleteNotification = async (id) => {
     try {
-      await fetch(`http://localhost:8001/api/notifications/${id}`, { method: "DELETE" });
+      await fetch(`http://localhost:5000/api/notifications/${id}`, { method: "DELETE" });
       setNotifications(prev => prev.filter(n => n._id !== id));
     } catch (err) { console.error(err); }
   };
@@ -714,9 +713,6 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
     role === "doctor"
       ? [
         { path: '/doctor-dashboard', icon: '/dashboard.png', label: 'Doctor Dashboard' },
-        { path: '/patients', icon: '/user.png', label: 'Patients' },
-        { path: '/reports', icon: '/notification-bell.png', label: 'Reports' },
-        { label: "Patient Details", path: "/patient-details", icon: "/details.png" },
       ]
       : [
         { path: '/dashboard', icon: '/dashboard.png', label: 'Dashboard' },
@@ -847,6 +843,9 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
                         style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', padding: '1rem 1.1rem', borderRadius: 18, background: isRead ? 'rgba(255,255,255,0.02)' : 'rgba(91,184,255,0.07)', border: `1px solid ${isRead ? 'rgba(255,255,255,0.05)' : 'rgba(91,184,255,0.2)'}`, marginBottom: idx < notifications.length - 1 ? '0.55rem' : 0, transition: 'transform 0.18s', opacity: isRead ? 0.6 : 1 }}
                         onMouseEnter={e => { if (!isRead) e.currentTarget.style.transform = 'translateX(4px)'; }}
                         onMouseLeave={e => { e.currentTarget.style.transform = 'translateX(0)'; }}
+                        onClick={() => {
+                          markAsRead(n._id);
+                        }}
                       >
                         <div style={{ width: 42, height: 42, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} onClick={() => { const role = JSON.parse(localStorage.getItem("user"))?.role; markAsRead(n._id); if (role === "doctor") { navigate("/reports", { state: { report: n } }); } }}>
                           <img src={`/icons/${n.icon}.png`} alt={n.icon} style={{ width: 36, height: 36, objectFit: 'contain', opacity: isRead ? 0.25 : 1, filter: isRead ? 'grayscale(1) opacity(0.3)' : 'brightness(0) saturate(100%) invert(53%) sepia(96%) saturate(400%) hue-rotate(180deg) brightness(105%)' }} />
@@ -873,37 +872,37 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
                     );
                   })}
                 </div>
-
-                <div style={{ padding: '1rem 1.1rem', borderTop: '1px solid rgba(91,184,255,0.1)', background: 'rgba(91,184,255,0.02)' }}>
-                  <button onClick={handleViewAll} style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg,#1e3a5f,#1b2f4b)', border: '1px solid rgba(91,184,255,0.25)', borderRadius: 18, color: '#e6f1ff', fontFamily: F, fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', letterSpacing: '0.04em', transition: 'all 0.25s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', boxShadow: '0 8px 25px rgba(0,0,0,0.4)', position: 'relative', overflow: 'hidden' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#2563eb,#7c3aed)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 35px rgba(59,130,246,0.35)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#1e3a5f,#1b2f4b)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.4)'; }}
-                  >
-                    <span style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '2px', background: 'linear-gradient(90deg,transparent,#5bb8ff,#a78bfa,transparent)', opacity: 0.7 }} />
-                    {JSON.parse(localStorage.getItem("user"))?.role === "doctor" ? "View Reports" : "View All Notifications"}
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
-                  </button>
-                </div>
               </div>
             )}
           </div>
         </div>
       </header>
 
+      
       <div className="layout-container">
-        <aside className="sidebar">
-          <nav className="sidebar-nav">
-            {menuItems.map(item => (
-              <Link key={item.path} to={item.path}
-                className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
-                data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                <img src={item.icon} alt={item.label} className="sidebar-icon-img" />
-                <span className="sidebar-label">{item.label}</span>
-              </Link>
-            ))}
-          </nav>
-        </aside>
-        <main className="main-content">{children}</main>
+        {role !== "doctor" && (
+          <aside className="sidebar">
+            <nav className="sidebar-nav">
+              {menuItems.map(item => (
+                <Link 
+                  key={item.path} 
+                  to={item.path}
+                  className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
+                  data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                >
+                  <img src={item.icon} alt={item.label} className="sidebar-icon-img" />
+                  <span className="sidebar-label">{item.label}</span>
+                </Link>
+              ))}
+            </nav>
+          </aside>
+        )}
+    
+        <main className={`${role === "doctor" ? "main-content-full" : "main-content"} ${role === "doctor" ? "role-doctor" : ""}`}>
+          <div className={role === "doctor" ? "doctor-layout-wrapper" : ""}>
+            {children}
+          </div>
+        </main>
       </div>
 
       {syncOpen && <SyncModal onClose={() => setSyncOpen(false)} onDeviceSwitch={onDeviceSwitch} devices={devices} setDevices={setDevices} />}

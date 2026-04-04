@@ -102,8 +102,8 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
  const [dayStreak, setDayStreak] = useState(0);
  const [bestStreak, setBestStreak] = useState(0);
  
- // The New States for Claiming
- const [claimedGoals, setClaimedGoals] = useState(loadClaimedGoals);
+ 
+ const [dailyProgress, setDailyProgress] = useState(0);
  const [particles, setParticles] = useState([]);
  const processingRef = useRef({});
 
@@ -116,7 +116,7 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
      return;
    }
 
-   fetch(`http://localhost:8001/api/goals?userId=${user.id}&programType=${selectedProgram}&device=${encodeURIComponent(activeDevice)}`, { cache: 'no-store' })
+   fetch(`http://localhost:5000/api/goals?userId=${user.id}&programType=${selectedProgram}&device=${encodeURIComponent(activeDevice)}`, { cache: 'no-store' })
      .then(res => res.json())
      .then(data => {
        if (Array.isArray(data) && data.length > 0) setGoals(data.map(normalizeGoal));
@@ -130,7 +130,7 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
    try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch { user = null; }
    if (!user?.id) return;
 
-   fetch(`http://localhost:8001/api/stats/${user.id}`)
+   fetch(`http://localhost:5000/api/stats/${user.id}`)
      .then(res => res.json())
      .then(data => {
        if (!data || data.error) return;
@@ -141,31 +141,36 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
      .catch(() => {});
  }, []);
 
- useEffect(() => {
-   let user = null;
-   try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch { user = null; }
+useEffect(() => {
+  let user = null;
+  try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch { user = null; }
 
-   if (!user?.id) {
-     setWeeklyData(FALLBACK_WEEKLY_DATA);
-     return;
-   }
+  if (!user?.id) return;
 
-   fetch(`http://localhost:8001/api/metrics/weekly/${user.id}?device=${encodeURIComponent(activeDevice)}`)
-     .then(res => (res.ok ? res.json() : null))
-     .then(data => {
-       if (!data?.metrics || !Array.isArray(data.metrics) || !data.metrics.length) {
-         setWeeklyData(FALLBACK_WEEKLY_DATA);
-         return;
-       }
-       const next = data.metrics.map((m) => ({
-         day: new Date(m.date).toLocaleDateString('en-US', { weekday: 'short' }),
-         steps: Number(((m.steps || 0) / 1000).toFixed(1)),
-         cals: Math.round(m.caloriesBurned || 0),
-       }));
-       setWeeklyData(next);
-     })
-     .catch(() => setWeeklyData(FALLBACK_WEEKLY_DATA));
- }, [activeDevice]);
+  fetch(`http://localhost:5000/api/metrics/weekly/${user.id}?device=${encodeURIComponent(activeDevice)}`)
+    .then(res => (res.ok ? res.json() : null))
+    .then(data => {
+      if (!data?.metrics || !Array.isArray(data.metrics)) return;
+
+      // Update the chart data
+      const next = data.metrics.map((m) => ({
+        day: new Date(m.date).toLocaleDateString('en-US', { weekday: 'short' }),
+        steps: Number(((m.steps || 0) / 1000).toFixed(1)),
+        cals: Math.round(m.caloriesBurned || 0),
+      }));
+      setWeeklyData(next);
+
+      const todayIdx = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+      const todayMetrics = data.metrics[todayIdx];
+      
+      if (todayMetrics) {
+        const stepTarget = 1300;
+        const progress = Math.min(100, ((todayMetrics.steps || 0) / stepTarget) * 100);
+        setDailyProgress(progress);
+      }
+    })
+    .catch(() => {});
+}, [activeDevice]);
 
  // ─── Particle Animation Function ─────────────────────────────────────────────
  const spawnParticles = useCallback((originEl, xp, coins) => {
@@ -202,45 +207,7 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
     }, 3500);
   }, []);
 
- // ─── Claim Goal Logic ─────────────────────────────────────────────
-const handleClaimGoal = (goal, event) => {
-    // 1. Prevent double clicks
-    if (claimedGoals[goal.id] || processingRef.current[goal.id]) return;
-    
-    const originEl = event.currentTarget; 
-    processingRef.current[goal.id] = true;
-    setTimeout(() => { processingRef.current[goal.id] = false; }, 1000);
 
-    // 🌟 2. INSTANT VISUALS! Trigger popup and particles immediately!
-   // 🌟 2. INSTANT VISUALS! Trigger popup and particles immediately!
-    showPopup({
-        burst: '/star.png',
-        title: 'Goal Complete!',
-        xp: goal.xp,        // 👉 FIXED: Pass XP directly
-        coins: goal.coins   // 👉 FIXED: Pass Coins directly
-    });
-    
-    // Safely shoot particles
-    try { spawnParticles(originEl, goal.xp, goal.coins); } catch (e) {}
-
-    // 3. Update the UI button to "✓ Claimed"
-    const nextClaimed = { ...claimedGoals, [goal.id]: true };
-    setClaimedGoals(nextClaimed);
-    saveClaimedGoals(nextClaimed);
-
-    // 4. Update the Top Nav Stats
-    if (onGoalComplete) onGoalComplete(goal.xp, goal.coins, null);
-
-    // 5. Quietly sync to backend (No 'await' so it doesn't freeze the screen)
-    const user = JSON.parse(localStorage.getItem('user') || 'null');
-    if (user?.id) {
-        fetch('http://localhost:8001/api/stats/rewards', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id, xp: goal.xp, coins: goal.coins })
-        }).catch(() => {});
-    }
- };
 
  const achievements = [
    { icon: '/throphy.png',   name: 'First Goal',     desc: 'Completed your first goal',                     unlocked: true  },
@@ -342,13 +309,14 @@ const handleSubmitGoal = async () => {
  const avgProgress = goals.length
    ? Math.round(goals.reduce((sum, g) => sum + Math.min(100, Math.round((g.current / Math.max(1, g.target)) * 100)), 0) / goals.length)
    : 0;
- const streakBonusPct = Math.min(dayStreak * 10, 100);
- const streakDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
- const todayStreakIdx = dayStreak > 0 ? Math.min(dayStreak - 1, 6) : 0;
 
- const getFillClass = (status) => ({ completed: 'green', 'at-risk': 'gold', behind: 'red' }[status] || '');
- const getStatusLabel = (status) => ({ 'on-track': 'On Track', 'at-risk': 'At Risk', behind: 'Behind', completed: 'Complete' }[status]);
+  const streakDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const todayStreakIdx = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+  const streakBonusPct = Math.min(dayStreak * 10, 100);
 
+  const getFillClass = (status) => ({ completed: 'green', 'at-risk': 'gold', behind: 'red' }[status] || '');
+  const getStatusLabel = (status) => ({ 'on-track': 'On Track', 'at-risk': 'At Risk', behind: 'Behind', completed: 'Complete' }[status]);
+  
  return (
   <div className="page-container">
 
@@ -446,14 +414,14 @@ const handleSubmitGoal = async () => {
               <div
                 key={g.id}
                 id={`goal-${g.id}`}
-                className={`gp-goal-item ${g.status}`}
+                className={`gp-goal-item ${g.current >= g.target ? 'completed' : g.status}`}
                 data-testid={`goal-${g.id}`}
               >
                 <div className="gp-goal-top">
                   <div className="gp-goal-left">
                     <Img src={g.icon} size={30} />
                     <div className="gp-goal-info">
-                      <div className="gp-goal-title">{g.title}</div>
+                      <div className="gp-goal-title"style={{ textDecoration: g.current >= g.target ? 'line-through' : 'none' }}>{g.title}</div>
                       <div className="gp-goal-meta">
                         <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                           <img src="/deadline.png" alt="" style={{ width: 12, height: 12, objectFit: 'contain' }} /> {g.deadline}
@@ -469,7 +437,6 @@ const handleSubmitGoal = async () => {
                 <div className="gp-goal-track">
                   <div className={`gp-goal-fill ${fc}`} style={{ width: `${pct}%` }} />
                 </div>
-                {/* 👉 FIXED: Keeps the XP/Coins visible and pushes the button to the right! */}
                 <div className="gp-goal-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                   
                   {/* Left Side: Percentage and Rewards */}
@@ -483,23 +450,17 @@ const handleSubmitGoal = async () => {
                   </div>
                   
                   {/* Right Side: The Claim Button (Only shows if 100%) */}
-                  {pct >= 100 && (
-                    claimedGoals[g.id] ? (
-                      <span style={{ color: '#34d399', fontWeight: 'bold', fontSize: '0.95rem' }}>✓ Claimed</span>
+                <div style={{ marginLeft: 'auto' }}>
+                    {g.current >= g.target ? (
+                      <span style={{ color: '#34d399', fontWeight: 'bold', fontSize: '0.95rem' }}>
+                        ✓ Milestone Reached
+                      </span>
                     ) : (
-                      <button
-                        onClick={(e) => handleClaimGoal(g, e)}
-                        style={{
-                          backgroundColor: '#fbbf24', color: '#000', border: 'none',
-                          fontWeight: 'bold', padding: '5px 15px', borderRadius: '8px',
-                          cursor: 'pointer', transition: 'all 0.3s ease',
-                          marginLeft: 'auto' // Pushes button to the right
-                        }}
-                      >
-                        Claim Reward!
-                      </button>
-                    )
-                  )}
+                      <span style={{ color: '#5a88a8', fontSize: '0.8rem' }}>
+                        {g.target - g.current} {g.unit} left
+                      </span>
+                    )}
+                </div>
 
                 </div>
               </div>
@@ -520,7 +481,7 @@ const handleSubmitGoal = async () => {
             <div className="gp-legend-item"><div className="gp-legend-dot" style={{ background: '#5bb8ff' }} />Steps (×1000)</div>
             <div className="gp-legend-item"><div className="gp-legend-dot" style={{ background: '#34d399' }} />Calories burned</div>
           </div>
-          <div className="gp-bar-chart">
+          {/* <div className="gp-bar-chart">
             {weeklyData.map(d => (
               <div className="gp-chart-col" key={d.day}>
                 <div className="gp-chart-bars">
@@ -530,8 +491,28 @@ const handleSubmitGoal = async () => {
                 <div className="gp-chart-day">{d.day}</div>
               </div>
             ))}
+          </div> */}
+            <div className="gp-breakdown">
+            <div className="gp-breakdown-title">Daily Breakdown</div>
+            {weeklyData.map(d => {
+              const stepPct = Math.round((d.steps / maxSteps) * 100);
+              const calPct  = Math.round((d.cals  / maxCals)  * 100);
+              return (
+                <div className="gp-breakdown-row" key={d.day}>
+                  <span className="gp-breakdown-day">{d.day}</span>
+                  <div className="gp-breakdown-bars">
+                    <div className="gp-breakdown-bar-wrap">
+                      <div className="gp-breakdown-fill steps" style={{ width: `${stepPct}%` }} />
+                    </div>
+                    <div className="gp-breakdown-bar-wrap">
+                      <div className="gp-breakdown-fill cals" style={{ width: `${calPct}%` }} />
+                    </div>
+                  </div>
+                  <span className="gp-breakdown-nums">{d.steps}k · {d.cals}</span>
+                </div>
+              );
+            })}
           </div>
-
           <div className="gp-weekly-stats">
             <div className="gp-weekly-stat">
               <img src="/training.png" alt="" style={{ width: 30, height: 30, objectFit: 'contain' }} />
@@ -605,6 +586,8 @@ const handleSubmitGoal = async () => {
       </div>
 
       {/* DAILY STREAK */}
+
+      {/* GoalsProgress.js Snippet */}      
       <div className="card gp-section" data-testid="streak-panel">
         <div className="gp-section-header">
           <div className="gp-section-title"><span className="gp-dot orange" />Daily Streak</div>
@@ -630,16 +613,17 @@ const handleSubmitGoal = async () => {
               </div>
             ))}
           </div>
+          {/* GoalsProgress.js Snippet */}
           <div className="gp-streak-milestone">
             <div className="gp-streak-milestone-top">
-              <span className="gp-streak-milestone-label">
-                <img src="/throphy.png" alt="" style={{ width: 13, height: 13, objectFit: 'contain', marginRight: 4, verticalAlign: 'middle' }} />
-                Next milestone: <strong style={{ color: '#fb923c' }}>10 days</strong>
-              </span>
-              <span className="gp-streak-milestone-label">{Math.max(0, 10 - dayStreak)} days away</span>
+              <span className="gp-streak-milestone-label">Today's Activity Goal</span>
+              <span className="gp-streak-milestone-label">{Math.round(dailyProgress)}%</span>
             </div>
             <div className="gp-streak-milestone-track">
-              <div className="gp-streak-milestone-fill" style={{ width: `${Math.min(100, Math.round((dayStreak / 10) * 100))}%` }} />
+              <div 
+                className="gp-streak-milestone-fill" 
+                style={{ width: `${Math.min(100, dailyProgress)}%` }} 
+              />
             </div>
           </div>
           <div className="gp-streak-stats">
@@ -665,11 +649,13 @@ const handleSubmitGoal = async () => {
           </div>
           <div className="gp-streak-history-label">Milestone History</div>
           <div className="gp-streak-history">
+                         {/* // Dynamic Milestone History */}
             {[
-              { days: 3,  label: '3-Day Streak',  icon: '/fire2.png',   color: '#fb923c', date: 'Feb 12', done: true  },
-              { days: 7,  label: '7-Day Streak',  icon: '/fire2.png',   color: '#f97316', date: 'Today',  done: true  },
-              { days: 10, label: '10-Day Streak', icon: '/throphy.png', color: '#fbbf24', date: 'Locked', done: false },
-              { days: 14, label: '14-Day Streak', icon: '/medal.png',   color: '#a78bfa', date: 'Locked', done: false },
+              { days: 1,  label: '1-Day Streak',  icon: '/fire2.png',   color: '#fb923c', date: 'Today', done: dayStreak >= 1 },
+              { days: 7,  label: '7-Day Streak',  icon: '/throphy.png', color: '#fbbf24', date: dayStreak >= 7 ? 'Earned' : 'Locked', done: dayStreak >= 7 },
+              { days: 10, label: '10-Day Streak', icon: '/throphy.png', color: '#fbbf24', date: dayStreak >= 10 ? 'Earned' : 'Locked', done: dayStreak >= 10 },
+              { days: 14, label: '14-Day Streak', icon: '/medal.png',   color: '#a78bfa', date: dayStreak >= 14 ? 'Earned' : 'Locked', done: dayStreak >= 14 },
+
             ].map((m, i) => (
               <div key={i} className={`gp-streak-milestone-row ${m.done ? 'done' : 'locked'}`}>
                 <div className="gp-streak-milestone-icon" style={{ background: m.done ? m.color + '22' : 'rgba(255,255,255,0.04)', borderColor: m.done ? m.color + '55' : 'rgba(255,255,255,0.08)' }}>
@@ -712,38 +698,6 @@ const handleSubmitGoal = async () => {
 
     </div>
 
-    {/* ── REWARD POPUP ── */}
-    {/* ── REWARD POPUP ── */}
-    {popup && (
-      <div className="reward-popup-overlay" style={{ zIndex: 10000 }}>
-        <div className="reward-popup">
-          <div className="reward-popup-burst">
-            <img src={popup.burst} alt="" style={{ width: 48, height: 48, objectFit: 'contain', animation: 'burstSpin 0.6s ease' }} />
-          </div>
-          <div className="reward-popup-title">{popup.title}</div>
-          
-          {/* If there are rewards, show them! */}
-          <div className="reward-popup-rewards" style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '10px' }}>
-            {popup.xp > 0 && (
-              <div className="reward-popup-item xp">
-                <img src="/star.png" alt="XP" className="rp-icon-img" />
-                <span className="rp-val">+{popup.xp} XP</span>
-              </div>
-            )}
-            
-            {popup.coins > 0 && (
-              <div className="reward-popup-item coins">
-                <img src="/profit.png" alt="Coins" className="rp-icon-img" />
-                <span className="rp-val">+{popup.coins} Coins</span>
-              </div>
-            )}
-          </div>
-
-          {/* If it's the "Coming Soon" popup, show the message! */}
-          {popup.message && <div style={{marginTop: '10px', color: '#9ca3af', fontSize: '0.9rem'}}>{popup.message}</div>}
-        </div>
-      </div>
-    )}
 
     {/* ── CHATBOT FAB ── */}
     <button className="gp-chat-fab" onClick={() => setChatOpen(o => !o)} title="AI Health Coach">

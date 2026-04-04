@@ -127,7 +127,7 @@ cd backend
 npm start
 ```
 
-The backend will be available at: `http://localhost:8001`
+The backend will be available at: `http://localhost:5000`
 
 **Note:** Make sure MongoDB is running and `.env` file is configured with `MONGO_URL`
 
@@ -167,7 +167,7 @@ npm run dev
 ### Frontend Environment (`frontend/.env`)
 
 ```env
-REACT_APP_BACKEND_URL=http://localhost:8001/api
+REACT_APP_BACKEND_URL=http://localhost:5000/api
 ```
 
 - **REACT_APP_BACKEND_URL**: The URL where your backend API is hosted (default: local development)
@@ -224,7 +224,7 @@ The server will automatically restart when you modify files.
 #### Test Database Connection
 
 ```bash
-curl http://localhost:8001/api/health
+curl http://localhost:5000/api/health
 ```
 
 Expected response:
@@ -291,8 +291,8 @@ The `--reload` flag enables auto-restart on code changes.
 #### View API Documentation
 
 Once the backend is running, visit:
-- **Swagger UI**: `http://localhost:8001/docs`
-- **ReDoc**: `http://localhost:8001/redoc`
+- **Swagger UI**: `http://localhost:5000/docs`
+- **ReDoc**: `http://localhost:5000/redoc`
 
 ---
 
@@ -385,7 +385,7 @@ When adding new features:
 
 For issues or questions:
 - Check the troubleshooting section above
-- Review the API docs at `http://localhost:8001/docs`
+- Review the API docs at `http://localhost:5000/docs`
 - Check browser console for frontend errors
 - Check backend logs for API errors
 

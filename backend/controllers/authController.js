@@ -126,75 +126,6 @@ const seedInitialHealthData = async (userId) => {
         }
     ];
 
-    const challenges = [
-        {
-            userId,
-            title: 'Walk 10,000 steps today',
-            description: 'Complete your daily movement target',
-            challengeType: 'daily',
-            programType: 'endurance',
-            rewardXp: 50,
-            rewardEnergy: 5,
-            rewardDiscipline: 0,
-            progress: 0
-        },
-        {
-            userId,
-            title: 'No sugary drinks today',
-            description: 'Choose water or unsweetened drinks',
-            challengeType: 'daily',
-            programType: 'weight-loss',
-            rewardXp: 30,
-            rewardEnergy: 0,
-            rewardDiscipline: 3,
-            progress: 0
-        },
-        {
-            userId,
-            title: 'Morning stretch routine',
-            description: 'Do a short mobility or breathing session',
-            challengeType: 'daily',
-            programType: 'stress',
-            rewardXp: 15,
-            rewardEnergy: 2,
-            rewardDiscipline: 0,
-            progress: 0
-        },
-        {
-            userId,
-            title: 'Daily workout complete',
-            description: 'Finish one structured workout',
-            challengeType: 'daily',
-            programType: 'muscle-gain',
-            rewardXp: 50,
-            rewardEnergy: 5,
-            rewardDiscipline: 2,
-            progress: 0
-        },
-        {
-            userId,
-            title: 'Sleep 7+ hours for 5 nights',
-            description: 'Weekly sleep consistency challenge',
-            challengeType: 'weekly',
-            programType: 'sleep',
-            rewardXp: 120,
-            rewardEnergy: 20,
-            rewardDiscipline: 10,
-            progress: 20
-        },
-        {
-            userId,
-            title: 'Share progress with a friend',
-            description: 'Build accountability this week',
-            challengeType: 'weekly',
-            programType: 'general',
-            rewardXp: 60,
-            rewardEnergy: 20,
-            rewardDiscipline: 0,
-            progress: 0
-        }
-    ];
-
     const activities = [
         {
             userId,
@@ -222,7 +153,6 @@ const seedInitialHealthData = async (userId) => {
 
     await Promise.all([
         Goal.insertMany(goals),
-        // Challenge.insertMany(challenges),
         ActivityLog.insertMany(activities),
         FoodIntake.insertMany(foods)
     ]);
@@ -345,6 +275,14 @@ exports.signup = async (req, res) => {
         if (password.length < 8) {
             return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
         }
+
+        const emailPrefix = (email || '').split('@')[0].replace(/[^A-Za-z0-9_]/g, '_');
+        if (emailPrefix.length < 3) {
+            return res.status(400).json({
+                error: 'The part before @ in the email must be at least 3 characters long.'
+            });
+        }
+
         //vlidates to ensure patients select a health program
         if (role === 'patient' && !healthProgram) {
             return res.status(400).json({ error: 'A health program is required for patients.' });
@@ -366,14 +304,11 @@ exports.signup = async (req, res) => {
             role: role || 'patient',  
         });
 
-        // Create initial UserStats document for the new user
-        const stats = await UserStats.create({ userId: user.id });
-        await Promise.all([
-            seedInitialHealthData(user.id),
-            seedInitialWeeklyMetrics(user.id),
-            initializeUserAvatar(user.id),
-            assignStarterChallenges(user.id)
-        ]);
+        // Create initial UserStats document for the new user (or reuse if it already exists)
+        let stats = await UserStats.findOne({ userId: user.id });
+        if (!stats) {
+            stats = await UserStats.create({ userId: user.id });
+        }
 
         const token = generateToken(user.id);
 
@@ -399,10 +334,30 @@ exports.signup = async (req, res) => {
                 totalDistance: stats.totalDistance
             }
         });
+
+        // Run non-critical setup after response so signup never blocks on seeding.
+        setImmediate(async () => {
+            const setupResults = await Promise.allSettled([
+                seedInitialHealthData(user.id),
+                seedInitialWeeklyMetrics(user.id),
+                initializeUserAvatar(user.id),
+                assignStarterChallenges(user.id)
+            ]);
+            setupResults.forEach((result, index) => {
+                if (result.status === 'rejected') {
+                    console.error(`⚠️ Signup setup task ${index + 1} failed for user ${user.id}:`, result.reason);
+                }
+            });
+        });
     } catch (error) {
         console.error("🔥 SIGNUP CRASHED:", error);
         if (error.name === 'ValidationError') {
             const messages = Object.values(error.errors).map((e) => e.message);
+            if (messages[0] && messages[0].includes('Username must be at least 3 characters long')) {
+                return res.status(400).json({
+                    error: 'The part before @ in the email must be at least 3 characters long.'
+                });
+            }
             return res.status(400).json({ error: messages[0] });
         }
         res.status(500).json({ error: 'Server error. Please try again.' });
@@ -476,15 +431,15 @@ const assignStarterChallenges = async (userId) => {
     const challengePool = {
         'endurance': [
             { title: 'Walk 10,000 steps today', rewardXp: 50, rewardEnergy: 5, rewardDiscipline: 0, challengeType: 'daily' },
-            { title: 'Run a total distance of 20 km in a week', rewardXp: 150, rewardEnergy: 50, rewardDiscipline: 20, challengeType: 'weekly' }
+            { title: 'Run a total distance of 20 km in a week', rewardXp: 150, rewardEnergy: 50, currentValue: 5, challengeType: 'weekly' }        
         ],
         'weight-loss': [
             { title: 'No Sugary snacks', rewardXp: 30, rewardEnergy: 0, rewardDiscipline: 3, challengeType: 'daily' }
         ],
         'general': [
             { title: 'Drink 2L of water', rewardXp: 20, rewardEnergy: 0, rewardDiscipline: 0, rewardHp: 3, challengeType: 'daily' },
-            { title: 'Share progress with a friend', rewardXp: 60, rewardEnergy: 20, rewardDiscipline: 0, challengeType: 'weekly' },
-            { title: 'Drink 14L water total this week', rewardXp: 100, rewardEnergy: 30, rewardDiscipline: 0, challengeType: 'weekly' }
+            { title: 'Share progress with a friend', rewardXp: 60, rewardEnergy: 20, rewardDiscipline: 0, currentValue: 0, challengeType: 'weekly' },
+            { title: 'Drink 14L water total this week', rewardXp: 100, rewardEnergy: 30, rewardDiscipline: 0, currentValue: 100, challengeType: 'weekly' }
         ],
         'stress': [
             { title: 'Morning Stretch', rewardXp: 15, rewardEnergy: 2, rewardDiscipline: 0, challengeType: 'daily' }
@@ -493,7 +448,7 @@ const assignStarterChallenges = async (userId) => {
             { title: 'Daily Workout Complete', rewardXp: 50, rewardEnergy: 5, rewardDiscipline: 2, challengeType: 'daily' }
         ],
         'sleep': [
-            { title: 'Sleep 7-8 hours per night for 5 nights', rewardXp: 120, rewardEnergy: 40, rewardDiscipline: 0, challengeType: 'weekly' }
+            { title: 'Sleep 7-8 hours per night for 5 nights', rewardXp: 120, rewardEnergy: 40, rewardDiscipline: 0, currentValue: 43, challengeType: 'weekly' }
         ]
     };
 
@@ -502,8 +457,8 @@ const assignStarterChallenges = async (userId) => {
         challenges.map(ch => ({
             ...ch,
             userId: userId,
-            programType: program, // Assigns the correct category (e.g., 'stress')
-            progress: 0,
+            programType: program, 
+            progress: ch.currentValue || 0,
             isCompleted: false
         }))
     );

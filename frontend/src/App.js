@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "./styles.css";
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import { Routes, Route, Outlet, useLocation } from "react-router-dom";
 
 // Components
 import Layout from "./components/Layout";
@@ -21,6 +21,9 @@ import DoctorDashboard from "./pages/DoctorDashboard";
 import Reports from "./pages/Reports";
 import Patients from "./pages/Patients";
 import PatientDetail from "./pages/PatientDetail";
+import socket from './socket';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'; 
 
 const DEFAULT_SELECTIONS = {
   skin: 's1', hairStyle: 'hs1', hairColor: 'hc1',
@@ -76,6 +79,24 @@ const daysBetween = (dateStrA, dateStrB) => {
 };
 const clamp = (val, min = 0, max = 100) => Math.max(min, Math.min(max, val));
 
+const NotificationListener = ({ currentUser }) => {
+  useEffect(() => {
+    if (currentUser?._id) {
+    
+      socket.emit('join_room', currentUser._id);
+      socket.on('receive_notification', (data) => {
+        toast.info(`New message: ${data.message}`, {
+          position: "top-right",
+          autoClose: 5000,
+        });
+      });
+    }
+
+    return () => socket.off('receive_notification');
+  }, [currentUser]); 
+};
+
+
 function App() {
   document.title = "HealUp! - Your Personal Health Companion";
   const link = document.querySelector("link[rel='icon']") || document.createElement('link');
@@ -83,6 +104,7 @@ function App() {
   link.type  = 'image/png';
   link.href  = '/logo-transparent.png';
   document.head.appendChild(link);
+  const location = useLocation();
 
   const [avatarSelections, setAvatarSelections] = useState(loadSelections);
   const [avatarName,       setAvatarName]        = useState(loadAvatarName);
@@ -113,7 +135,7 @@ function App() {
     const userId = getCurrentUserId();
     if (!userId) return null;
     try {
-      const res = await fetch(`http://localhost:8001/api/stats/${userId}`, {
+      const res = await fetch(`http://localhost:5000/api/stats/${userId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -127,9 +149,15 @@ function App() {
   useEffect(() => {
     const userId = getCurrentUserId();
     if (!userId) return;
+<<<<<<< HEAD
     fetch(`http://localhost:8001/api/stats/${userId}`)
       .then(res => res.json())
       .then(data => {
+=======
+    fetch(`http://localhost:5000/api/stats/${userId}`)
+      .then((res) => res.json())
+      .then((data) => {
+>>>>>>> d784f4eeecf135664221b900ea7a5e00a9da5ead
         if (!data || data.error) return;
         const mappedStats  = { xp: data.totalXp ?? 0, coins: data.coins ?? 0 };
         const mappedBars   = { hp: data.hp ?? 100, energy: data.totalEnergy ?? 0, discipline: data.totalDiscipline ?? 0 };
@@ -151,8 +179,17 @@ function App() {
     let cancelled = false;
     const loadAvatarProfile = async () => {
       try {
+<<<<<<< HEAD
         const res = await fetch(`http://localhost:8001/api/avatars/profile/${userId}`);
         if (!res.ok) { setAvatarSyncReady(true); return; }
+=======
+        const res = await fetch(`http://localhost:5000/api/avatars/profile/${userId}`);
+        if (!res.ok) {
+          setAvatarSyncReady(true);
+          return;
+        }
+
+>>>>>>> d784f4eeecf135664221b900ea7a5e00a9da5ead
         const payload = await res.json();
         const profileSelections = payload?.data?.selections;
         if (!cancelled && profileSelections) {
@@ -173,7 +210,7 @@ function App() {
     const controller = new AbortController();
     const persistSelections = async () => {
       try {
-        await fetch(`http://localhost:8001/api/avatars/profile/${userId}`, {
+        await fetch(`http://localhost:5000/api/avatars/profile/${userId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ selections: toBackendSelections(avatarSelections) }),
@@ -187,6 +224,10 @@ function App() {
 
   // ── Decay on inactivity ──
   useEffect(() => {
+    const publicRoutes = ["/", "/login", "/signup"];
+
+    if (publicRoutes.includes(location.pathname)) return;
+
     const lastActive = loadLastActive();
     const today = todayStr();
     if (lastActive.date && lastActive.date !== today) {
@@ -233,7 +274,7 @@ function App() {
       }
     }
     save('healup_last_active', { date: today });
-  }, []);
+  }, [location.pathname]);
 
   // ── Bad Habit handler — XP penalty guaranteed locally ──
   const handleBadHabit = useCallback((penalties) => {
@@ -369,7 +410,7 @@ function App() {
   };
 
   return (
-    <BrowserRouter>
+    <>
       <DecayAlert />
       <Routes>
         {/* No Sidebar */}
@@ -426,7 +467,7 @@ function App() {
           <Route path="/patient-details"  element={<PatientDetail />} />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </>
   );
 }
 
