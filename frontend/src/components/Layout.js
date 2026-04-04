@@ -643,21 +643,44 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
 
   const [notifications, setNotifications] = useState([]);
 
+  // useEffect(() => {
+  //   const fetchNotifications = async () => {
+  //     try {
+  //       const user = JSON.parse(localStorage.getItem("user") || "null");
+  //       const userId = user?.id || user?._id;
+  //       if (!userId) { setNotifications([]); return; }
+  //       const res = await fetch(`http://localhost:8001/api/notifications?userId=${userId}`);
+  //       const data = await res.json();
+  //       setNotifications(data);
+  //     } catch (err) {
+  //       console.error("Error fetching notifications:", err);
+  //       setNotifications([]);
+  //     }
+  //   };
+  //   fetchNotifications();
+  // }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "null");
+      const userId = user?.id || user?._id;
+      if (!userId) { setNotifications([]); return; }
+      const res = await fetch(`http://localhost:8001/api/notifications?userId=${userId}`);
+      const data = await res.json();
+      setNotifications(data);
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+      setNotifications([]);
+    }
+  };
+
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const user = JSON.parse(localStorage.getItem("user") || "null");
-        const userId = user?.id || user?._id;
-        if (!userId) { setNotifications([]); return; }
-        const res = await fetch(`http://localhost:5000/api/notifications?userId=${userId}`);
-        const data = await res.json();
-        setNotifications(data);
-      } catch (err) {
-        console.error("Error fetching notifications:", err);
-        setNotifications([]);
-      }
-    };
     fetchNotifications();
+  
+    window.refreshNotifications = fetchNotifications;
+    return () => {
+      delete window.refreshNotifications;
+    }; 
   }, []);
 
   const notifRef = useRef(null);
@@ -785,7 +808,7 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
           )}
 
           <div ref={notifRef} style={{ position: 'relative' }}>
-            <button className="topbar-icon-btn" title="Alerts" onClick={() => { setNotifOpen(p => !p); setSyncOpen(false); setProfileOpen(false); }} style={{ position: 'relative' }}>
+            <button className="topbar-icon-btn" title="Alerts" onClick={() => { setNotifOpen(p => { if (!p) fetchNotifications(); return !p;}); setSyncOpen(false); setProfileOpen(false); }} style={{ position: 'relative' }}>
               <img src="/notification.png" alt="Alerts" className="topbar-icon-img" style={notifOpen ? { filter: 'drop-shadow(0 0 6px rgba(91,184,255,0.9))' } : {}} />
               {unread > 0 && (
                 <span style={{

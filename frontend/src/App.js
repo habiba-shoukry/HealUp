@@ -259,7 +259,6 @@ function App() {
           save('healup_streak', carried);
           return carried;
         });
-        setDecayAlert({ ...losses, missedDays });
       }
     }
     save('healup_last_active', { date: today });
@@ -360,47 +359,9 @@ function App() {
     localStorage.setItem('healup_avatar_name', name);
   };
 
-  const DecayAlert = () => {
-    if (!decayAlert) return null;
-    return (
-      <div style={{
-        position: 'fixed', top: 70, left: '50%', transform: 'translateX(-50%)',
-        zIndex: 9999, background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
-        border: '1px solid rgba(239,68,68,0.4)', borderRadius: 16,
-        padding: '1rem 1.5rem', maxWidth: 420, width: '90%',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-        animation: 'popupIn 0.4s cubic-bezier(0.34,1.56,0.64,1)',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <div style={{ color: '#f87171', fontWeight: 800, fontSize: '0.95rem', marginBottom: 6 }}>
-              ⚠️ You were away for {decayAlert.missedDays} day{decayAlert.missedDays > 1 ? 's' : ''}!
-            </div>
-            <div style={{ color: '#94a3b8', fontSize: '0.78rem', lineHeight: 1.6 }}>
-              Your stats decayed from inactivity:<br />
-              <span style={{ color: '#f87171' }}>❤️ −{decayAlert.hp} HP</span>{'  '}
-              <span style={{ color: '#60a5fa' }}>⚡ −{decayAlert.energy} Energy</span>{'  '}
-              <span style={{ color: '#a78bfa' }}>💪 −{decayAlert.discipline} Discipline</span>
-              {decayAlert._streakBroken > 0 && (
-                <><br /><span style={{ color: '#fb923c' }}>🔥 {decayAlert._streakBroken}-day streak broken! −{decayAlert._streakPenalty} all stats</span></>
-              )}
-            </div>
-            <div style={{ color: '#34d399', fontSize: '0.75rem', marginTop: 6, fontWeight: 600 }}>
-              Complete challenges to recover your stats!
-            </div>
-          </div>
-          <button onClick={() => setDecayAlert(null)} style={{
-            background: 'none', border: 'none', color: '#64748b',
-            cursor: 'pointer', fontSize: '1.1rem', padding: '0 0 0 1rem',
-          }}>✕</button>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <>
-      <DecayAlert />
+
       <Routes>
         {/* No Sidebar */}
         <Route path="/"       element={<Welcome />} />
