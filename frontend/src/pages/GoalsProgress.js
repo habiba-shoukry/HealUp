@@ -116,7 +116,7 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
      return;
    }
 
-   fetch(`http://localhost:8001/api/goals?userId=${user.id}&programType=${selectedProgram}&device=${encodeURIComponent(activeDevice)}`, { cache: 'no-store' })
+   fetch(`http://localhost:5000/api/goals?userId=${user.id}&programType=${selectedProgram}&device=${encodeURIComponent(activeDevice)}`, { cache: 'no-store' })
      .then(res => res.json())
      .then(data => {
        if (Array.isArray(data) && data.length > 0) setGoals(data.map(normalizeGoal));
@@ -130,7 +130,7 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
    try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch { user = null; }
    if (!user?.id) return;
 
-   fetch(`http://localhost:8001/api/stats/${user.id}`)
+   fetch(`http://localhost:5000/api/stats/${user.id}`)
      .then(res => res.json())
      .then(data => {
        if (!data || data.error) return;
@@ -147,7 +147,7 @@ useEffect(() => {
 
   if (!user?.id) return;
 
-  fetch(`http://localhost:8001/api/metrics/weekly/${user.id}?device=${encodeURIComponent(activeDevice)}`)
+  fetch(`http://localhost:5000/api/metrics/weekly/${user.id}?device=${encodeURIComponent(activeDevice)}`)
     .then(res => (res.ok ? res.json() : null))
     .then(data => {
       if (!data?.metrics || !Array.isArray(data.metrics)) return;

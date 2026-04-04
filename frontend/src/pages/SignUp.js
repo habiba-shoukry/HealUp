@@ -14,8 +14,8 @@ export default function SignUp() {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'patient',             // Default role
-    healthProgram: 'wellbeing'   // Default health program
+    role: 'patient',           
+    healthProgram: 'wellbeing'   
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

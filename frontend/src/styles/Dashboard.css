@@ -583,3 +583,32 @@
   background: rgba(251, 191, 36, 0.15);
   color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.35);
 }
+
+
+/* Dashboard.css updates */
+
+/* For Laptops/Tablets: Switch to 2 columns */
+@media screen and (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .large-card {
+    grid-column: span 2; /* Let the avatar take the full top row */
+  }
+}
+
+/* For Mobile: Single column stack */
+@media screen and (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .large-card, .medium-card, .small-card {
+    grid-column: span 1;
+  }
+  /* Scale down the avatar scene to fit mobile viewports */
+  .dashboard-avatar-scene {
+    width: 220px;
+    height: 220px;
+  }
+}

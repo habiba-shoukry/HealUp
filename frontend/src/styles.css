@@ -238,9 +238,9 @@ body {
 .main-content {
   margin-left: 250px;
   width: calc(100% - 250px);
-  padding: 0;
+  padding: 2rem; 
   min-height: 100vh;
-  box-sizing: border-box;
+  box-sizing: border-box; 
   overflow-x: hidden;
 }
 
@@ -301,6 +301,47 @@ body {
 /* Mobile */
 @media screen and (max-width: 767px) {
   .layout-container { flex-direction: column; }
+
+  .topbar {
+    height: auto; /* Allow the bar to grow vertically */
+    flex-direction: column; 
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  /* Stacked Row 1: Logo and Navigation Icons */
+  .topbar-left {
+    justify-content: space-between;
+    width: 100%;
+    margin-left: 40px;
+  }
+
+  .topbar-center {
+    display: flex;
+    justify-content: center; 
+    align-items: center;
+    margin-top: 20pt;
+  }
+
+  /* Stacked Row 2: Stats and Avatar underneath */
+  .topbar-right {
+    width: 100%;
+    justify-content: space-around; /* Spread XP, Coins, and Avatar evenly */
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    order: 2;
+  }
+
+  /* Adjust Layout to account for the taller topbar */
+  .layout-container {
+    padding-top: 160px; /* Increase this to match the new stacked topbar height */
+  }
+
+  .sidebar {
+    top: 120px; /* Adjust sidebar starting position */
+    height: calc(100vh - 120px);
+  }
+
 
   .sidebar {
     width: 100%;
