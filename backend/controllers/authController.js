@@ -312,6 +312,8 @@ exports.signup = async (req, res) => {
 
         const token = generateToken(user.id);
 
+        await assignStarterChallenges(user.id);
+
         res.status(201).json({
             token,
             user: {
@@ -428,6 +430,9 @@ exports.login = async (req, res) => {
 
 
 const assignStarterChallenges = async (userId) => {
+
+    console.log("Assigning challenges to:", userId);
+
     const challengePool = {
         'endurance': [
             { title: 'Walk 10,000 steps today', rewardXp: 50, rewardEnergy: 5, rewardDiscipline: 0, challengeType: 'daily' },
@@ -463,5 +468,7 @@ const assignStarterChallenges = async (userId) => {
         }))
     );
 
+    console.log("Challenges inserted!");    
     await Challenge.insertMany(allChallenges);
+    console.log("Challenges inserted!");    
 };

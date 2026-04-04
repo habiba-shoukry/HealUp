@@ -14,8 +14,9 @@ const notificationSchema = new mongoose.Schema({
       "missed_goal",
       "health_event",
       "challenge_complete",
+      "goal_complete",
       "suggestion",
-      "ai_recommendation",
+      "recommendation",
       "motivation"
     ],
     required: true

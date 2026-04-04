@@ -8,6 +8,15 @@ const updateGoalProgress = async (userId, activityType, amount) => {
         // checks for completion
         if (goal.currentValue >= goal.targetValue) {
             goal.isCompleted = true;
+
+            await createNotification({
+                userId,
+                type: "goal_complete",
+                title: "Goal Achieved!",
+                desc: `You completed your goal: ${goal.title}`,
+                icon: "trophy",
+                tag: "Goals"
+            });
         }
         await goal.save();
     }
@@ -37,5 +46,16 @@ const updateDailyBehaviorStreak = async (userStats, dailyMetrics) => {
         if (userStats.dayStreak > userStats.bestStreak) userStats.bestStreak = userStats.dayStreak;
 
         await userStats.save();
+    }
+
+    if (userStats.dayStreak === 3 || userStats.dayStreak === 7 || userStats.dayStreak === 30) {
+        await createNotification({
+            userId: userStats.userId,
+            type: "motivation",
+            title: "Streak Milestone!",
+            desc: `You're on a ${userStats.dayStreak}-day streak 🔥`,
+            icon: "burn",
+            tag: "Streak"
+        });
     }
 };

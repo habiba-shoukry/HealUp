@@ -453,7 +453,7 @@ useEffect(() => {
     }
   };
 
-const handleCheck = (index) => {
+const handleCheck = async (index) => {
     const c = dailyChallenges[index];
     const key = challengeKey(c, index);
     
@@ -489,13 +489,27 @@ const handleCheck = (index) => {
     syncRewardsToDatabase(xp, coins, c.barEffects, false);
 
     if (hasRemoteDaily && c.id) {
-      fetch(`http://localhost:5000/api/challenges/${c.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ progress: 100, isCompleted: true }),
-      }).catch(() => {});
+      try {
+        await fetch(`http://localhost:8001/api/challenges/${c.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ progress: 100, isCompleted: true }),
+        });
+
+        // wait a tiny bit to ensure DB + notification write completes
+        setTimeout(() => {
+          localStorage.setItem("notif_refresh", Date.now());
+          if (window.refreshNotifications) {
+            window.refreshNotifications();
+          }
+        }, 200);
+
+    } catch (err) {
+      console.error(err);
+      }
     }
-    
+
+
     // Updates the UI instantly
     if (onChallengeComplete) onChallengeComplete(xp, coins, c.barEffects);
 
@@ -581,6 +595,13 @@ const handleCheck = (index) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isCompleted: true }),
       });
+
+      setTimeout(() => {
+      localStorage.setItem("notif_refresh", Date.now());
+        if (window.refreshNotifications) {
+          window.refreshNotifications();
+        }
+      }, 200);
     } catch (error) {
       console.error("Failed to mark weekly challenge complete");
     }

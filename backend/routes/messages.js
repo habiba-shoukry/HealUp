@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Message = require('../models/Message'); 
+const createNotification = require('../utils/createNotification');
 
 module.exports = function(io) {
   router.post('/send', async (req, res) => {
@@ -16,6 +17,15 @@ module.exports = function(io) {
       });
       await newMessage.save();
 
+      await createNotification({
+        userId: patientId,
+        type: "motivation",
+        title: "New message from your doctor",
+        desc: message,
+        icon: "spark",
+        tag: "Motivation"
+      });
+      
       // 2. triggers the real-time pop-up
       io.to(patientId).emit('receive_notification', {
         id: newMessage._id,

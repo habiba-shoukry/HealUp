@@ -4,6 +4,20 @@ const mongoose = require('mongoose');
 
 // Import your Quest/Challenge model (adjust the path/name if yours is different)
 const Quest = require('../models/Quest'); 
+const UserQuest = require('../models/Challenges');
+
+const assignChallengesToUser = async (userId) => {
+    const quests = await Quest.find();
+
+    const userChallenges = quests.map(q => ({
+        userId,
+        questId: q._id,
+        currentProgress: 0,
+        isCompleted: false
+    }));
+
+    await UserQuest.insertMany(userChallenges);
+};
 
 // The array we built
 const challenges = [

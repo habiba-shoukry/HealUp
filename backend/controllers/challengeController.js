@@ -1,55 +1,41 @@
-const WeeklyHealthMetrics = require('../models/WeeklyHealthMetrics'); // Import your table
+// const WeeklyHealthMetrics = require('../models/WeeklyHealthMetrics'); // Import your table
+// const createNotification = require('../utils/createNotification');
 
-// Inside your GET /api/challenges route:
-exports.getUserChallenges = async (req, res) => {
-    try {
-        const userId = req.user.id; // Or req.query.userId depending on your setup
-        
-        // 1. Fetch the user's active challenges
-        let activeChallenges = await UserQuest.find({ userId }).populate('questId');
-        
-        // 2. Fetch their health data for the week
-        const weeklyData = await WeeklyHealthMetrics.findOne({ userId });
+// exports.updateChallengeProgress = async (req, res) => {
+//     try {
+//         console.log("Calling createNotification");
+//         const { id } = req.params;
+//         const { progress } = req.body;
 
-        if (weeklyData) {
-            // 3. Loop through and calculate progress for AUTO weekly challenges
-            for (let uQuest of activeChallenges) {
-                const blueprint = uQuest.questId;
-                
-                if (blueprint.frequency === 'weekly' && blueprint.trackingType === 'auto' && !uQuest.isCompleted) {
-                    let totalAmount = 0;
+//         const challenge = await Challenge.findById(id);
 
-                    // Match the metricToTrack to the arrays in your WeeklyHealthMetrics table
-                    switch(blueprint.metricToTrack) {
-                        case 'distance_km':
-                            totalAmount = weeklyData.distanceKm.reduce((a, b) => a + b, 0);
-                            break;
-                        case 'sleep_hours':
-                            totalAmount = weeklyData.sleepHours.reduce((a, b) => a + b, 0);
-                            break;
-                        case 'calories':
-                            totalAmount = weeklyData.caloriesBurned.reduce((a, b) => a + b, 0);
-                            break;
-                        case 'steps':
-                            totalAmount = weeklyData.steps.reduce((a, b) => a + b, 0);
-                            break;
-                    }
+//         if (!challenge) {
+//             return res.status(404).json({ error: "Challenge not found" });
+//         }
 
-                    // Calculate percentage (max 100)
-                    const progressPct = Math.min(100, Math.floor((totalAmount / blueprint.targetValue) * 100));
-                    
-                    // Save the calculated progress to the database
-                    uQuest.currentProgress = progressPct;
-                    await uQuest.save();
-                }
-            }
-        }
+//         // Update progress
+//         challenge.progress = progress;
 
-        // Send the freshly calculated challenges to the frontend
-        res.status(200).json(activeChallenges);
+//         // Check completion
+//         if (progress >= 100 && !challenge.isCompleted) {
+//             challenge.isCompleted = true;
 
-    } catch (error) {
-        console.error("🔥 Error fetching challenges:", error);
-        res.status(500).json({ error: 'Server Error' });
-    }
-};
+//             await createNotification({
+//                 userId: challenge.userId,
+//                 type: "challenge_complete",
+//                 title: "Challenge Completed!",
+//                 desc: `You completed: ${challenge.title}`,
+//                 icon: "burn",
+//                 tag: "Achievement"
+//             });
+//         }
+
+//         await challenge.save();
+
+//         res.json(challenge);
+
+//     } catch (err) {
+//         console.error(err);
+//         res.status(500).json({ error: "Server error" });
+//     }
+// };

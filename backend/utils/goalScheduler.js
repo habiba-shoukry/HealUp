@@ -1,6 +1,5 @@
 const cron = require('node-cron');
 const Goal = require('../models/Goals');
-const Challenge = require('../models/Challenges');
 const HealthLog = require('../models/HealthLog');
 const UserStats = require('../models/UserStats');
 const Notification = require('../models/Notification');
@@ -57,34 +56,6 @@ cron.schedule('59 23 * * *', async () => {
     }
 
     console.log("Missed goals processed");
-  } catch (err) {
-    console.error("Scheduler error:", err);
-  }
-});
-
-// ==================== CHALLENGE COMPLETION ====================
-// Check for newly completed challenges every hour
-cron.schedule('0 * * * *', async () => {
-  console.log("Checking challenge completions...");
-
-  try {
-    const newlyCompleted = await Challenge.find({
-      isCompleted: true,
-      completedAt: { $gte: new Date(Date.now() - 3600000) } // completed in last hour
-    });
-
-    for (const challenge of newlyCompleted) {
-      await createNotification({
-        userId: challenge.userId,
-        type: "challenge_complete",
-        title: "Challenge Completed!",
-        desc: `🎉 You completed: ${challenge.title}`,
-        icon: "burn",  
-        tag: "Achievement"
-      });
-    }
-
-    console.log("Challenge completions processed");
   } catch (err) {
     console.error("Scheduler error:", err);
   }
