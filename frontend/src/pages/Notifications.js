@@ -38,14 +38,14 @@ const Notifications = () => {
   };
  
   const downloadReport = async () => {
-    try {
-      const user = JSON.parse(localStorage.getItem("user"));
-      const userId = user?.id;
+  try {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const userId = user?._id || user?.id; 
 
-      if (!userId) {
-        showPopup("❌ User not logged in");
-        return;
-      }
+    if (!userId) {
+      showPopup("❌ User not logged in");
+      return;
+    }
 
      const response = await fetch(
         `${apiBaseUrl}/api/report/download?userId=${userId}`
