@@ -47,7 +47,7 @@ const Notifications = () => {
         return;
       }
 
-     const response = await fetch(
+      const response = await fetch(
         `${apiBaseUrl}/api/report/download?userId=${userId}`
       );
 
