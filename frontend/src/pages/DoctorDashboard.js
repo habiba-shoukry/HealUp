@@ -501,7 +501,7 @@ const handleSend = async () => {
     // }
 
   try {
-    const response = await fetch('http://localhost:8001/api/messages/send', { 
+    const response = await fetch('https://healup-gtgv.onrender.com//api/messages/send', { 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

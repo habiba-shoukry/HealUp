@@ -236,14 +236,14 @@ useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || 'null');
     const userId = user?.id || user?._id; // Check for both id and _id
 
-  const baseUrl = "http://localhost:8001";
+  const baseUrl = "https://healup-gtgv.onrender.com/";
 
     if (!userId) {
       setRemoteChallenges({ daily: [], weekly: [] });
       return;
     }
     
-    fetch(`http://localhost:8001/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
+    fetch(`https://healup-gtgv.onrender.com//api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
       cache: 'no-store'
     })
       .then((res) => res.json())
@@ -275,7 +275,7 @@ useEffect(() => {
       const user = JSON.parse(localStorage.getItem('user') || 'null');
       if (!user?.id) return;
 
-      fetch(`http://localhost:8001/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
+      fetch(`https://healup-gtgv.onrender.com//api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
         cache: 'no-store'
       })
         .then((res) => res.json())
@@ -443,7 +443,7 @@ useEffect(() => {
     };
 
     try {
-      await fetch('http://localhost:8001/api/stats/rewards', {
+      await fetch('https://healup-gtgv.onrender.com//api/stats/rewards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -490,7 +490,7 @@ const handleCheck = async (index) => {
 
     if (hasRemoteDaily && c.id) {
       try {
-        await fetch(`http://localhost:8001/api/challenges/${c.id}`, {
+        await fetch(`https://healup-gtgv.onrender.com//api/challenges/${c.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ progress: 100, isCompleted: true }),
@@ -546,7 +546,7 @@ const handleCheck = async (index) => {
         ...prev,
         daily: prev.daily.map((d) => d.id === c.id ? { ...d, isCompleted: false, progress: 0 } : d),
       }));
-      fetch(`http://localhost:8001/api/challenges/${c.id}`, {
+      fetch(`https://healup-gtgv.onrender.com//api/challenges/${c.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ progress: 0, isCompleted: false }),
@@ -590,7 +590,7 @@ const handleCheck = async (index) => {
 
     // 2. Tell the backend to officially lock it as completed
     try {
-      await fetch(`http://localhost:8001/api/challenges/${challenge.id}`, {
+      await fetch(`https://healup-gtgv.onrender.com//api/challenges/${challenge.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isCompleted: true }),
