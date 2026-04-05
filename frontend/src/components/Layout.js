@@ -824,11 +824,20 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
 
             {notifOpen && (
               <div style={{
-                position: 'absolute', top: 'calc(100% + 14px)', right: '-160px', width: 520,
+                position: window.innerWidth < 600 ? 'fixed' : 'absolute',
+                left: window.innerWidth < 600 ? '50%' : 'auto',
+                top: window.innerWidth < 600 ? '80px' : 'calc(100% + 14px)',
+                right: window.innerWidth < 600 ? 'auto' : '-160px',
+                transform: window.innerWidth < 600 ? 'translateX(-50%)' : 'none',
+                width: '95vw',
+                maxWidth: 520,
+                // -------------------------------
                 background: 'linear-gradient(160deg,#0c1e30 0%,#0f2840 50%,#0c1e30 100%)',
-                border: '1px solid rgba(91,184,255,0.22)', borderRadius: 26,
+                border: '1px solid rgba(91,184,255,0.22)',
+                borderRadius: 26,
                 boxShadow: '0 32px 90px rgba(0,0,0,0.75)',
-                zIndex: 9999, overflow: 'hidden',
+                zIndex: 9999,
+                overflow: 'hidden',
                 animation: 'notifDropIn 0.25s cubic-bezier(0.34,1.56,0.64,1)',
                 fontFamily: F,
               }}>
