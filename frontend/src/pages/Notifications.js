@@ -3,7 +3,7 @@ import "../styles/Notifications.css";
  
 const Notifications = () => {
  
-  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "https://healup-gtgv.onrender.com";
   const [popupMessage, setPopupMessage] = useState("");
   const [score, setScore] = useState(0);
  
@@ -38,14 +38,14 @@ const Notifications = () => {
   };
  
   const downloadReport = async () => {
-  try {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const userId = user?._id || user?.id; 
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const userId = user?.id;
 
-    if (!userId) {
-      showPopup("❌ User not logged in");
-      return;
-    }
+      if (!userId) {
+        showPopup("❌ User not logged in");
+        return;
+      }
 
      const response = await fetch(
         `${apiBaseUrl}/api/report/download?userId=${userId}`
