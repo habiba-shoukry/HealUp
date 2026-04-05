@@ -5,18 +5,24 @@ import '../styles/LogIn.css';
 
 export default function SignUp() {
   const navigate = useNavigate();
-  const apiBaseUrl =
-    process.env.REACT_APP_API_BASE_URL ||
-    `${window.location.protocol}//${window.location.hostname}:8001`;
+
+ 
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "https://healup-gtgv.onrender.com";
+
+  
+  const cleanApiUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
 
   const [formData, setFormData] = useState({
-    fullName: '',
+    fullName: '', 
     email: '',
     password: '',
     confirmPassword: '',
     role: 'patient',
     healthProgram: 'wellbeing'
   });
+
+  
+  
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -121,9 +127,9 @@ export default function SignUp() {
 
 
           <div className="social-icons">
-            <a href="#" className="icon" aria-label="Instagram"><FaInstagram /></a>
-            <a href="#" className="icon" aria-label="Facebook"><FaFacebookF /></a>
-            <a href="#" className="icon" aria-label="Twitter"><FaTwitter /></a>
+            <a href="https://www.instagram.com/healup.wellness?igsh=dTA4aWwxZ2drOWtk&utm_source=qr" className="icon" aria-label="Instagram"><FaInstagram /></a>
+            {/* <a href="#" className="icon" aria-label="Facebook"><FaFacebookF /></a>
+            <a href="#" className="icon" aria-label="Twitter"><FaTwitter /></a> */}
           </div>
 
         </div>

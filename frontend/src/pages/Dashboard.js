@@ -1084,7 +1084,7 @@ const ChallengesCard = ({ onViewAll, onChallengeComplete }) => {
       return;
     }
 
-    fetch(`http://localhost:8001/api/challenges?userId=${userId}&programType=${encodeURIComponent(selectedProgram)}`)
+    fetch(`https://healup-gtgv.onrender.com/api/challenges?userId=${userId}&programType=${encodeURIComponent(selectedProgram)}`)
       .then((res) => res.json())
       .then((data) => {
         if (!Array.isArray(data) || data.length === 0) {
@@ -1167,7 +1167,7 @@ const ChallengesCard = ({ onViewAll, onChallengeComplete }) => {
         ...prev,
         daily: prev.daily.map((d) => (d.id === c.id ? { ...d, isCompleted: true, progress: 100 } : d)),
       }));
-      fetch(`http://localhost:8001/api/challenges/${c.id}`, {
+      fetch(`https://healup-gtgv.onrender.com/api/challenges/${c.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ progress: 100, isCompleted: true }),
@@ -1824,7 +1824,7 @@ const handleConsentDecline = () => {
 
     let isMounted = true;
     const fetchMetrics = () => {
-      fetch(`http://localhost:8001/api/metrics/weekly/${userId}?device=${encodeURIComponent(activeDevice)}`)
+      fetch(`https://healup-gtgv.onrender.com/api/metrics/weekly/${userId}?device=${encodeURIComponent(activeDevice)}`)
         .then((r) => r.ok ? r.json() : null)
         .then((data) => {
           if (!isMounted || !data?.metrics) return;

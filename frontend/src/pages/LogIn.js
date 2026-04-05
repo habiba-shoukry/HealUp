@@ -29,7 +29,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8001/api/auth/login', {
+      const response = await fetch('https://healup-gtgv.onrender.com/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -85,9 +85,9 @@ export default function LoginPage() {
         
 
           <div className="social-icons">
-            <a href="#" className="icon" aria-label="Instagram"><FaInstagram /></a>
-            <a href="#" className="icon" aria-label="Facebook"><FaFacebookF /></a>
-            <a href="#" className="icon" aria-label="Twitter"><FaTwitter /></a>
+            <a href="https://www.instagram.com/healup.wellness?igsh=dTA4aWwxZ2drOWtk&utm_source=qr" className="icon" aria-label="Instagram"><FaInstagram /></a>
+            {/* <a href="#" className="icon" aria-label="Facebook"><FaFacebookF /></a>
+            <a href="#" className="icon" aria-label="Twitter"><FaTwitter /></a> */}
           </div>
 
         </div>

@@ -654,7 +654,7 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
       
       const userId = user?.id || user?._id;
       if (!userId) { setNotifications([]); return; }
-      const res = await fetch(`http://localhost:8001/api/notifications?userId=${userId}`);
+      const res = await fetch(`https://healup-gtgv.onrender.com/api/notifications?userId=${userId}`);
       const data = await res.json();
       setNotifications(data);
     } catch (err) {
@@ -689,7 +689,7 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
     try {
       await Promise.all(
         notifications.map(n =>
-          fetch(`http://localhost:8001/api/notifications/${n._id}/read`, { method: "PATCH" })
+          fetch(`https://healup-gtgv.onrender.com/api/notifications/${n._id}/read`, { method: "PATCH" })
         )
       );
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
@@ -699,14 +699,14 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
 
   const markAsRead = async (id) => {
     try {
-      await fetch(`http://localhost:8001/api/notifications/${id}/read`, { method: "PATCH" });
+      await fetch(`https://healup-gtgv.onrender.com/api/notifications/${id}/read`, { method: "PATCH" });
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
     } catch (err) { console.error(err); }
   };
 
   const deleteNotification = async (id) => {
     try {
-      await fetch(`http://localhost:8001/api/notifications/${id}`, { method: "DELETE" });
+      await fetch(`https://healup-gtgv.onrender.com/api/notifications/${id}`, { method: "DELETE" });
       setNotifications(prev => prev.filter(n => n._id !== id));
     } catch (err) { console.error(err); }
   };
@@ -732,13 +732,13 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
         { path: '/challenges', icon: '/rpg-game.png', label: 'Challenges' },
         { path: '/goals', icon: '/dart.png', label: 'Goals and Progress' },
         { path: '/activity-food', icon: '/healthy-food.png', label: 'Daily Health Log' },
-        { path: '/notifications', icon: '/notification-bell.png', label: 'Notifications and Report' },
+        { path: '/notifications', icon: '/notification-bell.png', label: 'Report' },
         { path: '/chatbot', icon: '/robot (1).png', label: 'Chatbot' },
       ];
 
   return (
     <div>
-      <header className="topbar">
+      <header className={`topbar ${role === 'doctor' ? 'topbar-doctor' : ''}`}>
         <div className="topbar-left">
           <img src="/logo-transparent.png" alt="Logo" className="topbar-logo" />
           <span className="topbar-brand">HealUp!</span>
@@ -813,11 +813,20 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
 
             {notifOpen && (
               <div style={{
-                position: 'absolute', top: 'calc(100% + 14px)', right: '-160px', width: 520,
+                position: window.innerWidth < 600 ? 'fixed' : 'absolute',
+                left: window.innerWidth < 600 ? '50%' : 'auto',
+                top: window.innerWidth < 600 ? '80px' : 'calc(100% + 14px)',
+                right: window.innerWidth < 600 ? 'auto' : '-160px',
+                transform: window.innerWidth < 600 ? 'translateX(-50%)' : 'none',
+                width: '95vw',
+                maxWidth: 520,
+                // -------------------------------
                 background: 'linear-gradient(160deg,#0c1e30 0%,#0f2840 50%,#0c1e30 100%)',
-                border: '1px solid rgba(91,184,255,0.22)', borderRadius: 26,
+                border: '1px solid rgba(91,184,255,0.22)',
+                borderRadius: 26,
                 boxShadow: '0 32px 90px rgba(0,0,0,0.75)',
-                zIndex: 9999, overflow: 'hidden',
+                zIndex: 9999,
+                overflow: 'hidden',
                 animation: 'notifDropIn 0.25s cubic-bezier(0.34,1.56,0.64,1)',
                 fontFamily: F,
               }}>

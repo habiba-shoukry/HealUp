@@ -3,6 +3,7 @@ import "../styles/Notifications.css";
  
 const Notifications = () => {
  
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "https://healup-gtgv.onrender.com";
   const [popupMessage, setPopupMessage] = useState("");
   const [score, setScore] = useState(0);
  
@@ -46,8 +47,8 @@ const Notifications = () => {
         return;
       }
 
-      const response = await fetch(
-        "http://127.0.0.1:8001/api/report/download?userId=" + userId
+     const response = await fetch(
+        `${apiBaseUrl}/api/report/download?userId=${userId}`
       );
 
       if (!response.ok) {
@@ -228,12 +229,12 @@ const Notifications = () => {
           Download PDF Report
         </button>
  
-        <button
+        {/* <button
           className="share-button"
           onClick={() => showPopup("✔ Report Shared With Doctor")}
         >
           Share With Doctor
-        </button>
+        </button> */}
  
       </div>
  
