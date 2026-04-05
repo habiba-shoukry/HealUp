@@ -3,6 +3,7 @@ import "../styles/Notifications.css";
  
 const Notifications = () => {
  
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "https://healup-gtgv.onrender.com";
   const [popupMessage, setPopupMessage] = useState("");
   const [score, setScore] = useState(0);
  
