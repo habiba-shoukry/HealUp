@@ -243,7 +243,7 @@ useEffect(() => {
       return;
     }
     
-    fetch(`https://healup-gtgv.onrender.com/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
+    fetch(`https://healup-gtgv.onrender.com/api/challenges?userId=${userId}&programType=${selectedProgram}`, {
       cache: 'no-store'
     })
       .then((res) => res.json())
@@ -275,7 +275,7 @@ useEffect(() => {
       const user = JSON.parse(localStorage.getItem('user') || 'null');
       if (!user?.id) return;
 
-      fetch(`https://healup-gtgv.onrender.com/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
+      fetch(`https://healup-gtgv.onrender.com/api/challenges?userId=${userId}&programType=${selectedProgram}`, {
         cache: 'no-store'
       })
         .then((res) => res.json())
@@ -434,7 +434,7 @@ useEffect(() => {
     const multiplier = isUndo ? -1 : 1;
 
     const payload = {
-      userId: user.id,
+      userId: user._id,
       xp: xp * multiplier,
       coins: coins * multiplier,
       energy: (barEffects?.energy || 0) * multiplier,

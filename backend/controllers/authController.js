@@ -305,17 +305,17 @@ exports.signup = async (req, res) => {
         });
 
         // Create initial UserStats document for the new user (or reuse if it already exists)
-        let stats = await UserStats.findOne({ userId: user.id });
+        let stats = await UserStats.findOne({ userId: user._id });
         if (!stats) {
-            stats = await UserStats.create({ userId: user.id });
+            stats = await UserStats.create({ userId: user._id });
         }
 
-        const token = generateToken(user.id);
+        const token = generateToken(user._id);
 
         res.status(201).json({
             token,
             user: {
-                id: user.id,
+                id: user._id,
                 fullName: user.fullName,
                 username: user.username,
                 email: user.email,
@@ -338,14 +338,14 @@ exports.signup = async (req, res) => {
         // Run non-critical setup after response so signup never blocks on seeding.
         setImmediate(async () => {
             const setupResults = await Promise.allSettled([
-                seedInitialHealthData(user.id),
-                seedInitialWeeklyMetrics(user.id),
-                initializeUserAvatar(user.id),
-                assignStarterChallenges(user.id)
+                seedInitialHealthData(user._id),
+                seedInitialWeeklyMetrics(user._id),
+                initializeUserAvatar(user._id),
+                assignStarterChallenges(user._id)
             ]);
             setupResults.forEach((result, index) => {
                 if (result.status === 'rejected') {
-                    console.error(`⚠️ Signup setup task ${index + 1} failed for user ${user.id}:`, result.reason);
+                    console.error(`⚠️ Signup setup task ${index + 1} failed for user ${user._id}:`, result.reason);
                 }
             });
         });
@@ -390,18 +390,18 @@ exports.login = async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials.' });
         }
 
-        const token = generateToken(user.id);
+        const token = generateToken(user._id);
 
         // Fetch stats to include in login response; backfill if missing
-        let stats = await UserStats.findOne({ userId: user.id });
+        let stats = await UserStats.findOne({ userId: user._id });
         if (!stats) {
-            stats = await UserStats.create({ userId: user.id });
+            stats = await UserStats.create({ userId: user._id });
         }
 
         res.json({
             token,
             user: {
-                id: user.id,
+                id: user._id,
                 fullName: user.fullName,
                 username: user.username,
                 email: user.email, 
