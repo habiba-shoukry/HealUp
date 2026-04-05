@@ -116,7 +116,7 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
      return;
    }
 
-   fetch(`https://healup-gtgv.onrender.com//api/goals?userId=${user.id}&programType=${selectedProgram}&device=${encodeURIComponent(activeDevice)}`, { cache: 'no-store' })
+   fetch(`https://healup-gtgv.onrender.com/apigoals?userId=${user.id}&programType=${selectedProgram}&device=${encodeURIComponent(activeDevice)}`, { cache: 'no-store' })
      .then(res => res.json())
      .then(data => {
        if (Array.isArray(data) && data.length > 0) setGoals(data.map(normalizeGoal));
@@ -130,7 +130,7 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
    try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch { user = null; }
    if (!user?.id) return;
 
-   fetch(`https://healup-gtgv.onrender.com//api/stats/${user.id}`)
+   fetch(`https://healup-gtgv.onrender.com/apistats/${user.id}`)
      .then(res => res.json())
      .then(data => {
        if (!data || data.error) return;
@@ -147,7 +147,7 @@ useEffect(() => {
 
   if (!user?.id) return;
 
-  fetch(`https://healup-gtgv.onrender.com//api/metrics/weekly/${user.id}?device=${encodeURIComponent(activeDevice)}`)
+  fetch(`https://healup-gtgv.onrender.com/apimetrics/weekly/${user.id}?device=${encodeURIComponent(activeDevice)}`)
     .then(res => (res.ok ? res.json() : null))
     .then(data => {
       if (!data?.metrics || !Array.isArray(data.metrics)) return;
@@ -261,7 +261,7 @@ const handleSubmitGoal = async () => {
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   if (!user?.id) return;
 
-  await fetch('https://healup-gtgv.onrender.com//api/goals', {
+  await fetch('https://healup-gtgv.onrender.com/apigoals', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...newGoal, userId: user.id }),

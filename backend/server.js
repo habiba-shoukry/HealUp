@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
+const cron = require('node-cron');
 require('dotenv').config();
 require('./utils/goalScheduler');
 
@@ -11,93 +12,50 @@ const { userDB, activityDB } = require('./config/database');
 const app = express();
 const server = http.createServer(app);
 
-// ==================== Middleware ====================
+// ==================== CORS Configuration ====================
+// This handles the string from your Render Environment Variables
 const allowedOrigins = (process.env.CORS_ORIGINS || '')
   .split(',')
-  .map((origin) => origin.trim())
+  .map(origin => origin.trim())
   .filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps)
     if (!origin) return callback(null, true);
-
+    
     const isExplicitlyAllowed = allowedOrigins.includes(origin);
-    const isLocalDevOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
-    const isLanDevOrigin = process.env.NODE_ENV !== 'production' && /^https?:\/\/(\d{1,3}\.){3}\d{1,3}(:\d+)?$/i.test(origin);
+    const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1');
 
-    if (isExplicitlyAllowed || isLocalDevOrigin || isLanDevOrigin) {
+    if (isExplicitlyAllowed || isLocal) {
       return callback(null, true);
+    } else {
+      console.error(`CORS Blocked for: ${origin}`);
+      return callback(new Error('Not allowed by CORS'));
     }
-
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
-  },
-  credentials: true
-}));
-app.use(express.json());
-
-// ==================== Socket & Server Setup ====================
-// We define 'io' here so it exists BEFORE the routes below try to use it
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    const isExplicitlyAllowed = allowedOrigins.includes(origin);
-    if (isExplicitlyAllowed || origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      return callback(null, true);
-    }
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"] 
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
 }));
 
+app.use(express.json());
+
+// ==================== Socket.io Setup ====================
 const io = socketIo(server, {
-  cors: { 
-    origin: allowedOrigins, 
+  cors: {
+    // Socket.io needs the same allowed origins list
+    origin: allowedOrigins.length > 0 ? allowedOrigins : "http://localhost:3000",
     methods: ["GET", "POST"],
-    credentials: true 
-  }
+    credentials: true
+  },
+  transports: ['websocket', 'polling'] // Improves stability on Render
 });
 
 // Pass 'io' to the socket manager
 require('./sockets/socketManager')(io); 
 
-// ==================== Routes ====================
-app.get('/', (req, res) => {
-  res.json({ message: 'HealUp API is running' });
-});
-
-const authRoutes = require('./routes/auth');
-app.use('/api/auth', authRoutes);
-
-const statsRoutes = require('./routes/stats');
-app.use('/api/stats', statsRoutes);
-
-const goalsRoutes = require('./routes/goals');
-app.use('/api/goals', goalsRoutes);
-
-const challengesRoutes = require('./routes/challenges');
-app.use('/api/challenges', challengesRoutes);
-
-const healthLogsRoutes = require('./routes/healthLogs');
-app.use('/api/health-logs', healthLogsRoutes);
-
-const metricsRoutes = require('./routes/metrics');
-app.use('/api/metrics', metricsRoutes);
-
-const reportRoutes = require('./routes/report');
-app.use('/api/report', reportRoutes);
-
-const notificationRoutes = require('./routes/notifications');
-app.use('/api/notifications', notificationRoutes);
-
-const avatarRoutes = require('./routes/avatars');
-app.use('/api/avatars', avatarRoutes);
-
-// NOW this line works because 'io' is initialized above
-const messageRoutes = require('./routes/messages')(io);
-app.use('/api/messages', messageRoutes);
-
 // ==================== Models ====================
+// Load models BEFORE routes to ensure they are registered
 require('./models/User');
 require('./models/UserStats');
 require('./models/Reward');
@@ -108,19 +66,41 @@ require('./models/WeeklyHealthMetrics');
 require('./models/Notification');
 require('./models/AvatarItem');
 require('./models/UserAvatarSelection');
+const UserQuest = require('./models/Challenges'); 
+const UserStats = require('./models/UserStats');
 
-// Drop legacy single-field unique index
+// ==================== Routes ====================
+app.get('/', (req, res) => {
+  res.json({ message: 'HealUp API is running' });
+});
+
+// Standard Routes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/stats', require('./routes/stats'));
+app.use('/api/goals', require('./routes/goals'));
+app.use('/api/challenges', require('./routes/challenges'));
+app.use('/api/health-logs', require('./routes/healthLogs'));
+app.use('/api/metrics', require('./routes/metrics'));
+app.use('/api/report', require('./routes/report'));
+app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/avatars', require('./routes/avatars'));
+
+// Real-time Messages Route
+const messageRoutes = require('./routes/messages')(io);
+app.use('/api/messages', messageRoutes);
+
+// ==================== Database Maintenance ====================
 activityDB.once('open', async () => {
   try {
     const WeeklyHealthMetrics = activityDB.model('WeeklyHealthMetrics');
     await WeeklyHealthMetrics.collection.dropIndex('userId_1');
     console.log('Dropped legacy WeeklyHealthMetrics.userId_1 index');
-  } catch {
-    // Index already gone
+  } catch (err) {
+    // Index already gone or not found
   }
 });
 
-// Database status check
+// Health Check for Render Deployment
 app.get('/api/health', (req, res) => {
   const states = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
   res.json({
@@ -132,42 +112,37 @@ app.get('/api/health', (req, res) => {
 });
 
 // ==================== Cron Jobs ====================
-const cron = require('node-cron');
-const UserQuest = require('./models/Challenges'); 
-const UserStats = require('./models/UserStats');
-
-// Daily Challenge Reset
+// Daily Challenge Reset (00:00)
 cron.schedule('0 0 * * *', async () => {
-    console.log("Daily Reset: Wiping daily challenge progress...");
     try {
-        const result = await UserQuest.updateMany(
+        await UserQuest.updateMany(
             { challengeType: 'daily' }, 
             { $set: { progress: 0, isCompleted: false } }
         );
-        console.log(`Daily reset complete! Modified ${result.modifiedCount} challenges.`);
+        console.log(`Daily reset complete!`);
     } catch (error) {
         console.error("🔥 Error resetting daily challenges:", error);
     }
 });
 
-// Weekly Challenge Reset
+// Weekly Challenge Reset (Sunday 00:00)
 cron.schedule('0 0 * * 0', async () => {
     try {
         await UserQuest.updateMany(
             { challengeType: 'weekly' }, 
             { $set: { progress: 0, currentProgress: 0, isCompleted: false } }
         );
-        console.log("Weekly progress bars reset!");
+        console.log("Weekly reset complete!");
     } catch (error) {
         console.error("🔥 Error resetting weekly challenges:", error);
     }
 });
 
-// Daily Streak Reset
+// Daily Streak Status Reset
 cron.schedule('0 0 * * *', async () => {
-  console.log('Resetting daily streak status for all users...');
   try {
     await UserStats.updateMany({}, { $set: { streakTodayDone: false } });
+    console.log('Streak status reset.');
   } catch (err) {
     console.error('Failed to reset streak status:', err);
   }
