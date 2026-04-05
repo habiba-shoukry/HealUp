@@ -46,7 +46,7 @@ app.use(cors({
 
 const io = socketIo(server, {
   cors: { 
-    origin: "http://localhost:3000", // our React URL
+    origin: allowedOrigins, // our React URL
     credentials: true 
   }
 });
