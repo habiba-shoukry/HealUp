@@ -749,7 +749,7 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
 
   return (
     <div>
-      <header className="topbar">
+      <header className={`topbar ${role === 'doctor' ? 'topbar-doctor' : ''}`}>
         <div className="topbar-left">
           <img src="/logo-transparent.png" alt="Logo" className="topbar-logo" />
           <span className="topbar-brand">HealUp!</span>
