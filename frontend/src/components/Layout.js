@@ -643,26 +643,15 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
 
   const [notifications, setNotifications] = useState([]);
 
-  // useEffect(() => {
-  //   const fetchNotifications = async () => {
-  //     try {
-  //       const user = JSON.parse(localStorage.getItem("user") || "null");
-  //       const userId = user?.id || user?._id;
-  //       if (!userId) { setNotifications([]); return; }
-  //       const res = await fetch(`https://healup-gtgv.onrender.com/api/notifications?userId=${userId}`);
-  //       const data = await res.json();
-  //       setNotifications(data);
-  //     } catch (err) {
-  //       console.error("Error fetching notifications:", err);
-  //       setNotifications([]);
-  //     }
-  //   };
-  //   fetchNotifications();
-  // }, []);
-
   const fetchNotifications = async () => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "null");
+
+      if (user?.role === "doctor") {
+        setNotifications([]);
+        return;
+      }
+      
       const userId = user?.id || user?._id;
       if (!userId) { setNotifications([]); return; }
       const res = await fetch(`https://healup-gtgv.onrender.com/api/notifications?userId=${userId}`);
