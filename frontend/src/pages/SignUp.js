@@ -5,18 +5,24 @@ import '../styles/LogIn.css';
 
 export default function SignUp() {
   const navigate = useNavigate();
-  const apiBaseUrl =
-    process.env.REACT_APP_API_BASE_URL ||
-    `${window.location.protocol}//${window.location.hostname}:8001`;
+
+ 
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "https://healup-gtgv.onrender.com";
+
+  
+  const cleanApiUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
 
   const [formData, setFormData] = useState({
-    fullName: '',
+    fullName: '', 
     email: '',
     password: '',
     confirmPassword: '',
     role: 'patient',
     healthProgram: 'wellbeing'
   });
+
+  
+  
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
