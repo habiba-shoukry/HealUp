@@ -135,7 +135,7 @@ function App() {
     const userId = getCurrentUserId();
     if (!userId) return null;
     try {
-      const res = await fetch(`http://localhost:5000/api/stats/${userId}`, {
+      const res = await fetch(`http://localhost:8001/api/stats/${userId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -149,7 +149,7 @@ function App() {
   useEffect(() => {
     const userId = getCurrentUserId();
     if (!userId) return;
-    fetch(`http://localhost:5000/api/stats/${userId}`)
+    fetch(`http://localhost:8001/api/stats/${userId}`)
       .then((res) => res.json())
       .then((data) => {
         if (!data || data.error) return;
@@ -173,7 +173,7 @@ function App() {
     let cancelled = false;
     const loadAvatarProfile = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/avatars/profile/${userId}`);
+        const res = await fetch(`http://localhost:8001/api/avatars/profile/${userId}`);
         if (!res.ok) {
           setAvatarSyncReady(true);
           return;
@@ -199,7 +199,7 @@ function App() {
     const controller = new AbortController();
     const persistSelections = async () => {
       try {
-        await fetch(`http://localhost:5000/api/avatars/profile/${userId}`, {
+        await fetch(`http://localhost:8001/api/avatars/profile/${userId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ selections: toBackendSelections(avatarSelections) }),

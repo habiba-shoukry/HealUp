@@ -700,7 +700,7 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
     try {
       await Promise.all(
         notifications.map(n =>
-          fetch(`http://localhost:5000/api/notifications/${n._id}/read`, { method: "PATCH" })
+          fetch(`http://localhost:8001/api/notifications/${n._id}/read`, { method: "PATCH" })
         )
       );
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
@@ -710,14 +710,14 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
 
   const markAsRead = async (id) => {
     try {
-      await fetch(`http://localhost:5000/api/notifications/${id}/read`, { method: "PATCH" });
+      await fetch(`http://localhost:8001/api/notifications/${id}/read`, { method: "PATCH" });
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
     } catch (err) { console.error(err); }
   };
 
   const deleteNotification = async (id) => {
     try {
-      await fetch(`http://localhost:5000/api/notifications/${id}`, { method: "DELETE" });
+      await fetch(`http://localhost:8001/api/notifications/${id}`, { method: "DELETE" });
       setNotifications(prev => prev.filter(n => n._id !== id));
     } catch (err) { console.error(err); }
   };
