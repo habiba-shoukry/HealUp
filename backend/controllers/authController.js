@@ -312,8 +312,6 @@ exports.signup = async (req, res) => {
 
         const token = generateToken(user.id);
 
-        await assignStarterChallenges(user.id);
-
         res.status(201).json({
             token,
             user: {
