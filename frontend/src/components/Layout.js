@@ -743,7 +743,7 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
         { path: '/challenges', icon: '/rpg-game.png', label: 'Challenges' },
         { path: '/goals', icon: '/dart.png', label: 'Goals and Progress' },
         { path: '/activity-food', icon: '/healthy-food.png', label: 'Daily Health Log' },
-        { path: '/notifications', icon: '/notification-bell.png', label: 'Notifications and Report' },
+        { path: '/notifications', icon: '/notification-bell.png', label: 'Report' },
         { path: '/chatbot', icon: '/robot (1).png', label: 'Chatbot' },
       ];
 

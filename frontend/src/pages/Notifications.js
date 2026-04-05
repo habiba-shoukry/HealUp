@@ -228,12 +228,12 @@ const Notifications = () => {
           Download PDF Report
         </button>
  
-        <button
+        {/* <button
           className="share-button"
           onClick={() => showPopup("✔ Report Shared With Doctor")}
         >
           Share With Doctor
-        </button>
+        </button> */}
  
       </div>
  
