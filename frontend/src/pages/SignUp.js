@@ -121,9 +121,9 @@ export default function SignUp() {
 
 
           <div className="social-icons">
-            <a href="#" className="icon" aria-label="Instagram"><FaInstagram /></a>
-            <a href="#" className="icon" aria-label="Facebook"><FaFacebookF /></a>
-            <a href="#" className="icon" aria-label="Twitter"><FaTwitter /></a>
+            <a href="https://www.instagram.com/healup.wellness?igsh=dTA4aWwxZ2drOWtk&utm_source=qr" className="icon" aria-label="Instagram"><FaInstagram /></a>
+            {/* <a href="#" className="icon" aria-label="Facebook"><FaFacebookF /></a>
+            <a href="#" className="icon" aria-label="Twitter"><FaTwitter /></a> */}
           </div>
 
         </div>
