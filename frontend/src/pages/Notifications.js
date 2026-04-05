@@ -3,7 +3,7 @@ import "../styles/Notifications.css";
  
 const Notifications = () => {
  
-  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "https://healup-gtgv.onrender.com";
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
   const [popupMessage, setPopupMessage] = useState("");
   const [score, setScore] = useState(0);
  
@@ -47,7 +47,7 @@ const Notifications = () => {
         return;
       }
 
-      const response = await fetch(
+     const response = await fetch(
         `${apiBaseUrl}/api/report/download?userId=${userId}`
       );
 
