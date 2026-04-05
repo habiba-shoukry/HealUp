@@ -38,15 +38,22 @@ app.use(express.json());
 // ==================== Socket & Server Setup ====================
 // We define 'io' here so it exists BEFORE the routes below try to use it
 app.use(cors({
-  origin: "http://localhost:3000", 
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"], 
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const isExplicitlyAllowed = allowedOrigins.includes(origin);
+    if (isExplicitlyAllowed || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization"]
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"] 
 }));
 
 const io = socketIo(server, {
   cors: { 
-    origin: allowedOrigins, // our React URL
+    origin: allowedOrigins, 
+    methods: ["GET", "POST"],
     credentials: true 
   }
 });

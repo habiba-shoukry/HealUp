@@ -1,3 +1,5 @@
 import { io } from "socket.io-client";
-const socket = io("https://healup-gtgv.onrender.com/"); // need to match with server.js port
+const socket = io("https://healup-gtgv.onrender.com", {
+  transports: ['websocket', 'polling'] 
+}); 
 export default socket;
