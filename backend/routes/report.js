@@ -405,14 +405,15 @@ router.get('/download', async (req, res) => {
     `;
 
     // Generate PDF
-  const browser = await puppeteer.launch({
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null, 
+ const browser = await puppeteer.launch({
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
       "--single-process"
     ],
+    // Use the cache directory you defined in the backend variables
+    userDataDir: process.env.PUPPETEER_CACHE_DIR || "/opt/render/.cache/puppeteer",
     headless: "new",
   });
     
