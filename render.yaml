@@ -23,7 +23,7 @@ projects:
       rootDir: frontend
     - type: web
       name: HealUp-backend
-      runtime: node
+      runtime: docker
       repo: https://github.com/habiba-shoukry/HealUp
       branch: anu-backend
       plan: free
