@@ -57,4 +57,4 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
 # Start the server
 EXPOSE 5000
-CMD ["node", "index.js"]
+CMD ["npm", "start"]
