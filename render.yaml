@@ -1,0 +1,53 @@
+# Exported from Render on 2026-04-06T09:30:40Z
+version: "1"
+projects:
+- name: My project
+  environments:
+  - name: Production
+    services:
+    - type: web
+      name: HealUp
+      runtime: static
+      repo: https://github.com/habiba-shoukry/HealUp
+      branch: anu-backend
+      envVars:
+      - key: REACT_APP_API_BASE_URL
+        sync: false
+      buildCommand: npm install; npm run build
+      staticPublishPath: build
+      routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+      autoDeployTrigger: commit
+      rootDir: frontend
+    - type: web
+      name: HealUp-backend
+      runtime: node
+      repo: https://github.com/habiba-shoukry/HealUp
+      branch: anu-backend
+      plan: free
+      envVars:
+      - key: PUPPETEER_EXECUTABLE_PATH
+        sync: false
+      - key: NODE_ENV
+        sync: false
+      - key: MONGO_USER_DB_URL
+        sync: false
+      - key: MONGO_ACTIVITY_DB_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: PUPPETEER_CACHE_DIR
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      region: oregon
+      buildCommand: npm install && npx puppeteer browsers install chrome
+      startCommand: npm start
+      healthCheckPath: /api/health
+      autoDeployTrigger: commit
+      buildFilter:
+        paths:
+        - HealUp/backend/**
+      rootDir: backend
