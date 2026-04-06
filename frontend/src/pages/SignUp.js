@@ -7,7 +7,7 @@ export default function SignUp() {
   const navigate = useNavigate();
 
  
-  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "https://healup-gtgv.onrender.com";
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "https://healup-backend-2-0.onrender.com";
 
   
   const cleanApiUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;

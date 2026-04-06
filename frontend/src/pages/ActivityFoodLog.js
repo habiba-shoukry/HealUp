@@ -33,8 +33,8 @@ const ActivityFoodLog = ({ onBadHabit }) => {
     const userId = getUserId();
     try {
       const [activitiesRes, foodsRes] = await Promise.all([
-        fetch(`https://healup-gtgv.onrender.com/api/health-logs/activities?userId=${userId}`),
-        fetch(`https://healup-gtgv.onrender.com/api/health-logs/foods?userId=${userId}`),
+        fetch(`https://healup-backend-2-0.onrender.com/api/health-logs/activities?userId=${userId}`),
+        fetch(`https://healup-backend-2-0.onrender.com/api/health-logs/foods?userId=${userId}`),
       ]);
       const [activities, foods] = await Promise.all([activitiesRes.json(), foodsRes.json()]);
       setActivityLogs(Array.isArray(activities) ? activities : []);
@@ -71,7 +71,7 @@ const ActivityFoodLog = ({ onBadHabit }) => {
     if (reported[habit.id]) return;
     setReported(prev => ({ ...prev, [habit.id]: true }));
     if (onBadHabit) onBadHabit(habit.penalties);
-    fetch('https://healup-gtgv.onrender.com/api/health-logs/activities', {
+    fetch('https://healup-backend-2-0.onrender.com/api/health-logs/activities', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -104,7 +104,7 @@ const ActivityFoodLog = ({ onBadHabit }) => {
       timestamp: new Date(activityDate).toISOString(),
     };
     try {
-      await fetch('https://healup-gtgv.onrender.com/api/health-logs/activities', {
+      await fetch('https://healup-backend-2-0.onrender.com/api/health-logs/activities', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -130,7 +130,7 @@ const ActivityFoodLog = ({ onBadHabit }) => {
       timestamp: new Date().toISOString(),
     };
     try {
-      await fetch('https://healup-gtgv.onrender.com/api/health-logs/foods', {
+      await fetch('https://healup-backend-2-0.onrender.com/api/health-logs/foods', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

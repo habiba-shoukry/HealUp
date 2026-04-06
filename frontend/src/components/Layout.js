@@ -654,7 +654,7 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
       
       const userId = user?.id || user?._id;
       if (!userId) { setNotifications([]); return; }
-      const res = await fetch(`https://healup-gtgv.onrender.com/api/notifications?userId=${userId}`);
+      const res = await fetch(`https://healup-backend-2-0.onrender.com/api/notifications?userId=${userId}`);
       const data = await res.json();
       setNotifications(data);
     } catch (err) {
@@ -689,7 +689,7 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
     try {
       await Promise.all(
         notifications.map(n =>
-          fetch(`https://healup-gtgv.onrender.com/api/notifications/${n._id}/read`, { method: "PATCH" })
+          fetch(`https://healup-backend-2-0.onrender.com/api/notifications/${n._id}/read`, { method: "PATCH" })
         )
       );
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
@@ -699,14 +699,14 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
 
   const markAsRead = async (id) => {
     try {
-      await fetch(`https://healup-gtgv.onrender.com/api/notifications/${id}/read`, { method: "PATCH" });
+      await fetch(`https://healup-backend-2-0.onrender.com/api/notifications/${id}/read`, { method: "PATCH" });
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
     } catch (err) { console.error(err); }
   };
 
   const deleteNotification = async (id) => {
     try {
-      await fetch(`https://healup-gtgv.onrender.com/api/notifications/${id}`, { method: "DELETE" });
+      await fetch(`https://healup-backend-2-0.onrender.com/api/notifications/${id}`, { method: "DELETE" });
       setNotifications(prev => prev.filter(n => n._id !== id));
     } catch (err) { console.error(err); }
   };

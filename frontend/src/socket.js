@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const socket = io("https://healup-gtgv.onrender.com", {
+const socket = io("https://healup-backend-2-0.onrender.com", {
   transports: ["websocket", "polling"], 
   reconnection: true,            
   reconnectionAttempts: 5,        
