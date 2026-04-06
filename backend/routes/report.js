@@ -412,8 +412,7 @@ router.get('/download', async (req, res) => {
       "--disable-dev-shm-usage",
       "--single-process"
     ],
-    // Use the cache directory you defined in the backend variables
-    userDataDir: process.env.PUPPETEER_CACHE_DIR || "/opt/render/.cache/puppeteer",
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
     headless: "new",
   });
     
