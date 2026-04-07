@@ -1691,7 +1691,7 @@ const ViewDoctorModal = ({ onClose }) => {
       const selected = getSelectedBiomarkers();
       const user = JSON.parse(localStorage.getItem("user"));
 
-      await fetch(`http://localhost:5000/api/users/${user.id}/biomarkers`, {
+      await fetch(`${BASE_URL}/api/users/${user.id}/biomarkers`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
