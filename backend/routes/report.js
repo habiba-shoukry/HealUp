@@ -18,8 +18,10 @@ router.get('/download', async (req, res) => {
     const data = await WeeklyHealthMetrics.findOne({ userId }).sort({ createdAt: -1 });
 
     if (!data) {
-      return res.status(404).json({ error: 'No data found' });
+      console.log("❌ No health data found for this user ID");
+      return res.status(444).json({ error: 'No health metrics found for this user. Please sync your device first.' });
     }
+
 
     // Calculations 
     const totalSteps = data.steps.reduce((a, b) => a + b, 0);
@@ -406,10 +408,10 @@ router.get('/download', async (req, res) => {
 
     // Generate PDF
     const browser = await puppeteer.launch({
-        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
-        headless: "new"
-      });
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined, 
+      headless: "new"
+    });
     
     const page = await browser.newPage();
 
