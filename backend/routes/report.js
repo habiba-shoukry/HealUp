@@ -408,8 +408,8 @@ router.get('/download', async (req, res) => {
 
     // Generate PDF
     const browser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined, 
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH, // This pulls from the Dockerfile
       headless: "new"
     });
     
