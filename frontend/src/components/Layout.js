@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+const BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
 
 const NS = {
   good: { dot: '#34d399', glow: 'rgba(52,211,153,0.6)', bg: 'rgba(52,211,153,0.07)', border: 'rgba(52,211,153,0.2)', tag: { color: '#34d399', bg: 'rgba(52,211,153,0.12)', border: 'rgba(52,211,153,0.25)' } },
@@ -654,15 +656,17 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
       
       const userId = user?.id || user?._id;
       if (!userId) { setNotifications([]); return; }
-      // const res = await fetch(`https://healup-gtgv.onrender.com/api/notifications?userId=${userId}`);
-      const res = await fetch(`http://localhost:8001/api/notifications?userId=${userId}`);
+
+      // const res = await fetch(`https://healup-backend-2-0.onrender.com/api/notifications?userId=${userId}`);
+      const res = await fetch(`${BASE_URL}/api/notifications?userId=${userId}`);
+
       const data = await res.json();
       setNotifications(data);
     } catch (err) {
       console.error("Error fetching notifications:", err);
       setNotifications([]);
     }
-  };
+  }; 
 
   useEffect(() => {
     fetchNotifications();
@@ -690,8 +694,8 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
     try {
       await Promise.all(
         notifications.map(n =>
-          // fetch(`https://healup-gtgv.onrender.com/api/notifications/${n._id}/read`, { method: "PATCH" })
-          fetch(`http://localhost:8001/api/notifications/${n._id}/read`, { method: "PATCH" })
+          // fetch(`https://healup-backend-2-0.onrender.com/api/notifications/${n._id}/read`, { method: "PATCH" })
+          fetch(`${BASE_URL}/api/notifications/${n._id}/read`, { method: "PATCH" })
         )
       );
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
@@ -701,16 +705,16 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
 
   const markAsRead = async (id) => {
     try {
-      // await fetch(`https://healup-gtgv.onrender.com/api/notifications/${id}/read`, { method: "PATCH" });
-      await fetch(`http://localhost:8001/api/notifications/${id}/read`, { method: "PATCH" });
+      // await fetch(`https://healup-backend-2-0.onrender.com/api/notifications/${id}/read`, { method: "PATCH" });
+      await fetch(`${BASE_URL}/api/notifications/${id}/read`, { method: "PATCH" });
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
     } catch (err) { console.error(err); }
   };
 
   const deleteNotification = async (id) => {
     try {
-      // await fetch(`https://healup-gtgv.onrender.com/api/notifications/${id}`, { method: "DELETE" });
-      await fetch(`http://localhost:8001/api/notifications/${id}`, { method: "DELETE" });
+      // await fetch(`https://healup-backend-2-0.onrender.com/api/notifications/${id}`, { method: "DELETE" });
+      await fetch(`${BASE_URL}/api/notifications/${id}`, { method: "DELETE" });
       setNotifications(prev => prev.filter(n => n._id !== id));
     } catch (err) { console.error(err); }
   };

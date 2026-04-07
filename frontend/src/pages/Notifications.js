@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import "../styles/Notifications.css";
+const BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
  
 const Notifications = () => {
  
-  // const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "https://healup-gtgv.onrender.com";
-  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
+  // const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "https://healup-backend-2-0.onrender.com";
+  // const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "${BASE_URL}";
   const [popupMessage, setPopupMessage] = useState("");
   const [score, setScore] = useState(0);
  
@@ -49,7 +51,7 @@ const Notifications = () => {
       }
 
       const response = await fetch(
-        `${apiBaseUrl}/api/report/download?userId=${userId}`
+        `${BASE_URL}/api/report/download?userId=${userId}`
       );
 
       if (!response.ok) {

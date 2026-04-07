@@ -4,6 +4,8 @@ import {
   BarChart, Bar
 } from "recharts";
 import '../styles/DoctorDashboard.css';
+const BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -543,8 +545,8 @@ const handleSend = async () => {
     // }
 
   try {
-    // const response = await fetch('https://healup-gtgv.onrender.com/api/messages/send', { 
-    const response = await fetch('http://localhost:8001/api/messages/send', { 
+    // const response = await fetch('https://healup-backend-2-0.onrender.com/api//messages/send', { 
+    const response = await fetch(`${BASE_URL}/api//messages/send`, { 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

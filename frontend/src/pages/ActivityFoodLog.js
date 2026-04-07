@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import '../styles/ActivityFoodLog.css';
+const BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
 
 const BAD_HABITS = [
   { id: 'skipped_workout', title: 'Skipped workout',       description: 'Did not exercise today',       icon: '/workout.png',        penalties: { energy: 8, discipline: 6, xpPenalty: 15 }, tags: [{ label: '-8 Energy', color: '#60a5fa' }, { label: '-6 Discipline', color: '#a78bfa' }, { label: '-15 XP', color: '#f87171' }] },
@@ -33,10 +35,10 @@ const ActivityFoodLog = ({ onBadHabit }) => {
     const userId = getUserId();
     try {
       const [activitiesRes, foodsRes] = await Promise.all([
-        // fetch(`https://healup-gtgv.onrender.com/api/health-logs/activities?userId=${userId}`),
-        // fetch(`https://healup-gtgv.onrender.com/api/health-logs/foods?userId=${userId}`),
-        fetch(`http://localhost:8001/api/health-logs/activities?userId=${userId}`),
-        fetch(`http://localhost:8001/api/health-logs/foods?userId=${userId}`),
+        // fetch(`https://healup-backend-2-0.onrender.com/api/health-logs/activities?userId=${userId}`),
+        // fetch(`https://healup-backend-2-0.onrender.com/api/health-logs/foods?userId=${userId}`),
+        fetch(`${BASE_URL}/api/health-logs/activities?userId=${userId}`),
+        fetch(`${BASE_URL}/api/health-logs/foods?userId=${userId}`),
       ]);
       const [activities, foods] = await Promise.all([activitiesRes.json(), foodsRes.json()]);
       setActivityLogs(Array.isArray(activities) ? activities : []);
@@ -73,8 +75,8 @@ const ActivityFoodLog = ({ onBadHabit }) => {
     if (reported[habit.id]) return;
     setReported(prev => ({ ...prev, [habit.id]: true }));
     if (onBadHabit) onBadHabit(habit.penalties);
-    // fetch('https://healup-gtgv.onrender.com/api/health-logs/activities', {
-    fetch('http://localhost:8001/api/health-logs/activities', {
+    // fetch('https://healup-backend-2-0.onrender.com/api/health-logs/activities', {
+    fetch(`${BASE_URL}/api/health-logs/activities`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -107,8 +109,8 @@ const ActivityFoodLog = ({ onBadHabit }) => {
       timestamp: new Date(activityDate).toISOString(),
     };
     try {
-      // await fetch('https://healup-gtgv.onrender.com/api/health-logs/activities', {
-      await fetch('http://localhost:8001/api/health-logs/activities', {
+      // await fetch('https://healup-backend-2-0.onrender.com/api/health-logs/activities', {
+      await fetch(`${BASE_URL}/api/health-logs/activities`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -134,8 +136,8 @@ const ActivityFoodLog = ({ onBadHabit }) => {
       timestamp: new Date().toISOString(),
     };
     try {
-      // await fetch('https://healup-gtgv.onrender.com/api/health-logs/foods', {
-      await fetch('http://localhost:8001/api/health-logs/foods', {
+      // await fetch('https://healup-backend-2-0.onrender.com/api/health-logs/foods', {
+      await fetch(`${BASE_URL}/api/health-logs/foods`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

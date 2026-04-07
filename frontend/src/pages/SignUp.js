@@ -2,15 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaInstagram, FaFacebookF, FaTwitter } from 'react-icons/fa';
 import '../styles/LogIn.css';
+const apiBaseUrl =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
 
 export default function SignUp() {
   const navigate = useNavigate();
 
  
-  // const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "https://healup-gtgv.onrender.com";
-  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
+  // const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "https://healup-backend-2-0.onrender.com";
   
-  const cleanApiUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
+  // const cleanApiUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
 
   const [formData, setFormData] = useState({
     fullName: '', 

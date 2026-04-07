@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import '../styles/GoalsProgress.css';
 import '../styles/Challenges.css';
+const BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
 
 const Img = ({ src, size = 24 }) => (
   <img src={src} alt="" style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }} />
@@ -116,8 +118,8 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
      return;
    }
 
-  //  fetch(`https://healup-gtgv.onrender.com/api/goals?userId=${user._id}&programType=${selectedProgram}&device=${encodeURIComponent(activeDevice)}`, { cache: 'no-store' })
-   fetch(`http://localhost:8001/api/goals?userId=${user._id}&programType=${selectedProgram}&device=${encodeURIComponent(activeDevice)}`, { cache: 'no-store' })
+  //  fetch(`https://healup-backend-2-0.onrender.com/api/goals?userId=${user.id}&programType=${selectedProgram}&device=${encodeURIComponent(activeDevice)}`, { cache: 'no-store' })
+   fetch(`${BASE_URL}/api/goals?userId=${user.id}&programType=${selectedProgram}&device=${encodeURIComponent(activeDevice)}`, { cache: 'no-store' })
      .then(res => res.json())
      .then(data => {
        if (Array.isArray(data) && data.length > 0) setGoals(data.map(normalizeGoal));
@@ -131,9 +133,9 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
    try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch { user = null; }
    if (!user?.id) return;
 
-  //  fetch(`https://healup-gtgv.onrender.com/api/stats/${user._id}`)
-   fetch(`http://localhost:8001/api/stats/${user._id}`)
-      .then(res => res.json())
+  //  fetch(`https://healup-backend-2-0.onrender.com/api/stats/${user.id}`)
+   fetch(`${BASE_URL}/api/stats/${user.id}`)
+     .then(res => res.json())
      .then(data => {
        if (!data || data.error) return;
        setTotalXp(data.totalXp || 0);
@@ -149,8 +151,8 @@ useEffect(() => {
 
   if (!user?.id) return;
 
-  // fetch(`https://healup-gtgv.onrender.com/api/metrics/weekly/${user._id}?device=${encodeURIComponent(activeDevice)}`)
-  fetch(`http://localhost:8001/api/metrics/weekly/${user._id}?device=${encodeURIComponent(activeDevice)}`)
+  // fetch(`https://healup-backend-2-0.onrender.com/api/metrics/weekly/${user.id}?device=${encodeURIComponent(activeDevice)}`)
+  fetch(`${BASE_URL}/api/metrics/weekly/${user.id}?device=${encodeURIComponent(activeDevice)}`)
     .then(res => (res.ok ? res.json() : null))
     .then(data => {
       if (!data?.metrics || !Array.isArray(data.metrics)) return;
@@ -264,8 +266,8 @@ const handleSubmitGoal = async () => {
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   if (!user?.id) return;
 
-  // await fetch('https://healup-gtgv.onrender.com/api/goals', {
-  await fetch('http://localhost:8001/api/goals', {
+  // await fetch('https://healup-backend-2-0.onrender.com/api/goals', {
+  await fetch(`${BASE_URL}/api/goals`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...newGoal, userId: user._id }),

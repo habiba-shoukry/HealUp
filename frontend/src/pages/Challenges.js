@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import '../styles/Challenges.css';
+const BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
 
 const parseReward = (rewardStr) => {
   const xpMatch = rewardStr.match(/(\d+)\s*XP/);
@@ -236,16 +238,13 @@ useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || 'null');
     const userId = user?.id || user?._id; // Check for both id and _id
 
-  // const baseUrl = "https://healup-gtgv.onrender.com/";
-  const baseUrl = "http://localhost:8001/";
-
     if (!userId) {
       setRemoteChallenges({ daily: [], weekly: [] });
       return;
     }
     
-    // fetch(`https://healup-gtgv.onrender.com/api/challenges?userId=${userId}&programType=${selectedProgram}`, {
-    fetch(`http://localhost:8001/api/challenges?userId=${userId}&programType=${selectedProgram}`, {
+    // fetch(`https://healup-backend-2-0.onrender.com/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
+    fetch(`${BASE_URL}/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
       cache: 'no-store'
     })
       .then((res) => res.json())
@@ -277,8 +276,8 @@ useEffect(() => {
       const user = JSON.parse(localStorage.getItem('user') || 'null');
       if (!user?.id) return;
 
-      // fetch(`https://healup-gtgv.onrender.com/api/challenges?userId=${userId}&programType=${selectedProgram}`, {
-      fetch(`http://localhost:8001/api/challenges?userId=${userId}&programType=${selectedProgram}`, {
+      // fetch(`https://healup-backend-2-0.onrender.com/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
+      fetch(`${BASE_URL}/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
         cache: 'no-store'
       })
         .then((res) => res.json())
@@ -446,8 +445,8 @@ useEffect(() => {
     };
 
     try {
-      // await fetch('https://healup-gtgv.onrender.com/api/stats/rewards', {
-      await fetch('http://localhost:8001/api/stats/rewards', {
+      // await fetch('https://healup-backend-2-0.onrender.com/api/stats/rewards', {
+      await fetch(`${BASE_URL}/api/stats/rewards`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -494,8 +493,8 @@ const handleCheck = async (index) => {
 
     if (hasRemoteDaily && c.id) {
       try {
-        // await fetch(`https://healup-gtgv.onrender.com/api/challenges/${c.id}`, {
-        await fetch(`http://localhost:8001/api/challenges/${c.id}`, {
+        // await fetch(`https://healup-backend-2-0.onrender.com/api/challenges/${c.id}`, {
+        await fetch(`${BASE_URL}/api/challenges/${c.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ progress: 100, isCompleted: true }),
@@ -551,8 +550,8 @@ const handleCheck = async (index) => {
         ...prev,
         daily: prev.daily.map((d) => d.id === c.id ? { ...d, isCompleted: false, progress: 0 } : d),
       }));
-      // fetch(`https://healup-gtgv.onrender.com/api/challenges/${c.id}`, {
-      fetch(`http://localhost:8001/api/challenges/${c.id}`, {
+      // fetch(`https://healup-backend-2-0.onrender.com/api/challenges/${c.id}`, {
+      fetch(`${BASE_URL}/api/challenges/${c.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ progress: 0, isCompleted: false }),
@@ -596,8 +595,8 @@ const handleCheck = async (index) => {
 
     // 2. Tell the backend to officially lock it as completed
     try {
-      // await fetch(`https://healup-gtgv.onrender.com/api/challenges/${challenge.id}`, {
-      await fetch(`http://localhost:8001/api/challenges/${challenge.id}`, {
+      // await fetch(`https://healup-backend-2-0.onrender.com/api/challenges/${challenge.id}`, {
+      await fetch(`${BASE_URL}/api/challenges/${challenge.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isCompleted: true }),
