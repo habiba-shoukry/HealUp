@@ -3,7 +3,7 @@ import "../styles/Notifications.css";
  
 const Notifications = () => {
  
-  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:3000";
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "https://healup-backend-2-0.onrender.com";
   const [popupMessage, setPopupMessage] = useState("");
   const [score, setScore] = useState(0);
  

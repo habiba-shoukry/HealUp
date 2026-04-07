@@ -405,15 +405,11 @@ router.get('/download', async (req, res) => {
     `;
 
     // Generate PDF
-  const puppeteer = require('puppeteer');
-
- 
-  const browser = await puppeteer.launch({
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
-
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
-    headless: "new"
-  });
+    const browser = await puppeteer.launch({
+        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
+        headless: "new"
+      });
     
     const page = await browser.newPage();
 
