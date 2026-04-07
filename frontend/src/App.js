@@ -81,6 +81,15 @@ const daysBetween = (dateStrA, dateStrB) => {
 };
 const clamp = (val, min = 0, max = 100) => Math.max(min, Math.min(max, val));
 
+const getStoredUserId = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    return user?.id || user?._id || null;
+  } catch {
+    return null;
+  }
+};
+
 const NotificationListener = ({ currentUser }) => {
   useEffect(() => {
     if (currentUser?._id) {
@@ -116,6 +125,7 @@ function App() {
   const [streak,           setStreak]            = useState(loadStreak);
   const [decayAlert,       setDecayAlert]        = useState(null);
   const [avatarSyncReady,  setAvatarSyncReady]   = useState(false);
+  const [sessionHydrated,  setSessionHydrated]   = useState(() => !getStoredUserId());
   const [dailyChallengesKey] = useState(() => {
     localStorage.removeItem('healup_daily_checked');
     return 'challenges';
@@ -148,59 +158,66 @@ function App() {
     } catch { return null; }
   }, [getCurrentUserId]);
 
-  // ── Fetch stats from backend on mount ──
+  // ── Hydrate account state from backend before private routes render ──
   useEffect(() => {
     const userId = getCurrentUserId();
-    if (!userId) return;
-    // fetch(`https://healup-backend-2-0.onrender.com/api/stats/${userId}`)
-    fetch(`${BASE_URL}/api/stats/${userId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!data || data.error) return;
-        const mappedStats  = { xp: data.totalXp ?? 0, coins: data.coins ?? 0 };
-        const mappedBars   = { hp: data.hp ?? 100, energy: data.totalEnergy ?? 0, discipline: data.totalDiscipline ?? 0 };
-        const mappedStreak = { count: data.dayStreak ?? 0, lastCompletedDate: data.streakLastCompletedDate || null, todayDone: Boolean(data.streakTodayDone) };
-        setStats(mappedStats);
-        setBars(mappedBars);
-        setStreak(mappedStreak);
-        save('healup_stats',  mappedStats);
-        save('healup_bars',   mappedBars);
-        save('healup_streak', mappedStreak);
-      })
-      .catch(() => {});
-  }, [getCurrentUserId]);
+    if (!userId) {
+      setAvatarSyncReady(true);
+      setSessionHydrated(true);
+      return;
+    }
 
-  // ── Avatar sync ──
-  useEffect(() => {
-    const userId = getCurrentUserId();
-    if (!userId) { setAvatarSyncReady(true); return; }
     let cancelled = false;
-    const loadAvatarProfile = async () => {
+    setSessionHydrated(false);
+    setAvatarSyncReady(false);
+
+    const hydrateSession = async () => {
       try {
-        // const res = await fetch(`https://healup-backend-2-0.onrender.com/api/avatars/profile/${userId}`);
-        const res = await fetch(`${BASE_URL}/api/avatars/profile/${userId}`);
-        if (!res.ok) {
-          setAvatarSyncReady(true);
-          return;
+        const [statsRes, avatarRes] = await Promise.all([
+          fetch(`${BASE_URL}/api/stats/${userId}`),
+          fetch(`${BASE_URL}/api/avatars/profile/${userId}`),
+        ]);
+
+        if (!cancelled && statsRes.ok) {
+          const statsData = await statsRes.json();
+          if (statsData && !statsData.error) {
+            const mappedStats  = { xp: statsData.totalXp ?? 0, coins: statsData.coins ?? 0 };
+            const mappedBars   = { hp: statsData.hp ?? 100, energy: statsData.totalEnergy ?? 0, discipline: statsData.totalDiscipline ?? 0 };
+            const mappedStreak = { count: statsData.dayStreak ?? 0, lastCompletedDate: statsData.streakLastCompletedDate || null, todayDone: Boolean(statsData.streakTodayDone) };
+            setStats(mappedStats);
+            setBars(mappedBars);
+            setStreak(mappedStreak);
+            save('healup_stats',  mappedStats);
+            save('healup_bars',   mappedBars);
+            save('healup_streak', mappedStreak);
+          }
         }
 
-        const payload = await res.json();
-        const profileSelections = payload?.data?.selections;
-        if (!cancelled && profileSelections) {
-          const mapped = toFrontendSelections(profileSelections);
-          setAvatarSelections(mapped);
-          save('healup_avatar_selections', mapped);
+        if (!cancelled && avatarRes.ok) {
+          const avatarPayload = await avatarRes.json();
+          const profileSelections = avatarPayload?.data?.selections;
+          if (profileSelections) {
+            const mapped = toFrontendSelections(profileSelections);
+            setAvatarSelections(mapped);
+            save('healup_avatar_selections', mapped);
+          }
         }
       } catch {}
-      finally { if (!cancelled) setAvatarSyncReady(true); }
+      finally {
+        if (!cancelled) {
+          setAvatarSyncReady(true);
+          setSessionHydrated(true);
+        }
+      }
     };
-    loadAvatarProfile();
+
+    hydrateSession();
     return () => { cancelled = true; };
   }, [getCurrentUserId]);
 
   useEffect(() => {
     const userId = getCurrentUserId();
-    if (!userId || !avatarSyncReady) return;
+    if (!userId || !avatarSyncReady || !sessionHydrated) return;
     const controller = new AbortController();
     const persistSelections = async () => {
       try {
@@ -215,7 +232,7 @@ function App() {
     };
     persistSelections();
     return () => controller.abort();
-  }, [avatarSelections, avatarSyncReady, getCurrentUserId]);
+  }, [avatarSelections, avatarSyncReady, sessionHydrated, getCurrentUserId]);
 
   // ── Decay on inactivity ──
   useEffect(() => {
@@ -364,6 +381,11 @@ function App() {
     setAvatarName(name);
     localStorage.setItem('healup_avatar_name', name);
   };
+
+  const publicRoutes = ["/", "/login", "/signup", "/LogIn", "/SignUp"];
+  if (!sessionHydrated && !publicRoutes.includes(location.pathname)) {
+    return <div className="page-container">Loading your account...</div>;
+  }
 
   return (
     <>
