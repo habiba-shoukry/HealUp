@@ -302,6 +302,7 @@ exports.signup = async (req, res) => {
             email, 
             password, 
             role: role || 'patient',  
+            healthProgram
         });
 
         // Create initial UserStats document for the new user (or reuse if it already exists)
@@ -465,8 +466,7 @@ const assignStarterChallenges = async (userId) => {
             isCompleted: false
         }))
     );
-
-    console.log("Challenges inserted!");    
+  
     await Challenge.insertMany(allChallenges);
     console.log("Challenges inserted!");    
 };

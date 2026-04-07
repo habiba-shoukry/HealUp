@@ -7,8 +7,8 @@ export default function SignUp() {
   const navigate = useNavigate();
 
  
-  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "https://healup-gtgv.onrender.com";
-
+  // const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "https://healup-gtgv.onrender.com";
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
   
   const cleanApiUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
 

@@ -84,6 +84,7 @@ app.use('/api/metrics', require('./routes/metrics'));
 app.use('/api/report', require('./routes/report'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/avatars', require('./routes/avatars'));
+app.use('/api/users', require('./routes/users'));
 
 // Real-time Messages Route
 const messageRoutes = require('./routes/messages')(io);

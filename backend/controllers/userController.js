@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const mongoose = require('mongoose');
 
 // Create user
 exports.createUser = async (req, res, next) => {
@@ -79,6 +80,28 @@ exports.deleteUser = async (req, res, next) => {
   }
 };
 
+exports.getDoctorPatients = async (req, res) => {
+ try {
+   const { doctorId } = req.query;
+   
+   if (!doctorId) {
+    return res.json([]);
+   }
+
+   const patients = await User.find({
+     role: 'patient',
+      doctorId: new mongoose.Types.ObjectId(doctorId)
+   }).select('-password');
+
+   res.json(patients);
+
+ } catch (err) {
+   console.error("🔥 GET DOCTOR PATIENTS CRASHED:", err);
+   res.status(500).json({ error: 'Server error' });
+ }
+};
+
+
 // links docs and patients
 exports.linkDoctor = async (req, res) => {
     try {
@@ -99,7 +122,7 @@ exports.linkDoctor = async (req, res) => {
         const patient = await User.findByIdAndUpdate(
             patientId,
             { 
-                doctorId: doctor._id,
+                doctorId: doctor._id.toString(),
                 hasDoctor: true 
             },
             { new: true } 

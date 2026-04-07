@@ -1084,8 +1084,9 @@ const ChallengesCard = ({ onViewAll, onChallengeComplete }) => {
       return;
     }
 
-    fetch(`https://healup-gtgv.onrender.com/api/challenges?userId=${userId}&programType=${encodeURIComponent(selectedProgram)}`)
-      .then((res) => res.json())
+    // fetch(`https://healup-gtgv.onrender.com/api/challenges?userId=${userId}&programType=${encodeURIComponent(selectedProgram)}`)
+    fetch(`http://localhost:8001/api/challenges?userId=${userId}&programType=${encodeURIComponent(selectedProgram)}`)
+    .then((res) => res.json())
       .then((data) => {
         if (!Array.isArray(data) || data.length === 0) {
           setRemoteChallenges({ daily: [], weekly: [] });
@@ -1167,7 +1168,8 @@ const ChallengesCard = ({ onViewAll, onChallengeComplete }) => {
         ...prev,
         daily: prev.daily.map((d) => (d.id === c.id ? { ...d, isCompleted: true, progress: 100 } : d)),
       }));
-      fetch(`https://healup-gtgv.onrender.com/api/challenges/${c.id}`, {
+      // fetch(`https://healup-gtgv.onrender.com/api/challenges/${c.id}`, {
+      fetch(`http://localhost:8001/api/challenges/${c.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ progress: 100, isCompleted: true }),
@@ -1678,6 +1680,33 @@ const BIOMARKERS = [
 ];
 const ViewDoctorModal = ({ onClose }) => {
   const [enabled,setEnabled]=useState(Object.fromEntries(BIOMARKERS.map(b=>[b.key,true])));
+  const getSelectedBiomarkers = () => {
+    return Object.keys(enabled).filter((key) => enabled[key]);
+  };
+
+  const handleSend = async () => {
+    try {
+      const selected = getSelectedBiomarkers();
+      const user = JSON.parse(localStorage.getItem("user"));
+
+      await fetch("http://localhost:8001/api/biomarkers/share", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          biomarkers: selected,
+        }),
+      });
+
+      console.log("Sending biomarkers:", selected);
+      onClose();
+    } catch (err) {
+      console.error("Failed to save biomarkers:", err);
+    }
+  };
+
   return (
     <div className="doctor-modal-overlay" onClick={onClose}>
       <div className="doctor-modal" onClick={e=>e.stopPropagation()}>
@@ -1708,7 +1737,7 @@ const ViewDoctorModal = ({ onClose }) => {
           </div>
         </div>
         <div className="doctor-modal-footer">
-          <button className="doctor-send-btn" onClick={onClose}>Send to Doctor</button>
+          <button className="doctor-send-btn" onClick={handleSend}>Send to Doctor</button>
         </div>
       </div>
     </div>
@@ -1824,7 +1853,8 @@ const handleConsentDecline = () => {
 
     let isMounted = true;
     const fetchMetrics = () => {
-      fetch(`https://healup-gtgv.onrender.com/api/metrics/weekly/${userId}?device=${encodeURIComponent(activeDevice)}`)
+      // fetch(`https://healup-gtgv.onrender.com/api/metrics/weekly/${userId}?device=${encodeURIComponent(activeDevice)}`)
+      fetch(`http://localhost:8001/api/metrics/weekly/${userId}?device=${encodeURIComponent(activeDevice)}`)
         .then((r) => r.ok ? r.json() : null)
         .then((data) => {
           if (!isMounted || !data?.metrics) return;
