@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import '../styles/GoalsProgress.css';
 import '../styles/Challenges.css';
 const BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 const Img = ({ src, size = 24 }) => (
   <img src={src} alt="" style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }} />

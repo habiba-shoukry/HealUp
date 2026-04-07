@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import "./styles.css";
 import { Routes, Route, Outlet, useLocation } from "react-router-dom";
 const BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 // Components
 import Layout from "./components/Layout";

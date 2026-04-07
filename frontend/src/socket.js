@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
 
 const BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 // const socket = io("https://healup-backend-2-0.onrender.com", {
 const socket = io(BASE_URL, {

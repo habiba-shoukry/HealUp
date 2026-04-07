@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import '../styles/Challenges.css';
 const BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 const parseReward = (rewardStr) => {
   const xpMatch = rewardStr.match(/(\d+)\s*XP/);

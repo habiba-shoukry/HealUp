@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaInstagram, FaFacebookF, FaTwitter } from 'react-icons/fa';
 import '../styles/LogIn.css';
 const BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 export default function LoginPage() {
   const navigate = useNavigate();

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/Dashboard.css';
 const BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 const PRIVACY_CONSENT_KEY = 'healup_privacy_consent_accepted';
 
@@ -1691,7 +1691,7 @@ const ViewDoctorModal = ({ onClose }) => {
       const selected = getSelectedBiomarkers();
       const user = JSON.parse(localStorage.getItem("user"));
 
-      await fetch(`http://localhost:8001/api/users/${user.id}/biomarkers`, {
+      await fetch(`http://localhost:5000/api/users/${user.id}/biomarkers`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

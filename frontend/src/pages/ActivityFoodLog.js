@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import '../styles/ActivityFoodLog.css';
 const BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 const BAD_HABITS = [
   { id: 'skipped_workout', title: 'Skipped workout',       description: 'Did not exercise today',       icon: '/workout.png',        penalties: { energy: 8, discipline: 6, xpPenalty: 15 }, tags: [{ label: '-8 Energy', color: '#60a5fa' }, { label: '-6 Discipline', color: '#a78bfa' }, { label: '-15 XP', color: '#f87171' }] },

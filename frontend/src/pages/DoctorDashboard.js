@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import '../styles/DoctorDashboard.css';
 const BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:8001";
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -466,7 +466,7 @@ export default function DoctorDashboard() {
       if (!doctorId) return;
 
       const res = await fetch(
-        `http://localhost:8001/api/users/doctor/patients?doctorId=${doctorId}`
+        `http://localhost:5000/api/users/doctor/patients?doctorId=${doctorId}`
       );
 
       const data = await res.json();
@@ -480,7 +480,7 @@ export default function DoctorDashboard() {
         data.map(async (p) => {
           try {
             const metricsRes = await fetch(
-              `http://localhost:8001/api/metrics/weekly/${p._id}`
+              `http://localhost:5000/api/metrics/weekly/${p._id}`
             );
 
             if (!metricsRes.ok) {
