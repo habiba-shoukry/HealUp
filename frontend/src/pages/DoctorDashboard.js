@@ -466,7 +466,7 @@ export default function DoctorDashboard() {
       if (!doctorId) return;
 
       const res = await fetch(
-        `http://localhost:5000/api/users/doctor/patients?doctorId=${doctorId}`
+        `${BASE_URL}/api/users/doctor/patients?doctorId=${doctorId}`
       );
 
       const data = await res.json();
@@ -480,7 +480,7 @@ export default function DoctorDashboard() {
         data.map(async (p) => {
           try {
             const metricsRes = await fetch(
-              `http://localhost:5000/api/metrics/weekly/${p._id}`
+              `${BASE_URL}/api/metrics/weekly/${p._id}`
             );
 
             if (!metricsRes.ok) {
