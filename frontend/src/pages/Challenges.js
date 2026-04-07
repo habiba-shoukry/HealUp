@@ -123,7 +123,7 @@ const mapChallenge = (c) => {
   const effects = {};
   if ((c.rewardEnergy || 0) > 0) effects.energy = c.rewardEnergy;
   if ((c.rewardDiscipline || 0) > 0) effects.discipline = c.rewardDiscipline;
-    const coins = Math.round((c.rewardXp || 0) * 0.2); 
+    const coins = Math.round((c.rewardXp || 0) * 0.9); 
      const tags = [
     { label: `${c.rewardXp || 0} XP`, type: 'xp' },
     ...(effects.energy ? [{ label: `+${effects.energy} Energy`, type: 'energy' }] : []),
@@ -615,8 +615,7 @@ const handleCheck = async (index) => {
       console.error("Failed to mark weekly challenge complete");
     }
 
-    // 🌟 3. THE REWARD LOGIC 🌟
-    // Use parseReward to safely extract XP and Coins from the string just like Daily Challenges do!
+   
     // 🌟 3. THE REWARD LOGIC 🌟
     // Use parseReward to safely extract XP, but force coins to 0 for Weekly challenges!
     const { xp } = parseReward(challenge.reward);
