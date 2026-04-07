@@ -96,7 +96,7 @@ const ActivityFoodLog = ({ onBadHabit }) => {
 
   const getUserId = () => {
     const user = JSON.parse(localStorage.getItem('user') || 'null');
-    return user?.id || 'demo-user';
+    return user?.id || user?._id || 'demo-user';
   };
 
   const handleLogActivity = async () => {

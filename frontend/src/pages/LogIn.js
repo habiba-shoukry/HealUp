@@ -48,10 +48,26 @@ export default function LoginPage() {
         return;
       }
 
+      const normalizedUser = {
+        ...(data.user || {}),
+        id: data?.user?.id || data?.user?._id || null,
+      };
+
+      if (!normalizedUser.id) {
+        setError('Login succeeded but user profile is missing an ID. Please try again.');
+        return;
+      }
+
       localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      if (data.stats) localStorage.setItem('stats', JSON.stringify(data.stats));
-      if (data.user.role === 'doctor') {
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
+      if (data.stats) {
+        localStorage.setItem('stats', JSON.stringify(data.stats));
+        localStorage.setItem('healup_stats', JSON.stringify({
+          xp: data.stats.totalXp ?? data.stats.xp ?? 0,
+          coins: data.stats.coins ?? 0,
+        }));
+      }
+      if (normalizedUser.role === 'doctor') {
         navigate('/doctor-dashboard');
       } else {
         navigate('/dashboard');

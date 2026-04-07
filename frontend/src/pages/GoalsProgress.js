@@ -112,14 +112,15 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
  useEffect(() => {
    let user = null;
    try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch { user = null; }
+   const userId = user?.id || user?._id;
    
-   if (!user?.id) {
+   if (!userId) {
      setGoals(FALLBACK_GOALS.filter(g => g.programType === selectedProgram || g.programType === 'general'));
      return;
    }
 
   //  fetch(`https://healup-backend-2-0.onrender.com/api/goals?userId=${user.id}&programType=${selectedProgram}&device=${encodeURIComponent(activeDevice)}`, { cache: 'no-store' })
-   fetch(`${BASE_URL}/api/goals?userId=${user.id}&programType=${selectedProgram}&device=${encodeURIComponent(activeDevice)}`, { cache: 'no-store' })
+   fetch(`${BASE_URL}/api/goals?userId=${userId}&programType=${selectedProgram}&device=${encodeURIComponent(activeDevice)}`, { cache: 'no-store' })
      .then(res => res.json())
      .then(data => {
        if (Array.isArray(data) && data.length > 0) setGoals(data.map(normalizeGoal));
@@ -131,10 +132,11 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
  useEffect(() => {
    let user = null;
    try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch { user = null; }
-   if (!user?.id) return;
+   const userId = user?.id || user?._id;
+   if (!userId) return;
 
   //  fetch(`https://healup-backend-2-0.onrender.com/api/stats/${user.id}`)
-   fetch(`${BASE_URL}/api/stats/${user.id}`)
+   fetch(`${BASE_URL}/api/stats/${userId}`)
      .then(res => res.json())
      .then(data => {
        if (!data || data.error) return;
@@ -148,11 +150,12 @@ const GoalsProgress = ({ bars = { hp: 65, energy: 80, discipline: 45 }, activeDe
 useEffect(() => {
   let user = null;
   try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch { user = null; }
+  const userId = user?.id || user?._id;
 
-  if (!user?.id) return;
+  if (!userId) return;
 
   // fetch(`https://healup-backend-2-0.onrender.com/api/metrics/weekly/${user.id}?device=${encodeURIComponent(activeDevice)}`)
-  fetch(`${BASE_URL}/api/metrics/weekly/${user.id}?device=${encodeURIComponent(activeDevice)}`)
+  fetch(`${BASE_URL}/api/metrics/weekly/${userId}?device=${encodeURIComponent(activeDevice)}`)
     .then(res => (res.ok ? res.json() : null))
     .then(data => {
       if (!data?.metrics || !Array.isArray(data.metrics)) return;
@@ -264,13 +267,14 @@ const handleAddGoal = () => setShowAddGoal(true);
 const handleSubmitGoal = async () => {
   if (!newGoal.title || !newGoal.targetValue) return;
   const user = JSON.parse(localStorage.getItem('user') || 'null');
-  if (!user?.id) return;
+  const userId = user?.id || user?._id;
+  if (!userId) return;
 
   // await fetch('https://healup-backend-2-0.onrender.com/api/goals', {
   await fetch(`${BASE_URL}/api/goals`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...newGoal, userId: user._id }),
+    body: JSON.stringify({ ...newGoal, userId }),
   });
 
   setShowAddGoal(false);

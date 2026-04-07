@@ -97,11 +97,10 @@ exports.updateRewards = async (req, res) => {
             return res.status(400).json({ error: 'User ID is required' });
         }
 
-        // Find the user's stats document
-        const stats = await UserStats.findOne({ userId: userId });
-        
+        // Find the user's stats document (or create one if missing)
+        let stats = await UserStats.findOne({ userId: userId });
         if (!stats) {
-            return res.status(404).json({ error: 'User stats not found' });
+            stats = await UserStats.create({ userId });
         }
 
         // Add the rewards and use the 'clamp' helper to keep them within boundaries

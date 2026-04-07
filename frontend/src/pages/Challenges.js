@@ -244,7 +244,7 @@ useEffect(() => {
     }
     
     // fetch(`https://healup-backend-2-0.onrender.com/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
-    fetch(`${BASE_URL}/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
+    fetch(`${BASE_URL}/api/challenges?userId=${userId}&programType=${selectedProgram}`, {
       cache: 'no-store'
     })
       .then((res) => res.json())
@@ -274,10 +274,11 @@ useEffect(() => {
   useEffect(() => {
     const interval = setInterval(() => {
       const user = JSON.parse(localStorage.getItem('user') || 'null');
-      if (!user?.id) return;
+      const userId = user?.id || user?._id;
+      if (!userId) return;
 
       // fetch(`https://healup-backend-2-0.onrender.com/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
-      fetch(`${BASE_URL}/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
+      fetch(`${BASE_URL}/api/challenges?userId=${userId}&programType=${selectedProgram}`, {
         cache: 'no-store'
       })
         .then((res) => res.json())
@@ -307,7 +308,8 @@ useEffect(() => {
 
 
   const user = JSON.parse(localStorage.getItem('user') || 'null');
-  const isGuest = !user?.id;
+  const userId = user?.id || user?._id;
+  const isGuest = !userId;
 
   const dailyChallenges = (isGuest
     ? FALLBACK_DAILY_CHALLENGES.filter(c => c.programType === selectedProgram || c.programType === 'all')
@@ -430,13 +432,14 @@ useEffect(() => {
 //  sends the rewards to our new backend bank route
   const syncRewardsToDatabase = async (xp, coins, barEffects, isUndo = false) => {
     const user = JSON.parse(localStorage.getItem('user') || 'null');
-    if (!user?.id) return;
+    const userId = user?.id || user?._id;
+    if (!userId) return;
 
     // If it's an undo action, flip the numbers to negative!
     const multiplier = isUndo ? -1 : 1;
 
     const payload = {
-      userId: user._id,
+      userId,
       xp: xp * multiplier,
       coins: coins * multiplier,
       energy: (barEffects?.energy || 0) * multiplier,

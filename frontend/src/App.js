@@ -39,7 +39,7 @@ const toFrontendSelections = (backendSelections = {}) => ({
     ? backendSelections.hairStyle.replace(/^h(\d+)$/, 'hs$1')
     : DEFAULT_SELECTIONS.hairStyle,
   animalEars: backendSelections.animalEars
-    ? backendSelections.animalEars.replace(/^ae(\d+)$/, 'ae$1')
+    ? backendSelections.animalEars.replace(/^e(\d+)$/, 'ae$1')
     : DEFAULT_SELECTIONS.animalEars,
   pets: backendSelections.pet ?? backendSelections.pets ?? null,
 });
@@ -129,7 +129,7 @@ function App() {
   const getCurrentUserId = useCallback(() => {
     try {
       const user = JSON.parse(localStorage.getItem('user') || 'null');
-      return user?.id || null;
+      return user?.id || user?._id || null;
     } catch { return null; }
   }, []);
 

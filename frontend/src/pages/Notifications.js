@@ -43,7 +43,7 @@ const Notifications = () => {
   const downloadReport = async () => {
     try {
       const user = JSON.parse(localStorage.getItem("user"));
-      const userId = user?.id;
+      const userId = user?.id || user?._id;
 
       if (!userId) {
         showPopup("❌ User not logged in");
