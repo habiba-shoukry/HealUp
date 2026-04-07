@@ -601,7 +601,7 @@ const ProfileDropdown = ({ user, onClose, onLogout }) => {
 
         {/* Fields */}
         <div style={{ padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-          <Field label="Full Name" value={user?.username || '—'} />
+          <Field label="Full Name" value={user?.fullName || '—'} />
           <Field label="Email" value={user?.email || '—'} />
           <Field label="Password" value={user?.password || '—'} isPassword />
         </div>
