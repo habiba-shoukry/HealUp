@@ -405,16 +405,14 @@ router.get('/download', async (req, res) => {
     `;
 
     // Generate PDF
-  const chromium = require('@sparticuz/chromium-min');
-  const puppeteer = require('puppeteer-core');
+  const puppeteer = require('puppeteer');
 
+ 
   const browser = await puppeteer.launch({
-    args: [...chromium.args, '--hide-scrollbars', '--disable-web-security'],
-    defaultViewport: chromium.defaultViewport,
-    executablePath: await chromium.executablePath(
-      `https://github.com/Sparticuz/chromium/releases/download/v121.0.0/chromium-v121.0.0-pack.tar`
-    ),
-    headless: chromium.headless,
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
+    headless: "new"
   });
     
     const page = await browser.newPage();
