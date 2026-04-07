@@ -139,6 +139,7 @@ const formatMetrics = (metrics) => {
 };
 
 const getRiskScore = (p) => {
+  if (!p) return 0;
   const l = p.data[p.data.length - 1];
   let s = 0;
   if (l.hr > 85) s += 3; else if (l.hr > 75) s += 1;
@@ -695,11 +696,7 @@ const handleSend = async () => {
             : ["heartRate", "sleep", "stress", "calories", "steps"];
 
           const allowed = allowedRaw.map(b => biomarkerMap[b]);
-
-          console.log("PATIENT:", patient.name);
-          console.log("sharedBiomarkers:", patient.sharedBiomarkers);
-          console.log("allowed:", allowed);
-            
+          
           const latest = patient.data[patient.data.length - 1];
           const score  = getRiskScore(patient);
           const risk   = getRiskLabel(score);
