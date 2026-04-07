@@ -546,7 +546,7 @@ const handleSend = async () => {
 
   try {
     // const response = await fetch('https://healup-backend-2-0.onrender.com/api//messages/send', { 
-    const response = await fetch(`${BASE_URL}/api//messages/send`, { 
+    const response = await fetch(`${BASE_URL}/api/messages/send`, { 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
