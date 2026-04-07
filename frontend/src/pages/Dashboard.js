@@ -1689,13 +1689,12 @@ const ViewDoctorModal = ({ onClose }) => {
       const selected = getSelectedBiomarkers();
       const user = JSON.parse(localStorage.getItem("user"));
 
-      await fetch("http://localhost:8001/api/biomarkers/share", {
-        method: "POST",
+      await fetch(`http://localhost:8001/api/users/${user.id}/biomarkers`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId: user.id,
           biomarkers: selected,
         }),
       });

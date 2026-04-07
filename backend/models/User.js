@@ -52,9 +52,9 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  sharedBiometrics: [{
+  sharedBiomarkers: [{
     type: String,
-    enum: ['heart_rate', 'sleep', 'steps', 'calories'] // The info they allow the doc to see
+    enum: ['heartRate', 'sleep', 'steps', 'calories', 'stress'] // The info they allow the doc to see
   }],
   doctorId: {
     type: mongoose.Schema.Types.ObjectId, // This is how you link to another user!

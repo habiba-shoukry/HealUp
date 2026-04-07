@@ -498,6 +498,13 @@ export default function DoctorDashboard() {
 
   const userJson = localStorage.getItem('user');
   const currentUser = userJson ? JSON.parse(userJson) : null;
+  const biomarkerMap = {
+    heartRate: "hr",
+    sleep: "sleep",
+    stress: "stress",
+    calories: "calories",
+    steps: "steps",
+  };
 
   useEffect(() => {
   if (!currentUser?.id) return;
@@ -683,6 +690,16 @@ const handleSend = async () => {
           if (!patient.data || patient.data.length === 0) {
             return null;
           }
+          const allowedRaw = patient.sharedBiomarkers?.length
+            ? patient.sharedBiomarkers
+            : ["heartRate", "sleep", "stress", "calories", "steps"];
+
+          const allowed = allowedRaw.map(b => biomarkerMap[b]);
+
+          console.log("PATIENT:", patient.name);
+          console.log("sharedBiomarkers:", patient.sharedBiomarkers);
+          console.log("allowed:", allowed);
+            
           const latest = patient.data[patient.data.length - 1];
           const score  = getRiskScore(patient);
           const risk   = getRiskLabel(score);
@@ -766,7 +783,7 @@ const handleSend = async () => {
               <div className="doc-card-divider" />
 
               {/* Metric cards */}
-              <div className="doc-metrics-row">
+              {/* <div className="doc-metrics-row">
                 <MetricCard
                   metricKey="hr" label="Heart Rate"
                   value={latest.hr} unit="bpm"
@@ -802,6 +819,77 @@ const handleSend = async () => {
                   noteRight={`Avg ${formatSteps(avgSteps)}`}
                   data={patient.data} gradientId={`stpG${patient._id}`} type="bar"
                 />
+              </div> */}
+              <div className="doc-metrics-row">
+                {allowed.includes("hr") && (
+                  <MetricCard
+                    metricKey="hr"
+                    label="Heart Rate"
+                    value={latest.hr}
+                    unit="bpm"
+                    note={`Min ${Math.min(...patient.data.map(d => d.hr))} bpm`}
+                    noteRight={`Max ${Math.max(...patient.data.map(d => d.hr))} bpm`}
+                    data={patient.data}
+                    gradientId={`hrG${patient._id}`}
+                    type="area"
+                  />
+                )}
+
+                {allowed.includes("sleep") && (
+                  <MetricCard
+                    metricKey="sleep"
+                    label="Sleep"
+                    value={latest.sleep}
+                    unit="hrs"
+                    note="Goal: 8 hrs"
+                    noteRight={`Avg ${avgSleep} hrs`}
+                    data={patient.data}
+                    gradientId={`slG${patient._id}`}
+                    type="bar"
+                  />
+                )}
+
+                {allowed.includes("stress") && (
+                  <MetricCard
+                    metricKey="stress"
+                    label="Stress Level"
+                    value={latest.stress}
+                    unit="/ 100"
+                    note="HRV based"
+                    noteRight={`Peak ${Math.max(...patient.data.map(d => d.stress))}`}
+                    data={patient.data}
+                    gradientId={`stG${patient._id}`}
+                    type="area"
+                  />
+                )}
+
+                {allowed.includes("calories") && (
+                  <MetricCard
+                    metricKey="calories"
+                    label="Calories"
+                    value={latest.calories}
+                    unit="kcal"
+                    note="Goal: 2,000 kcal"
+                    noteRight={`Avg ${avgCals.toLocaleString()}`}
+                    data={patient.data}
+                    gradientId={`calG${patient._id}`}
+                    type="bar"
+                  />
+                )}
+
+                {allowed.includes("steps") && (
+                  <MetricCard
+                    metricKey="steps"
+                    label="Steps"
+                    value={latest.steps}
+                    unit="steps"
+                    note="Goal: 10,000"
+                    noteRight={`Avg ${formatSteps(avgSteps)}`}
+                    data={patient.data}
+                    gradientId={`stpG${patient._id}`}
+                    type="bar"
+                  />
+                )}
               </div>
             </div>
           );
@@ -815,13 +903,22 @@ const handleSend = async () => {
         const score  = getRiskScore(p);
         const risk   = getRiskLabel(score);
         const avgSteps = Math.round(p.data.reduce((a, b) => a + b.steps, 0) / p.data.length);
+        // const metricConfigs = [
+        //   { key: 'hr',       label: 'Heart Rate', unit: 'bpm',   gradId: `mhr${p._id}`,  type: 'area' },
+        //   { key: 'sleep',    label: 'Sleep',       unit: 'hrs',   gradId: `msl${p._id}`,  type: 'bar'  },
+        //   { key: 'stress',   label: 'Stress',      unit: '/100',  gradId: `mst${p._id}`,  type: 'area' },
+        //   { key: 'calories', label: 'Calories',    unit: 'kcal',  gradId: `mcal${p._id}`, type: 'bar'  },
+        //   { key: 'steps',    label: 'Steps',       unit: 'steps', gradId: `mstp${p._id}`, type: 'bar'  },
+        // ];
+        const allowedRaw = p.sharedBiomarkers || [];
+        const allowed = allowedRaw.map(b => biomarkerMap[b]);
         const metricConfigs = [
-          { key: 'hr',       label: 'Heart Rate', unit: 'bpm',   gradId: `mhr${p._id}`,  type: 'area' },
-          { key: 'sleep',    label: 'Sleep',       unit: 'hrs',   gradId: `msl${p._id}`,  type: 'bar'  },
-          { key: 'stress',   label: 'Stress',      unit: '/100',  gradId: `mst${p._id}`,  type: 'area' },
-          { key: 'calories', label: 'Calories',    unit: 'kcal',  gradId: `mcal${p._id}`, type: 'bar'  },
-          { key: 'steps',    label: 'Steps',       unit: 'steps', gradId: `mstp${p._id}`, type: 'bar'  },
-        ];
+          { key: 'hr', label: 'Heart Rate', unit: 'bpm', gradId: `mhr${p._id}`, type: 'area' },
+          { key: 'sleep', label: 'Sleep', unit: 'hrs', gradId: `msl${p._id}`, type: 'bar' },
+          { key: 'stress', label: 'Stress', unit: '/100', gradId: `mst${p._id}`, type: 'area' },
+          { key: 'calories', label: 'Calories', unit: 'kcal', gradId: `mcal${p._id}`, type: 'bar' },
+          { key: 'steps', label: 'Steps', unit: 'steps', gradId: `mstp${p._id}`, type: 'bar' },
+        ].filter(m => allowed.includes(m.key));
 
         return (
           <div

@@ -149,3 +149,33 @@ exports.linkDoctor = async (req, res) => {
         res.status(500).json({ error: 'Server error. Please try again.' });
     }
 };
+
+exports.updateSharedBiomarkers = async (req, res, next) => {
+  try {
+    console.log("🔥 Biomarker update hit:", req.params.userId, req.body);
+    const userId = req.params.userId;
+    const { biomarkers } = req.body;
+
+    if (!userId || !Array.isArray(biomarkers)) {
+      return res.status(400).json({ error: 'Invalid input' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { sharedBiomarkers: biomarkers },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      sharedBiomarkers: user.sharedBiomarkers
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
