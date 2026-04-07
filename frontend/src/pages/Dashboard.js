@@ -1717,11 +1717,7 @@ const ViewDoctorModal = ({ onClose }) => {
           </div>
           <button className="doctor-close-btn" onClick={onClose}>✕</button>
         </div>
-        <div className="doctor-message">
-          <span className="doctor-message-icon"><img src="/doctor.png" alt="" style={{width:18,height:18,objectFit:'contain'}}/></span>
-          <p>"Great progress this week! Keep up your hydration goals and aim for 8 hours of sleep. You're on the right track!"</p>
-        </div>
-        <div className="doctor-biomarkers">
+        <div className="doctor-biomarkers" style={{ marginTop: "16px" }}>
           <p className="doctor-section-title">Share Biomarkers with Doctor</p>
           <div className="doctor-biomarker-list">
             {BIOMARKERS.map(b=>(
