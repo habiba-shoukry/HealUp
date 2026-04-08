@@ -343,7 +343,7 @@ body {
 
   /* Adjust Layout to account for the taller topbar */
   .layout-container {
-    padding-top: 160px; /* Increase this to match the new stacked topbar height */
+    padding-top: 145px; /* Increase this to match the new stacked topbar height */
   }
 
   .sidebar {
