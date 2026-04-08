@@ -719,7 +719,7 @@ const handleSend = async () => {
                       className="doc-detail-btn"
                       onClick={() => setSelectedPatient(patient)}
                     >
-                      Details →
+                      message →
                     </button>
                   </div>
                   <RiskBar score={score} />
