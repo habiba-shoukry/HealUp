@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "./styles.css";
 import { Routes, Route, Outlet, useLocation } from "react-router-dom";
-const BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 // Components
 import Layout from "./components/Layout";
@@ -81,40 +80,8 @@ const daysBetween = (dateStrA, dateStrB) => {
 };
 const clamp = (val, min = 0, max = 100) => Math.max(min, Math.min(max, val));
 
-const getStoredUserId = () => {
-  try {
-    const user = JSON.parse(localStorage.getItem('user') || 'null');
-    return user?.id || user?._id || null;
-  } catch {
-    return null;
-  }
-};
-
-const NotificationListener = ({ currentUser }) => {
-  useEffect(() => {
-    if (currentUser?._id) {
-    
-      socket.emit('join_room', currentUser._id);
-      socket.on('receive_notification', (data) => {
-        toast.info(`New message: ${data.message}`, {
-          position: "top-right",
-          autoClose: 5000,
-        });
-      });
-    }
-
-    return () => socket.off('receive_notification');
-  }, [currentUser]); 
-};
-
-
 function App() {
   document.title = "HealUp! - Your Personal Health Companion";
-  const link = document.querySelector("link[rel='icon']") || document.createElement('link');
-  link.rel   = 'icon';
-  link.type  = 'image/png';
-  link.href  = '/logo-transparent.png';
-  document.head.appendChild(link);
   const location = useLocation();
 
   const [avatarSelections, setAvatarSelections] = useState(loadSelections);
@@ -123,18 +90,8 @@ function App() {
   const [activeDevice,     setActiveDevice]      = useState(() => localStorage.getItem('healup_active_device') || 'apple');
   const [bars,             setBars]              = useState(() => load('healup_bars', { hp: 65, energy: 80, discipline: 45 }));
   const [streak,           setStreak]            = useState(loadStreak);
-  const [decayAlert,       setDecayAlert]        = useState(null);
   const [avatarSyncReady,  setAvatarSyncReady]   = useState(false);
-  const [sessionHydrated,  setSessionHydrated]   = useState(() => !getStoredUserId());
-  const [dailyChallengesKey] = useState(() => {
-    localStorage.removeItem('healup_daily_checked');
-    return 'challenges';
-  });
-
-  const handleDeviceSwitch = useCallback((deviceId) => {
-    setActiveDevice(deviceId);
-    localStorage.setItem('healup_active_device', deviceId);
-  }, []);
+  const [sessionHydrated,  setSessionHydrated]   = useState(false);
 
   const getCurrentUserId = useCallback(() => {
     try {
@@ -146,11 +103,16 @@ function App() {
   const patchUserStats = useCallback(async (payload) => {
     const userId = getCurrentUserId();
     if (!userId) return null;
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const token = localStorage.getItem('token') || storedUser.token;
+
     try {
-      // const res = await fetch(`https://healup-backend-2-0.onrender.com/api/stats/${userId}`, {
       const res = await fetch(`${BASE_URL}/api/stats/${userId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
         body: JSON.stringify(payload),
       });
       if (!res.ok) return null;
@@ -158,44 +120,54 @@ function App() {
     } catch { return null; }
   }, [getCurrentUserId]);
 
-  // ── Hydrate account state from backend before private routes render ──
+  // ── 1. Unified Session Hydration (Stats + Avatar) ──
   useEffect(() => {
     const userId = getCurrentUserId();
-    if (!userId) return;
-    fetch(`http://localhost:8001/api/stats/${userId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (!data || data.error) return;
-        const mappedStats  = { xp: data.totalXp ?? 0, coins: data.coins ?? 0 };
-        const mappedBars   = { hp: data.hp ?? 100, energy: data.totalEnergy ?? 0, discipline: data.totalDiscipline ?? 0 };
-        const mappedStreak = { count: data.dayStreak ?? 0, lastCompletedDate: data.streakLastCompletedDate || null, todayDone: Boolean(data.streakTodayDone) };
-        setStats(mappedStats);
-        setBars(mappedBars);
-        setStreak(mappedStreak);
-        save('healup_stats',  mappedStats);
-        save('healup_bars',   mappedBars);
-        save('healup_streak', mappedStreak);
-      })
-      .catch(() => {});
-  }, [getCurrentUserId]);
+    if (!userId) {
+      setSessionHydrated(true);
+      setAvatarSyncReady(true);
+      return;
+    }
 
     let cancelled = false;
-    setSessionHydrated(false);
-    setAvatarSyncReady(false);
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const token = localStorage.getItem('token') || storedUser.token;
 
-    const hydrateSession = async () => {
+    const hydrate = async () => {
       try {
-        const res = await fetch(`http://localhost:8001/api/avatars/profile/${userId}`);
-        if (!res.ok) { setAvatarSyncReady(true); return; }
-        const payload = await res.json();
-        const profileSelections = payload?.data?.selections;
-        if (!cancelled && profileSelections) {
-          const mapped = toFrontendSelections(profileSelections);
+        // Fetch Stats
+        const statsRes = await fetch(`${BASE_URL}/api/stats/${userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const statsData = await statsRes.json();
+        
+        if (!cancelled && statsData && !statsData.error) {
+          const mappedStats  = { xp: statsData.totalXp ?? 0, coins: statsData.coins ?? 0 };
+          const mappedBars   = { hp: statsData.hp ?? 100, energy: statsData.totalEnergy ?? 0, discipline: statsData.totalDiscipline ?? 0 };
+          const mappedStreak = { count: statsData.dayStreak ?? 0, lastCompletedDate: statsData.streakLastCompletedDate || null, todayDone: Boolean(statsData.streakTodayDone) };
+          
+          setStats(mappedStats);
+          setBars(mappedBars);
+          setStreak(mappedStreak);
+          save('healup_stats',  mappedStats);
+          save('healup_bars',   mappedBars);
+          save('healup_streak', mappedStreak);
+        }
+
+        // Fetch Avatar
+        const avatarRes = await fetch(`${BASE_URL}/api/avatars/profile/${userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const avatarData = await avatarRes.json();
+        
+        if (!cancelled && avatarData?.data?.selections) {
+          const mapped = toFrontendSelections(avatarData.data.selections);
           setAvatarSelections(mapped);
           save('healup_avatar_selections', mapped);
         }
-      } catch {}
-      finally {
+      } catch (err) {
+        console.error("Hydration failed:", err);
+      } finally {
         if (!cancelled) {
           setAvatarSyncReady(true);
           setSessionHydrated(true);
@@ -203,20 +175,27 @@ function App() {
       }
     };
 
-    hydrateSession();
+    hydrate();
     return () => { cancelled = true; };
-  } [getCurrentUserId];
+  }, [getCurrentUserId]);
 
+  // ── 2. Persist Avatar Selections ──
   useEffect(() => {
     const userId = getCurrentUserId();
     if (!userId || !avatarSyncReady || !sessionHydrated) return;
+
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const token = localStorage.getItem('token') || storedUser.token;
+
     const controller = new AbortController();
     const persistSelections = async () => {
       try {
-        // await fetch(`https://healup-backend-2-0.onrender.com/api/avatars/profile/${userId}`, {
         await fetch(`${BASE_URL}/api/avatars/profile/${userId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+          },
           body: JSON.stringify({ selections: toBackendSelections(avatarSelections) }),
           signal: controller.signal,
         });
@@ -226,10 +205,9 @@ function App() {
     return () => controller.abort();
   }, [avatarSelections, avatarSyncReady, sessionHydrated, getCurrentUserId]);
 
-  // ── Decay on inactivity ──
+  // ── 3. Decay on inactivity ──
   useEffect(() => {
-    const publicRoutes = ["/", "/login", "/signup"];
-
+    const publicRoutes = ["/", "/login", "/signup", "/LogIn", "/SignUp"];
     if (publicRoutes.includes(location.pathname)) return;
 
     const lastActive = loadLastActive();
@@ -251,67 +229,11 @@ function App() {
           save('healup_bars', next);
           return next;
         });
-        setStreak(prev => {
-          const streakBroken = missedDays >= 2 || !prev.todayDone;
-          if (streakBroken && prev.count > 0) {
-            const broken = { count: 0, lastCompletedDate: null, todayDone: false };
-            save('healup_streak', broken);
-            const streakPenalty = Math.min(20, prev.count * 2);
-            setBars(b => {
-              const penalised = {
-                hp:         clamp(b.hp         - streakPenalty),
-                energy:     clamp(b.energy     - streakPenalty),
-                discipline: clamp(b.discipline - streakPenalty),
-              };
-              save('healup_bars', penalised);
-              return penalised;
-            });
-            losses._streakBroken  = prev.count;
-            losses._streakPenalty = streakPenalty;
-            return broken;
-          }
-          const carried = { ...prev, todayDone: false };
-          save('healup_streak', carried);
-          return carried;
-        });
       }
     }
     save('healup_last_active', { date: today });
   }, [location.pathname]);
 
-  // ── Bad Habit handler — XP penalty guaranteed locally ──
-  const handleBadHabit = useCallback((penalties) => {
-    // 1. Reduce bars
-    setBars(prev => {
-      const next = {
-        hp:         clamp(prev.hp         - (penalties.hp         || 0)),
-        energy:     clamp(prev.energy     - (penalties.energy     || 0)),
-        discipline: clamp(prev.discipline - (penalties.discipline || 0)),
-      };
-      save('healup_bars', next);
-      return next;
-    });
-
-    // 2. Reduce XP — always apply this regardless of backend response
-    const xpLoss = penalties.xpPenalty || 0;
-    if (xpLoss > 0) {
-      setStats(prev => {
-        const next = { ...prev, xp: Math.max(0, prev.xp - xpLoss) };
-        save('healup_stats', next); // persist immediately so refresh keeps the loss
-        return next;
-      });
-    }
-
-    // 3. Best-effort backend sync (not awaited — UI already updated above)
-    patchUserStats({
-      hpDelta:          -(penalties.hp         || 0),
-      energyDelta:      -(penalties.energy     || 0),
-      disciplineDelta:  -(penalties.discipline || 0),
-      xpDelta:          -xpLoss,
-    });
-  }, [patchUserStats]);
-
-  // ── Challenge complete handler ──
   const handleChallengeComplete = useCallback((xpGain, coinGain, barEffects) => {
     const today = todayStr();
     let newStreak = streak;
@@ -321,10 +243,10 @@ function App() {
       if (prev.lastCompletedDate === today) {
         next = prev;
       } else {
-        const yesterday    = new Date();
+        const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayStr = yesterday.toISOString().slice(0, 10);
-        const consecutive  = prev.lastCompletedDate === yesterdayStr;
+        const consecutive = prev.lastCompletedDate === yesterdayStr;
         next = { count: consecutive ? prev.count + 1 : 1, lastCompletedDate: today, todayDone: true };
       }
       save('healup_streak', next);
@@ -369,11 +291,6 @@ function App() {
     });
   };
 
-  const handleSetAvatarName = (name) => {
-    setAvatarName(name);
-    localStorage.setItem('healup_avatar_name', name);
-  };
-
   const publicRoutes = ["/", "/login", "/signup", "/LogIn", "/SignUp"];
   if (!sessionHydrated && !publicRoutes.includes(location.pathname)) {
     return <div className="page-container">Loading your account...</div>;
@@ -381,16 +298,13 @@ function App() {
 
   return (
     <>
-
       <Routes>
-        {/* No Sidebar */}
         <Route path="/"       element={<Welcome />} />
         <Route path="/LogIn"  element={<LogIn />} />
         <Route path="/SignUp" element={<SignUp />} />
 
-        {/* App pages with Sidebar & Chatbox */}
         <Route element={
-          <Layout stats={stats} streak={streak} onDeviceSwitch={handleDeviceSwitch}>
+          <Layout stats={stats} streak={streak} onDeviceSwitch={(d) => setActiveDevice(d)}>
             <Outlet />
             <ChatboxButton />
           </Layout>
@@ -410,7 +324,7 @@ function App() {
               avatarSelections={avatarSelections}
               setAvatarSelections={handleSetSelections}
               avatarName={avatarName}
-              setAvatarName={handleSetAvatarName}
+              setAvatarName={(n) => { setAvatarName(n); localStorage.setItem('healup_avatar_name', n); }}
               stats={stats}
               setStats={setStats}
               patchUserStats={patchUserStats}
@@ -418,19 +332,15 @@ function App() {
           } />
           <Route path="/challenges" element={
             <Challenges
-              key={dailyChallengesKey}
-              onBadHabit={handleBadHabit}
               onChallengeComplete={handleChallengeComplete}
               bars={bars}
               streak={streak}
             />
           } />
           <Route path="/goals"         element={<GoalsProgress bars={bars} onGoalComplete={handleChallengeComplete} activeDevice={activeDevice} />} />
-          <Route path="/activity-food" element={<ActivityFoodLog onBadHabit={handleBadHabit} />} />
+          <Route path="/activity-food" element={<ActivityFoodLog onBadHabit={() => {}} />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/chatbot"       element={<Chatbot />} />
-
-          {/* Doctor routes */}
           <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
           <Route path="/patients"         element={<Patients />} />
           <Route path="/reports"          element={<Reports />} />
