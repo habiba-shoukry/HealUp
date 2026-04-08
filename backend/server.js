@@ -85,6 +85,7 @@ app.use('/api/report', require('./routes/report'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/avatars', require('./routes/avatars'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/chatbot', require('./routes/chatbot'));
 
 // Real-time Messages Route
 const messageRoutes = require('./routes/messages')(io);
