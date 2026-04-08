@@ -123,7 +123,7 @@ const mapChallenge = (c) => {
   const effects = {};
   if ((c.rewardEnergy || 0) > 0) effects.energy = c.rewardEnergy;
   if ((c.rewardDiscipline || 0) > 0) effects.discipline = c.rewardDiscipline;
-    const coins = Math.round((c.rewardXp || 0) * 0.9); 
+    const coins = Math.round((c.rewardXp || 0) * 0.2); 
      const tags = [
     { label: `${c.rewardXp || 0} XP`, type: 'xp' },
     ...(effects.energy ? [{ label: `+${effects.energy} Energy`, type: 'energy' }] : []),
