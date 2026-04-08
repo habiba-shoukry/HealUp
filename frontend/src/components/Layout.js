@@ -741,7 +741,6 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
         { path: '/goals', icon: '/dart.png', label: 'Goals and Progress' },
         { path: '/activity-food', icon: '/healthy-food.png', label: 'Daily Health Log' },
         { path: '/notifications', icon: '/notification-bell.png', label: 'Report' },
-        { path: '/chatbot', icon: '/robot (1).png', label: 'Chatbot' },
       ];
 
   return (
@@ -793,11 +792,6 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
         </div>
 
         <div className="topbar-center">
-          {role !== "doctor" && (
-            <button className="topbar-icon-btn" onClick={() => navigate('/chatbot')} title="AI Chatbot">
-              <img src="/robot.png" alt="Chatbot" className="topbar-icon-img" />
-            </button>
-          )}
           {role !== "doctor" && (
             <button className="topbar-icon-btn" title="Sync Devices" onClick={() => { setSyncOpen(p => !p); setNotifOpen(false); setProfileOpen(false); }} style={{ position: 'relative' }}>
               <img src="/fitness-tracker.png" alt="Sync" className="topbar-icon-img" style={syncOpen ? { filter: 'drop-shadow(0 0 6px rgba(52,211,153,0.9))' } : {}} />

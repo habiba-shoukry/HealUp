@@ -205,7 +205,7 @@ function App() {
 
     hydrateSession();
     return () => { cancelled = true; };
-  }, [getCurrentUserId]);
+  } [getCurrentUserId];
 
   useEffect(() => {
     const userId = getCurrentUserId();
