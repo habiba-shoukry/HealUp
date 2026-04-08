@@ -149,15 +149,9 @@ function App() {
   useEffect(() => {
     const userId = getCurrentUserId();
     if (!userId) return;
-<<<<<<< HEAD
     fetch(`http://localhost:8001/api/stats/${userId}`)
       .then(res => res.json())
       .then(data => {
-=======
-    fetch(`http://localhost:5000/api/stats/${userId}`)
-      .then((res) => res.json())
-      .then((data) => {
->>>>>>> d784f4eeecf135664221b900ea7a5e00a9da5ead
         if (!data || data.error) return;
         const mappedStats  = { xp: data.totalXp ?? 0, coins: data.coins ?? 0 };
         const mappedBars   = { hp: data.hp ?? 100, energy: data.totalEnergy ?? 0, discipline: data.totalDiscipline ?? 0 };
@@ -179,17 +173,8 @@ function App() {
     let cancelled = false;
     const loadAvatarProfile = async () => {
       try {
-<<<<<<< HEAD
         const res = await fetch(`http://localhost:8001/api/avatars/profile/${userId}`);
         if (!res.ok) { setAvatarSyncReady(true); return; }
-=======
-        const res = await fetch(`http://localhost:5000/api/avatars/profile/${userId}`);
-        if (!res.ok) {
-          setAvatarSyncReady(true);
-          return;
-        }
-
->>>>>>> d784f4eeecf135664221b900ea7a5e00a9da5ead
         const payload = await res.json();
         const profileSelections = payload?.data?.selections;
         if (!cancelled && profileSelections) {

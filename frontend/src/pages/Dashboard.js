@@ -1795,13 +1795,10 @@ const Dashboard = ({ avatarSelections, avatarName, bars = { hp:65, energy:80, di
   });
   const [metricsReady, setMetricsReady] = useState(() => Boolean(getStoredUserId() && readMetricsCache(getStoredUserId(), activeDevice)));
   
-  const [showConsent, setShowConsent] = useState(() => {
-  try { return !localStorage.getItem(PRIVACY_CONSENT_KEY); }
-  catch { return true; }
-});
+  const [showConsent, setShowConsent] = useState(true);
+
 
 const handleConsentAccept = () => {
-  try { localStorage.setItem(PRIVACY_CONSENT_KEY, 'true'); } catch {}
   setShowConsent(false);
 };
 
@@ -1985,17 +1982,8 @@ const handleConsentDecline = () => {
           <MetricPopup type={activeMetric} onClose={() => setActiveMetric(null)} metrics={metricsData} />
         )}
 
-<<<<<<< HEAD
         {/* Doctor modal */}
         {showDoctor && <ViewDoctorModal onClose={() => setShowDoctor(false)} />}
-=======
-       {/* Stacked Action Buttons in the bottom-right slot */}
-        <div className="dashboard-footer-actions">
-          <button className="dashboard-action-btn doctor-btn" onClick={() => setShowDoctor(true)}>
-            <img src="/doctor.png" alt="" style={{width:18,height:18,objectFit:'contain',verticalAlign:'middle',marginRight:6}}/>
-            Hydrationctor
-          </button>
->>>>>>> d784f4eeecf135664221b900ea7a5e00a9da5ead
 
       </div>
     </>
