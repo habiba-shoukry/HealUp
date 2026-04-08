@@ -720,10 +720,31 @@ const Layout = ({ children, stats = { xp: 0, coins: 0 }, onDeviceSwitch }) => {
   };
 
   // ── Logout handler ──────────────────────────────────────────────────────────
+ // ── Unified Logout handler ──
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('healup_active_device');
-    navigate('/login');
+    // 1. Add confirmation check to match Dashboard
+    const confirmLogout = window.confirm("Are you sure you want to log out?");
+    
+    if (confirmLogout) {
+      // 2. Clear primary user data
+      localStorage.removeItem('user');
+      localStorage.removeItem('token'); // Ensure the VIP token is removed
+      localStorage.removeItem('healup_active_device');
+      
+      // 3. Reset the Terms & Conditions flag for the next session
+      sessionStorage.removeItem('healup_terms_seen');
+
+     
+      const user = JSON.parse(localStorage.getItem("user") || "null");
+      const userId = user?.id || user?._id;
+      if (userId) {
+        localStorage.removeItem(`healup_metrics_cache_${userId}_apple`);
+        localStorage.removeItem(`healup_metrics_cache_${userId}_google`);
+      }
+
+      navigate('/login');
+      window.location.reload();
+    }
   };
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
