@@ -176,7 +176,7 @@ REACT_APP_BACKEND_URL=http://localhost:5000/api
 
 ```env
 MONGO_URL=mongodb+srv://username:password@cluster.mongodb.net/health_tracker
-PORT=8001
+PORT=5000
 NODE_ENV=development
 CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 JWT_SECRET=your_secret_key_here
@@ -184,7 +184,7 @@ JWT_EXPIRE=7d
 ```
 
 - **MONGO_URL**: MongoDB Atlas connection string or local MongoDB URI
-- **PORT**: Backend server port (default: 8001)
+- **PORT**: Backend server port (default: 5000)
 - **NODE_ENV**: Environment mode (development/production)
 - **CORS_ORIGINS**: Comma-separated list of allowed frontend URLs
 - **JWT_SECRET**: Secret key for JWT token signing (authentication)
@@ -283,7 +283,7 @@ yarn test
 
 ```bash
 cd /app/backend
-uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+uvicorn server:app --host 0.0.0.0 --port 5000 --reload
 ```
 
 The `--reload` flag enables auto-restart on code changes.
@@ -349,8 +349,8 @@ python -m uvicorn server:app --reload
 # Kill process on port 3000 (frontend)
 lsof -ti:3000 | xargs kill -9
 
-# Kill process on port 8001 (backend)
-lsof -ti:8001 | xargs kill -9
+# Kill process on port 5000 (backend)
+lsof -ti:5000 | xargs kill -9
 ```
 
 ### MongoDB connection issues?

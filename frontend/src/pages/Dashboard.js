@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/Dashboard.css';
+const BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 const PRIVACY_CONSENT_KEY = 'healup_privacy_consent_accepted';
 
@@ -1084,7 +1086,8 @@ const ChallengesCard = ({ onViewAll, onChallengeComplete }) => {
       return;
     }
 
-    fetch(`http://localhost:5000/api/challenges?userId=${userId}&programType=${encodeURIComponent(selectedProgram)}`)
+    // fetch(`https://healup-backend-2-0.onrender.com/api/challenges?userId=${userId}&programType=${encodeURIComponent(selectedProgram)}`)
+    fetch(`${BASE_URL}/api/challenges?userId=${userId}&programType=${encodeURIComponent(selectedProgram)}`)
       .then((res) => res.json())
       .then((data) => {
         if (!Array.isArray(data) || data.length === 0) {
@@ -1167,7 +1170,8 @@ const ChallengesCard = ({ onViewAll, onChallengeComplete }) => {
         ...prev,
         daily: prev.daily.map((d) => (d.id === c.id ? { ...d, isCompleted: true, progress: 100 } : d)),
       }));
-      fetch(`http://localhost:5000/api/challenges/${c.id}`, {
+      // fetch(`https://healup-backend-2-0.onrender.com/api/challenges/${c.id}`, {
+      fetch(`${BASE_URL}/api/challenges/${c.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ progress: 100, isCompleted: true }),
@@ -1678,6 +1682,32 @@ const BIOMARKERS = [
 ];
 const ViewDoctorModal = ({ onClose }) => {
   const [enabled,setEnabled]=useState(Object.fromEntries(BIOMARKERS.map(b=>[b.key,true])));
+  const getSelectedBiomarkers = () => {
+    return Object.keys(enabled).filter((key) => enabled[key]);
+  };
+
+  const handleSend = async () => {
+    try {
+      const selected = getSelectedBiomarkers();
+      const user = JSON.parse(localStorage.getItem("user"));
+
+      await fetch(`${BASE_URL}/api/users/${user.id}/biomarkers`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          biomarkers: selected,
+        }),
+      });
+
+      console.log("Sending biomarkers:", selected);
+      onClose();
+    } catch (err) {
+      console.error("Failed to save biomarkers:", err);
+    }
+  };
+
   return (
     <div className="doctor-modal-overlay" onClick={onClose}>
       <div className="doctor-modal" onClick={e=>e.stopPropagation()}>
@@ -1689,11 +1719,7 @@ const ViewDoctorModal = ({ onClose }) => {
           </div>
           <button className="doctor-close-btn" onClick={onClose}>✕</button>
         </div>
-        <div className="doctor-message">
-          <span className="doctor-message-icon"><img src="/doctor.png" alt="" style={{width:18,height:18,objectFit:'contain'}}/></span>
-          <p>"Great progress this week! Keep up your hydration goals and aim for 8 hours of sleep. You're on the right track!"</p>
-        </div>
-        <div className="doctor-biomarkers">
+        <div className="doctor-biomarkers" style={{ marginTop: "16px" }}>
           <p className="doctor-section-title">Share Biomarkers with Doctor</p>
           <div className="doctor-biomarker-list">
             {BIOMARKERS.map(b=>(
@@ -1708,7 +1734,7 @@ const ViewDoctorModal = ({ onClose }) => {
           </div>
         </div>
         <div className="doctor-modal-footer">
-          <button className="doctor-send-btn" onClick={onClose}>Send to Doctor</button>
+          <button className="doctor-send-btn" onClick={handleSend}>Send to Doctor</button>
         </div>
       </div>
     </div>
@@ -1821,7 +1847,8 @@ const handleConsentDecline = () => {
 
     let isMounted = true;
     const fetchMetrics = () => {
-      fetch(`http://localhost:5000/api/metrics/weekly/${userId}?device=${encodeURIComponent(activeDevice)}`)
+      // fetch(`https://healup-backend-2-0.onrender.com/api/metrics/weekly/${userId}?device=${encodeURIComponent(activeDevice)}`)
+      fetch(`${BASE_URL}/api/metrics/weekly/${userId}?device=${encodeURIComponent(activeDevice)}`)
         .then((r) => r.ok ? r.json() : null)
         .then((data) => {
           if (!isMounted || !data?.metrics) return;

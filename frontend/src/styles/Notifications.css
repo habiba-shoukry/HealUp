@@ -27,16 +27,45 @@ body {
 
 /* HEALTH SUMMARY */
 
+/* Notifications.css */
+
 .health-summary {
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: linear-gradient(145deg, #132f44, #0d2435);
-  padding: 30px;
+  padding: clamp(15px, 3vw, 30px); /* Fluid padding */
   border-radius: 16px;
   margin-bottom: 35px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  gap: 15px; /* Adds breathing room between items */
+  flex-wrap: wrap; /* Allows items to move to next line if needed */
+}
+
+.summary-item {
+  text-align: center;
+  flex: 1;
+  min-width: 120px; /* Prevents items from getting too thin */
+}
+
+/* --- Mobile Media Query --- */
+@media screen and (max-width: 768px) {
+  .health-summary {
+    flex-direction: column; /* Stacks items vertically on phones */
+    gap: 25px;
+    text-align: center;
+  }
+
+  .summary-item {
+    width: 100%;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 15px;
+  }
+
+  .summary-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
 }
 
 .health-score h3 {

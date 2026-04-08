@@ -1,6 +1,7 @@
 const express = require('express');
 const Challenge = require('../models/Challenges');
 const Goal = require('../models/Goals');
+const createNotification = require('../utils/createNotification');
 
 const router = express.Router();
 
@@ -113,7 +114,17 @@ router.patch('/:id', async (req, res) => {
 
 		if (!existing.isCompleted && challenge.isCompleted) {
 			await updateGoalFromChallengeTransition(challenge, 1);
-		} else if (existing.isCompleted && !challenge.isCompleted) {
+
+			await createNotification({
+				userId: challenge.userId,
+				type: "challenge_complete",
+				title: "Challenge Completed!",
+				desc: `You completed: ${challenge.title}`,
+				icon: "burn",
+				tag: "Achievement"
+			});
+		} 
+		else if (existing.isCompleted && !challenge.isCompleted) {
 			await updateGoalFromChallengeTransition(challenge, -1);
 		}
 
@@ -137,6 +148,15 @@ router.patch('/:id/complete', async (req, res) => {
 
 		if (!existing.isCompleted && challenge.isCompleted) {
 			await updateGoalFromChallengeTransition(challenge, 1);
+
+			await createNotification({
+				userId: challenge.userId,
+				type: "challenge_complete",
+				title: "Challenge Completed!",
+				desc: `You completed: ${challenge.title}`,
+				icon: "burn",
+				tag: "Achievement"
+			});
 		}
 
 		return res.json(challenge);

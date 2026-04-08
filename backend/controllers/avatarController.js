@@ -2,6 +2,21 @@ const AvatarItem = require('../models/AvatarItem');
 const UserAvatarProfile = require('../models/UserAvatarSelection');
 const { uploadAvatarImage, getAvatarImage, deleteAvatarImage } = require('../utils/avatarImageStorage');
 
+const DEFAULT_OWNED_ITEMS = [
+    's1', 's2',
+    'h1', 'h2', 'h3', 'h4',
+    'hc1', 'hc2', 'hc3',
+    'e1', 'e2', 'e3', 'e4',
+    'ar1', 'ar2', 'ar3', 'ar4', 'ar5', 'ar6',
+    'p1', 'p2', 'p4'
+];
+
+const mapDefaultOwnedItems = () => DEFAULT_OWNED_ITEMS.map((itemId) => ({
+    itemId,
+    source: 'default',
+    ownedAt: new Date(),
+}));
+
 // ─── Get all available avatar items ────────────────────────────────────────────
 exports.getAllAvatarItems = async (req, res) => {
     try {
@@ -56,8 +71,12 @@ exports.getUserAvatarProfile = async (req, res) => {
                     animalEars: 'e1',
                     pet: null,
                 },
-                ownedItems: []
+                ownedItems: mapDefaultOwnedItems()
             });
+        } else if (!Array.isArray(profile.ownedItems) || profile.ownedItems.length === 0) {
+            // Backfill legacy profiles created without starter ownership.
+            profile.ownedItems = mapDefaultOwnedItems();
+            await profile.save();
         }
         
         res.status(200).json({
@@ -116,12 +135,12 @@ exports.updateUserAvatarSelection = async (req, res) => {
             profile = new UserAvatarProfile({
                 userId,
                 selections: selections || {},
-                ownedItems: []
+                ownedItems: mapDefaultOwnedItems()
             });
         } else {
             // Validate selections
             const itemIds = Object.values(selections).filter(id => id && id !== null);
-            const allOwned = itemIds.every(id => profile.ownsItem(id));
+            const allOwned = itemIds.every(id => profile.ownsItem(id) || DEFAULT_OWNED_ITEMS.includes(id));
             
             if (!allOwned) {
                 return res.status(403).json({
@@ -177,7 +196,7 @@ exports.grantItemToUser = async (req, res) => {
                     animalEars: 'e1',
                     pet: null,
                 },
-                ownedItems: []
+                ownedItems: mapDefaultOwnedItems()
             });
         }
         

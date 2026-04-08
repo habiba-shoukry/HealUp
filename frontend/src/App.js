@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "./styles.css";
 import { Routes, Route, Outlet, useLocation } from "react-router-dom";
+const BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 // Components
 import Layout from "./components/Layout";
@@ -37,7 +39,7 @@ const toFrontendSelections = (backendSelections = {}) => ({
     ? backendSelections.hairStyle.replace(/^h(\d+)$/, 'hs$1')
     : DEFAULT_SELECTIONS.hairStyle,
   animalEars: backendSelections.animalEars
-    ? backendSelections.animalEars.replace(/^ae(\d+)$/, 'ae$1')
+    ? backendSelections.animalEars.replace(/^e(\d+)$/, 'ae$1')
     : DEFAULT_SELECTIONS.animalEars,
   pets: backendSelections.pet ?? backendSelections.pets ?? null,
 });
@@ -79,6 +81,15 @@ const daysBetween = (dateStrA, dateStrB) => {
 };
 const clamp = (val, min = 0, max = 100) => Math.max(min, Math.min(max, val));
 
+const getStoredUserId = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    return user?.id || user?._id || null;
+  } catch {
+    return null;
+  }
+};
+
 const NotificationListener = ({ currentUser }) => {
   useEffect(() => {
     if (currentUser?._id) {
@@ -114,6 +125,7 @@ function App() {
   const [streak,           setStreak]            = useState(loadStreak);
   const [decayAlert,       setDecayAlert]        = useState(null);
   const [avatarSyncReady,  setAvatarSyncReady]   = useState(false);
+  const [sessionHydrated,  setSessionHydrated]   = useState(() => !getStoredUserId());
   const [dailyChallengesKey] = useState(() => {
     localStorage.removeItem('healup_daily_checked');
     return 'challenges';
@@ -127,7 +139,7 @@ function App() {
   const getCurrentUserId = useCallback(() => {
     try {
       const user = JSON.parse(localStorage.getItem('user') || 'null');
-      return user?.id || null;
+      return user?.id || user?._id || null;
     } catch { return null; }
   }, []);
 
@@ -135,7 +147,8 @@ function App() {
     const userId = getCurrentUserId();
     if (!userId) return null;
     try {
-      const res = await fetch(`http://localhost:5000/api/stats/${userId}`, {
+      // const res = await fetch(`https://healup-backend-2-0.onrender.com/api/stats/${userId}`, {
+      const res = await fetch(`${BASE_URL}/api/stats/${userId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -145,7 +158,7 @@ function App() {
     } catch { return null; }
   }, [getCurrentUserId]);
 
-  // ── Fetch stats from backend on mount ──
+  // ── Hydrate account state from backend before private routes render ──
   useEffect(() => {
     const userId = getCurrentUserId();
     if (!userId) return;
@@ -166,12 +179,11 @@ function App() {
       .catch(() => {});
   }, [getCurrentUserId]);
 
-  // ── Avatar sync ──
-  useEffect(() => {
-    const userId = getCurrentUserId();
-    if (!userId) { setAvatarSyncReady(true); return; }
     let cancelled = false;
-    const loadAvatarProfile = async () => {
+    setSessionHydrated(false);
+    setAvatarSyncReady(false);
+
+    const hydrateSession = async () => {
       try {
         const res = await fetch(`http://localhost:8001/api/avatars/profile/${userId}`);
         if (!res.ok) { setAvatarSyncReady(true); return; }
@@ -183,19 +195,26 @@ function App() {
           save('healup_avatar_selections', mapped);
         }
       } catch {}
-      finally { if (!cancelled) setAvatarSyncReady(true); }
+      finally {
+        if (!cancelled) {
+          setAvatarSyncReady(true);
+          setSessionHydrated(true);
+        }
+      }
     };
-    loadAvatarProfile();
+
+    hydrateSession();
     return () => { cancelled = true; };
   }, [getCurrentUserId]);
 
   useEffect(() => {
     const userId = getCurrentUserId();
-    if (!userId || !avatarSyncReady) return;
+    if (!userId || !avatarSyncReady || !sessionHydrated) return;
     const controller = new AbortController();
     const persistSelections = async () => {
       try {
-        await fetch(`http://localhost:5000/api/avatars/profile/${userId}`, {
+        // await fetch(`https://healup-backend-2-0.onrender.com/api/avatars/profile/${userId}`, {
+        await fetch(`${BASE_URL}/api/avatars/profile/${userId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ selections: toBackendSelections(avatarSelections) }),
@@ -205,7 +224,7 @@ function App() {
     };
     persistSelections();
     return () => controller.abort();
-  }, [avatarSelections, avatarSyncReady, getCurrentUserId]);
+  }, [avatarSelections, avatarSyncReady, sessionHydrated, getCurrentUserId]);
 
   // ── Decay on inactivity ──
   useEffect(() => {
@@ -255,7 +274,6 @@ function App() {
           save('healup_streak', carried);
           return carried;
         });
-        setDecayAlert({ ...losses, missedDays });
       }
     }
     save('healup_last_active', { date: today });
@@ -356,47 +374,14 @@ function App() {
     localStorage.setItem('healup_avatar_name', name);
   };
 
-  const DecayAlert = () => {
-    if (!decayAlert) return null;
-    return (
-      <div style={{
-        position: 'fixed', top: 70, left: '50%', transform: 'translateX(-50%)',
-        zIndex: 9999, background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
-        border: '1px solid rgba(239,68,68,0.4)', borderRadius: 16,
-        padding: '1rem 1.5rem', maxWidth: 420, width: '90%',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-        animation: 'popupIn 0.4s cubic-bezier(0.34,1.56,0.64,1)',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <div style={{ color: '#f87171', fontWeight: 800, fontSize: '0.95rem', marginBottom: 6 }}>
-              ⚠️ You were away for {decayAlert.missedDays} day{decayAlert.missedDays > 1 ? 's' : ''}!
-            </div>
-            <div style={{ color: '#94a3b8', fontSize: '0.78rem', lineHeight: 1.6 }}>
-              Your stats decayed from inactivity:<br />
-              <span style={{ color: '#f87171' }}>❤️ −{decayAlert.hp} HP</span>{'  '}
-              <span style={{ color: '#60a5fa' }}>⚡ −{decayAlert.energy} Energy</span>{'  '}
-              <span style={{ color: '#a78bfa' }}>💪 −{decayAlert.discipline} Discipline</span>
-              {decayAlert._streakBroken > 0 && (
-                <><br /><span style={{ color: '#fb923c' }}>🔥 {decayAlert._streakBroken}-day streak broken! −{decayAlert._streakPenalty} all stats</span></>
-              )}
-            </div>
-            <div style={{ color: '#34d399', fontSize: '0.75rem', marginTop: 6, fontWeight: 600 }}>
-              Complete challenges to recover your stats!
-            </div>
-          </div>
-          <button onClick={() => setDecayAlert(null)} style={{
-            background: 'none', border: 'none', color: '#64748b',
-            cursor: 'pointer', fontSize: '1.1rem', padding: '0 0 0 1rem',
-          }}>✕</button>
-        </div>
-      </div>
-    );
-  };
+  const publicRoutes = ["/", "/login", "/signup", "/LogIn", "/SignUp"];
+  if (!sessionHydrated && !publicRoutes.includes(location.pathname)) {
+    return <div className="page-container">Loading your account...</div>;
+  }
 
   return (
     <>
-      <DecayAlert />
+
       <Routes>
         {/* No Sidebar */}
         <Route path="/"       element={<Welcome />} />

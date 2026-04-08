@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { userDB } = require('../config/database');
 
 const messageSchema = new mongoose.Schema({
   senderId: {
@@ -21,4 +22,5 @@ const messageSchema = new mongoose.Schema({
   }
 }, { timestamps: true }); // Automatically adds 'createdAt' to show when the message was sent
 
-module.exports = mongoose.model('Message', messageSchema);
+// module.exports = mongoose.model('Message', messageSchema);
+module.exports = userDB.model('Message', messageSchema);

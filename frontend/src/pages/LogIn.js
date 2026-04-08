@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaInstagram, FaFacebookF, FaTwitter } from 'react-icons/fa';
 import '../styles/LogIn.css';
+const BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -29,7 +31,8 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      // const response = await fetch('https://healup-backend-2-0.onrender.com/api/auth/login', {
+      const response = await fetch(`${BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -45,10 +48,26 @@ export default function LoginPage() {
         return;
       }
 
+      const normalizedUser = {
+        ...(data.user || {}),
+        id: data?.user?.id || data?.user?._id || null,
+      };
+
+      if (!normalizedUser.id) {
+        setError('Login succeeded but user profile is missing an ID. Please try again.');
+        return;
+      }
+
       localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      if (data.stats) localStorage.setItem('stats', JSON.stringify(data.stats));
-      if (data.user.role === 'doctor') {
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
+      if (data.stats) {
+        localStorage.setItem('stats', JSON.stringify(data.stats));
+        localStorage.setItem('healup_stats', JSON.stringify({
+          xp: data.stats.totalXp ?? data.stats.xp ?? 0,
+          coins: data.stats.coins ?? 0,
+        }));
+      }
+      if (normalizedUser.role === 'doctor') {
         navigate('/doctor-dashboard');
       } else {
         navigate('/dashboard');
@@ -85,9 +104,9 @@ export default function LoginPage() {
         
 
           <div className="social-icons">
-            <a href="#" className="icon" aria-label="Instagram"><FaInstagram /></a>
-            <a href="#" className="icon" aria-label="Facebook"><FaFacebookF /></a>
-            <a href="#" className="icon" aria-label="Twitter"><FaTwitter /></a>
+            <a href="https://www.instagram.com/healup.wellness?igsh=dTA4aWwxZ2drOWtk&utm_source=qr" className="icon" aria-label="Instagram"><FaInstagram /></a>
+            {/* <a href="#" className="icon" aria-label="Facebook"><FaFacebookF /></a>
+            <a href="#" className="icon" aria-label="Twitter"><FaTwitter /></a> */}
           </div>
 
         </div>

@@ -316,6 +316,15 @@ body {
     margin-left: 40px;
   }
 
+  .topbar-logo {
+  height: 60px;
+  width: 60px;
+  object-fit: contain;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
   .topbar-center {
     display: flex;
     justify-content: center; 
@@ -334,7 +343,7 @@ body {
 
   /* Adjust Layout to account for the taller topbar */
   .layout-container {
-    padding-top: 160px; /* Increase this to match the new stacked topbar height */
+    padding-top: 145px; /* Increase this to match the new stacked topbar height */
   }
 
   .sidebar {
@@ -368,7 +377,7 @@ body {
     display: flex;
     justify-content: center; 
     align-items: center;
-    margin-top: 20pt;
+    margin-top: 10pt;
   }
 
   /* Stacked Row 2: Stats and Avatar underneath */
@@ -439,4 +448,46 @@ body {
   .section-title { font-size: 1.2rem; margin-bottom: 1rem; }
   .sidebar-item { min-width: 60px; }
   .sidebar-label { font-size: 0.65rem; }
+}
+
+
+/* specific override for Doctor topbar to stay horizontal on mobile */
+@media screen and (max-width: 820px) {
+  .topbar.topbar-doctor {
+    flex-direction: row !important; 
+    height: 60px !important;       
+    padding: 0 1rem !important;    
+    gap: 0 !important;            
+  }
+
+  .topbar.topbar-doctor .topbar-left {
+    margin-left: 0 !important;      
+    width: auto !important;
+  }
+
+  .topbar.topbar-doctor .topbar-center {
+  margin-top: 0 !important; 
+  margin-left: 0 !important;
+  position: static !important; 
+  transform: none !important;
+}
+
+  .topbar.topbar-doctor .topbar-right {
+    width: auto !important;
+    border-top: none !important;    /* Remove the mobile divider line */
+    padding-top: 0 !important;
+    justify-content: flex-end !important;
+  }
+
+  /* Ensure the main content doesn't push down too far since the bar isn't tall */
+  .topbar.topbar-doctor + .layout-container {
+    padding-top: 60px !important;
+  }
+}
+
+/* Hide brand name even on doctor mobile to save space if needed */
+@media screen and (max-width: 600px) {
+  .topbar-doctor .topbar-brand {
+    display: none;
+  }
 }

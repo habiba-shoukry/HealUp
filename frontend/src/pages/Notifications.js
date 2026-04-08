@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
 import "../styles/Notifications.css";
+const BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
  
 const Notifications = () => {
  
+  // const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "https://healup-backend-2-0.onrender.com";
+  // const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "${BASE_URL}";
   const [popupMessage, setPopupMessage] = useState("");
   const [score, setScore] = useState(0);
  
@@ -39,7 +43,7 @@ const Notifications = () => {
   const downloadReport = async () => {
     try {
       const user = JSON.parse(localStorage.getItem("user"));
-      const userId = user?.id;
+      const userId = user?.id || user?._id;
 
       if (!userId) {
         showPopup("❌ User not logged in");
@@ -47,7 +51,7 @@ const Notifications = () => {
       }
 
       const response = await fetch(
-        "http://127.0.0.1:8001/api/report/download?userId=" + userId
+        `${BASE_URL}/api/report/download?userId=${userId}`
       );
 
       if (!response.ok) {
@@ -228,12 +232,12 @@ const Notifications = () => {
           Download PDF Report
         </button>
  
-        <button
+        {/* <button
           className="share-button"
           onClick={() => showPopup("✔ Report Shared With Doctor")}
         >
           Share With Doctor
-        </button>
+        </button> */}
  
       </div>
  

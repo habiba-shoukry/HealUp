@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   BarChart, Bar
 } from "recharts";
 import '../styles/DoctorDashboard.css';
+const BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -63,58 +65,6 @@ const METRIC_COLORS = {
   steps:    T.green,
 };
 
-// ─── Patient data ─────────────────────────────────────────────────────────────
-const patients = [
-  {
-    id: 1, name: "John Doe", age: 34, avatar: "JD", gender: "Male",
-    bloodType: "A+", condition: "Hypertension", lastVisit: "Mar 24",
-    nextVisit: "Apr 07", avatarColor: ["#3b82f6", "#6366f1"],
-    data: [
-      { day: "Mon", hr: 72, sleep: 6.5, stress: 70, calories: 2200, steps: 7200 },
-      { day: "Tue", hr: 75, sleep: 7.0, stress: 65, calories: 2100, steps: 8100 },
-      { day: "Wed", hr: 70, sleep: 6.8, stress: 72, calories: 2300, steps: 6900 },
-      { day: "Thu", hr: 73, sleep: 7.2, stress: 60, calories: 2000, steps: 9400 },
-      { day: "Fri", hr: 71, sleep: 6.9, stress: 75, calories: 2400, steps: 7800 },
-    ]
-  },
-  {
-    id: 2, name: "Jane Smith", age: 28, avatar: "JS", gender: "Female",
-    bloodType: "O-", condition: "Anxiety Disorder", lastVisit: "Mar 20",
-    nextVisit: "Apr 03", avatarColor: ["#ec4899", "#f43f5e"],
-    data: [
-      { day: "Mon", hr: 65, sleep: 7.8, stress: 30, calories: 1800, steps: 10200 },
-      { day: "Tue", hr: 68, sleep: 8.0, stress: 35, calories: 1750, steps: 11000 },
-      { day: "Wed", hr: 66, sleep: 7.9, stress: 40, calories: 1850, steps: 9800 },
-      { day: "Thu", hr: 64, sleep: 8.1, stress: 32, calories: 1700, steps: 10500 },
-      { day: "Fri", hr: 67, sleep: 7.7, stress: 34, calories: 1900, steps: 11300 },
-    ]
-  },
-  {
-    id: 3, name: "Marcus Lee", age: 45, avatar: "ML", gender: "Male",
-    bloodType: "B+", condition: "Chronic Stress / Insomnia", lastVisit: "Mar 28",
-    nextVisit: "Apr 04", avatarColor: ["#f97316", "#ef4444"],
-    data: [
-      { day: "Mon", hr: 88, sleep: 5.5, stress: 80, calories: 2600, steps: 3100 },
-      { day: "Tue", hr: 91, sleep: 5.2, stress: 85, calories: 2750, steps: 2800 },
-      { day: "Wed", hr: 86, sleep: 5.8, stress: 78, calories: 2500, steps: 3400 },
-      { day: "Thu", hr: 90, sleep: 5.0, stress: 82, calories: 2800, steps: 2600 },
-      { day: "Fri", hr: 93, sleep: 4.9, stress: 88, calories: 2900, steps: 2200 },
-    ]
-  },
-  {
-    id: 4, name: "Aisha Patel", age: 31, avatar: "AP", gender: "Female",
-    bloodType: "AB+", condition: "Routine Monitoring", lastVisit: "Mar 15",
-    nextVisit: "Apr 15", avatarColor: ["#10b981", "#06b6d4"],
-    data: [
-      { day: "Mon", hr: 62, sleep: 8.2, stress: 22, calories: 1650, steps: 12400 },
-      { day: "Tue", hr: 60, sleep: 8.5, stress: 18, calories: 1700, steps: 13100 },
-      { day: "Wed", hr: 63, sleep: 8.1, stress: 25, calories: 1600, steps: 11800 },
-      { day: "Thu", hr: 61, sleep: 8.4, stress: 20, calories: 1720, steps: 12900 },
-      { day: "Fri", hr: 59, sleep: 8.6, stress: 15, calories: 1680, steps: 13500 },
-    ]
-  }
-];
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const getTrend = (data, key) => {
   const vals = data.map(d => d[key]);
@@ -125,7 +75,21 @@ const getTrend = (data, key) => {
     : { color: T.green, label: `${diff.toFixed(1)}` };
 };
 
+const formatMetrics = (metrics) => {
+  if (!metrics || !metrics.length) return [];
+
+  return metrics.map((m) => ({
+    day: new Date(m.date).toLocaleDateString("en-US", { weekday: "short" }),
+    hr: m.restingHeartRate || 0,
+    sleep: m.sleepHours || 0,
+    stress: m.stressLevel || 0,
+    calories: m.caloriesBurned || 0,
+    steps: m.steps || 0,
+  }));
+};
+
 const getRiskScore = (p) => {
+  if (!p) return 0;
   const l = p.data[p.data.length - 1];
   let s = 0;
   if (l.hr > 85) s += 3; else if (l.hr > 75) s += 1;
@@ -481,16 +445,96 @@ export default function DoctorDashboard() {
   const [message, setMessage] = useState('');
   const [sent, setSent] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [patients, setPatients] = useState([]);
 
   const userJson = localStorage.getItem('user');
   const currentUser = userJson ? JSON.parse(userJson) : null;
+  const biomarkerMap = {
+    heartRate: "hr",
+    sleep: "sleep",
+    stress: "stress",
+    calories: "calories",
+    steps: "steps",
+  };
+
+  useEffect(() => {
+  if (!currentUser?.id) return;
+
+  const fetchPatients = async () => {
+    try {
+      const doctorId = currentUser.id;
+      if (!doctorId) return;
+
+      const res = await fetch(
+        `${BASE_URL}/api/users/doctor/patients?doctorId=${doctorId}`
+      );
+
+      const data = await res.json();
+
+      if (!Array.isArray(data)) {
+        console.error("Expected an array of patients but got:", data);
+        return;
+      }
+
+      const patientsWithData = await Promise.all(
+        data.map(async (p) => {
+          try {
+            const metricsRes = await fetch(
+              `${BASE_URL}/api/metrics/weekly/${p._id}`
+            );
+
+            if (!metricsRes.ok) {
+              console.error("Metrics fetch failed:", metricsRes.status);
+              return {
+                ...p,
+                name: p.fullName,
+                avatar: p.fullName?.[0] || "P",
+                avatarColor: ["#3b82f6", "#6366f1"],
+                data: [],
+              };
+            }
+
+            const resData = await metricsRes.json();
+            const formatted = formatMetrics(resData.metrics);
+
+            return {
+              ...p,
+              name: p.fullName,
+              avatar: p.fullName?.[0] || "P",
+              avatarColor: ["#3b82f6", "#6366f1"],
+              data: formatted,
+            };
+
+          } catch (err) {
+            console.error("Error fetching metrics for patient:", p._id, err);
+
+            return {
+              ...p,
+              name: p.fullName,
+              avatar: p.fullName?.[0] || "P",
+              avatarColor: ["#3b82f6", "#6366f1"],
+              data: [],
+            };
+          }
+        })
+      );
+
+      setPatients(patientsWithData);
+
+    } catch (err) {
+      console.error("Failed to fetch patients:", err);
+    }
+  };
+
+  fetchPatients();
+}, [currentUser]);
 
 const handleSend = async () => {
   if (!message.trim() || !selectedPatient) return;
 
   const payload = {
     senderId: currentUser?.id || currentUser?._id, 
-    receiverId: selectedPatient.id, 
+    receiverId: selectedPatient._id, 
     content: message          
   };
 
@@ -501,7 +545,8 @@ const handleSend = async () => {
     // }
 
   try {
-    const response = await fetch('http://localhost:5000/api/messages/send', { 
+    // const response = await fetch('https://healup-backend-2-0.onrender.com/api//messages/send', { 
+    const response = await fetch(`${BASE_URL}/api/messages/send`, { 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -593,6 +638,15 @@ const handleSend = async () => {
       {/* ── Patient cards ── */}
       <div className="doc-patient-list">
         {filtered.map((patient) => {
+          if (!patient.data || patient.data.length === 0) {
+            return null;
+          }
+          const allowedRaw = patient.sharedBiomarkers?.length
+            ? patient.sharedBiomarkers
+            : ["heartRate", "sleep", "stress", "calories", "steps"];
+
+          const allowed = allowedRaw.map(b => biomarkerMap[b]);
+          
           const latest = patient.data[patient.data.length - 1];
           const score  = getRiskScore(patient);
           const risk   = getRiskLabel(score);
@@ -604,7 +658,7 @@ const handleSend = async () => {
 
           return (
             <div
-              key={patient.id}
+              key={patient._id}
               className="doc-patient-card"
               style={{ borderColor: risk.border }}
             >
@@ -676,42 +730,113 @@ const handleSend = async () => {
               <div className="doc-card-divider" />
 
               {/* Metric cards */}
-              <div className="doc-metrics-row">
+              {/* <div className="doc-metrics-row">
                 <MetricCard
                   metricKey="hr" label="Heart Rate"
                   value={latest.hr} unit="bpm"
                   note={`Min ${Math.min(...patient.data.map(d => d.hr))} bpm`}
                   noteRight={`Max ${Math.max(...patient.data.map(d => d.hr))} bpm`}
-                  data={patient.data} gradientId={`hrG${patient.id}`} type="area"
+                  data={patient.data} gradientId={`hrG${patient._id}`} type="area"
                 />
                 <MetricCard
                   metricKey="sleep" label="Sleep"
                   value={latest.sleep} unit="hrs"
                   note="Goal: 8 hrs"
                   noteRight={`Avg ${avgSleep} hrs`}
-                  data={patient.data} gradientId={`slG${patient.id}`} type="bar"
+                  data={patient.data} gradientId={`slG${patient._id}`} type="bar"
                 />
                 <MetricCard
                   metricKey="stress" label="Stress Level"
                   value={latest.stress} unit="/ 100"
                   note="HRV based"
                   noteRight={`Peak ${Math.max(...patient.data.map(d => d.stress))}`}
-                  data={patient.data} gradientId={`stG${patient.id}`} type="area"
+                  data={patient.data} gradientId={`stG${patient._id}`} type="area"
                 />
                 <MetricCard
                   metricKey="calories" label="Calories"
                   value={latest.calories} unit="kcal"
                   note="Goal: 2,000 kcal"
                   noteRight={`Avg ${avgCals.toLocaleString()}`}
-                  data={patient.data} gradientId={`calG${patient.id}`} type="bar"
+                  data={patient.data} gradientId={`calG${patient._id}`} type="bar"
                 />
                 <MetricCard
                   metricKey="steps" label="Steps"
                   value={latest.steps} unit="steps"
                   note="Goal: 10,000"
                   noteRight={`Avg ${formatSteps(avgSteps)}`}
-                  data={patient.data} gradientId={`stpG${patient.id}`} type="bar"
+                  data={patient.data} gradientId={`stpG${patient._id}`} type="bar"
                 />
+              </div> */}
+              <div className="doc-metrics-row">
+                {allowed.includes("hr") && (
+                  <MetricCard
+                    metricKey="hr"
+                    label="Heart Rate"
+                    value={latest.hr}
+                    unit="bpm"
+                    note={`Min ${Math.min(...patient.data.map(d => d.hr))} bpm`}
+                    noteRight={`Max ${Math.max(...patient.data.map(d => d.hr))} bpm`}
+                    data={patient.data}
+                    gradientId={`hrG${patient._id}`}
+                    type="area"
+                  />
+                )}
+
+                {allowed.includes("sleep") && (
+                  <MetricCard
+                    metricKey="sleep"
+                    label="Sleep"
+                    value={latest.sleep}
+                    unit="hrs"
+                    note="Goal: 8 hrs"
+                    noteRight={`Avg ${avgSleep} hrs`}
+                    data={patient.data}
+                    gradientId={`slG${patient._id}`}
+                    type="bar"
+                  />
+                )}
+
+                {allowed.includes("stress") && (
+                  <MetricCard
+                    metricKey="stress"
+                    label="Stress Level"
+                    value={latest.stress}
+                    unit="/ 100"
+                    note="HRV based"
+                    noteRight={`Peak ${Math.max(...patient.data.map(d => d.stress))}`}
+                    data={patient.data}
+                    gradientId={`stG${patient._id}`}
+                    type="area"
+                  />
+                )}
+
+                {allowed.includes("calories") && (
+                  <MetricCard
+                    metricKey="calories"
+                    label="Calories"
+                    value={latest.calories}
+                    unit="kcal"
+                    note="Goal: 2,000 kcal"
+                    noteRight={`Avg ${avgCals.toLocaleString()}`}
+                    data={patient.data}
+                    gradientId={`calG${patient._id}`}
+                    type="bar"
+                  />
+                )}
+
+                {allowed.includes("steps") && (
+                  <MetricCard
+                    metricKey="steps"
+                    label="Steps"
+                    value={latest.steps}
+                    unit="steps"
+                    note="Goal: 10,000"
+                    noteRight={`Avg ${formatSteps(avgSteps)}`}
+                    data={patient.data}
+                    gradientId={`stpG${patient._id}`}
+                    type="bar"
+                  />
+                )}
               </div>
             </div>
           );
@@ -725,13 +850,22 @@ const handleSend = async () => {
         const score  = getRiskScore(p);
         const risk   = getRiskLabel(score);
         const avgSteps = Math.round(p.data.reduce((a, b) => a + b.steps, 0) / p.data.length);
+        // const metricConfigs = [
+        //   { key: 'hr',       label: 'Heart Rate', unit: 'bpm',   gradId: `mhr${p._id}`,  type: 'area' },
+        //   { key: 'sleep',    label: 'Sleep',       unit: 'hrs',   gradId: `msl${p._id}`,  type: 'bar'  },
+        //   { key: 'stress',   label: 'Stress',      unit: '/100',  gradId: `mst${p._id}`,  type: 'area' },
+        //   { key: 'calories', label: 'Calories',    unit: 'kcal',  gradId: `mcal${p._id}`, type: 'bar'  },
+        //   { key: 'steps',    label: 'Steps',       unit: 'steps', gradId: `mstp${p._id}`, type: 'bar'  },
+        // ];
+        const allowedRaw = p.sharedBiomarkers || [];
+        const allowed = allowedRaw.map(b => biomarkerMap[b]);
         const metricConfigs = [
-          { key: 'hr',       label: 'Heart Rate', unit: 'bpm',   gradId: `mhr${p.id}`,  type: 'area' },
-          { key: 'sleep',    label: 'Sleep',       unit: 'hrs',   gradId: `msl${p.id}`,  type: 'bar'  },
-          { key: 'stress',   label: 'Stress',      unit: '/100',  gradId: `mst${p.id}`,  type: 'area' },
-          { key: 'calories', label: 'Calories',    unit: 'kcal',  gradId: `mcal${p.id}`, type: 'bar'  },
-          { key: 'steps',    label: 'Steps',       unit: 'steps', gradId: `mstp${p.id}`, type: 'bar'  },
-        ];
+          { key: 'hr', label: 'Heart Rate', unit: 'bpm', gradId: `mhr${p._id}`, type: 'area' },
+          { key: 'sleep', label: 'Sleep', unit: 'hrs', gradId: `msl${p._id}`, type: 'bar' },
+          { key: 'stress', label: 'Stress', unit: '/100', gradId: `mst${p._id}`, type: 'area' },
+          { key: 'calories', label: 'Calories', unit: 'kcal', gradId: `mcal${p._id}`, type: 'bar' },
+          { key: 'steps', label: 'Steps', unit: 'steps', gradId: `mstp${p._id}`, type: 'bar' },
+        ].filter(m => allowed.includes(m.key));
 
         return (
           <div

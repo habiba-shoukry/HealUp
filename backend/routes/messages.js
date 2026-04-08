@@ -1,23 +1,31 @@
 const express = require('express');
 const router = express.Router();
 const Message = require('../models/Message'); 
+const createNotification = require('../utils/createNotification');
 
 module.exports = function(io) {
   router.post('/send', async (req, res) => {
     try {
-      
-      const { doctorId, patientId, message } = req.body;
+      const { senderId, receiverId, content } = req.body;
 
-      // 1. save to mongoDb
       const newMessage = new Message({
-        senderId: doctorId,    
-        receiverId: patientId, 
-        content: message       
+        senderId,
+        receiverId,
+        content
       });
       await newMessage.save();
 
+      await createNotification({
+        userId: receiverId,
+        type: "motivation",
+        title: "New message from your doctor",
+        desc: content,
+        icon: "chat",
+        tag: "Motivation"
+      });
+      
       // 2. triggers the real-time pop-up
-      io.to(patientId).emit('receive_notification', {
+      io.to(receiverId).emit('receive_notification', {
         id: newMessage._id,
         message: newMessage.content,
         senderId: newMessage.senderId,

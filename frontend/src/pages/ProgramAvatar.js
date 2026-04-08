@@ -539,7 +539,7 @@ const ProgramAvatar = ({
 
     // Also sync to backend if patchUserStats is available
     if (patchUserStats) {
-      patchUserStats({ coinDelta: -price });
+      patchUserStats({ coinsDelta: -price });
     }
 
     // Mark item as owned in shop

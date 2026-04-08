@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import '../styles/Challenges.css';
+const BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 const parseReward = (rewardStr) => {
   const xpMatch = rewardStr.match(/(\d+)\s*XP/);
@@ -236,14 +238,13 @@ useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || 'null');
     const userId = user?.id || user?._id; // Check for both id and _id
 
-  const baseUrl = "http://localhost:5000";
-
     if (!userId) {
       setRemoteChallenges({ daily: [], weekly: [] });
       return;
     }
     
-    fetch(`http://localhost:5000/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
+    // fetch(`https://healup-backend-2-0.onrender.com/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
+    fetch(`${BASE_URL}/api/challenges?userId=${userId}&programType=${selectedProgram}`, {
       cache: 'no-store'
     })
       .then((res) => res.json())
@@ -273,9 +274,11 @@ useEffect(() => {
   useEffect(() => {
     const interval = setInterval(() => {
       const user = JSON.parse(localStorage.getItem('user') || 'null');
-      if (!user?.id) return;
+      const userId = user?.id || user?._id;
+      if (!userId) return;
 
-      fetch(`http://localhost:5000/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
+      // fetch(`https://healup-backend-2-0.onrender.com/api/challenges?userId=${user.id}&programType=${selectedProgram}`, {
+      fetch(`${BASE_URL}/api/challenges?userId=${userId}&programType=${selectedProgram}`, {
         cache: 'no-store'
       })
         .then((res) => res.json())
@@ -305,7 +308,8 @@ useEffect(() => {
 
 
   const user = JSON.parse(localStorage.getItem('user') || 'null');
-  const isGuest = !user?.id;
+  const userId = user?.id || user?._id;
+  const isGuest = !userId;
 
   const dailyChallenges = (isGuest
     ? FALLBACK_DAILY_CHALLENGES.filter(c => c.programType === selectedProgram || c.programType === 'all')
@@ -428,13 +432,14 @@ useEffect(() => {
 //  sends the rewards to our new backend bank route
   const syncRewardsToDatabase = async (xp, coins, barEffects, isUndo = false) => {
     const user = JSON.parse(localStorage.getItem('user') || 'null');
-    if (!user?.id) return;
+    const userId = user?.id || user?._id;
+    if (!userId) return;
 
     // If it's an undo action, flip the numbers to negative!
     const multiplier = isUndo ? -1 : 1;
 
     const payload = {
-      userId: user.id,
+      userId,
       xp: xp * multiplier,
       coins: coins * multiplier,
       energy: (barEffects?.energy || 0) * multiplier,
@@ -443,7 +448,8 @@ useEffect(() => {
     };
 
     try {
-      await fetch('http://localhost:5000/api/stats/rewards', {
+      // await fetch('https://healup-backend-2-0.onrender.com/api/stats/rewards', {
+      await fetch(`${BASE_URL}/api/stats/rewards`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -453,7 +459,7 @@ useEffect(() => {
     }
   };
 
-const handleCheck = (index) => {
+const handleCheck = async (index) => {
     const c = dailyChallenges[index];
     const key = challengeKey(c, index);
     
@@ -489,13 +495,28 @@ const handleCheck = (index) => {
     syncRewardsToDatabase(xp, coins, c.barEffects, false);
 
     if (hasRemoteDaily && c.id) {
-      fetch(`http://localhost:5000/api/challenges/${c.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ progress: 100, isCompleted: true }),
-      }).catch(() => {});
+      try {
+        // await fetch(`https://healup-backend-2-0.onrender.com/api/challenges/${c.id}`, {
+        await fetch(`${BASE_URL}/api/challenges/${c.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ progress: 100, isCompleted: true }),
+        });
+
+        // wait a tiny bit to ensure DB + notification write completes
+        setTimeout(() => {
+          localStorage.setItem("notif_refresh", Date.now());
+          if (window.refreshNotifications) {
+            window.refreshNotifications();
+          }
+        }, 200);
+
+    } catch (err) {
+      console.error(err);
+      }
     }
-    
+
+
     // Updates the UI instantly
     if (onChallengeComplete) onChallengeComplete(xp, coins, c.barEffects);
 
@@ -532,7 +553,8 @@ const handleCheck = (index) => {
         ...prev,
         daily: prev.daily.map((d) => d.id === c.id ? { ...d, isCompleted: false, progress: 0 } : d),
       }));
-      fetch(`http://localhost:5000/api/challenges/${c.id}`, {
+      // fetch(`https://healup-backend-2-0.onrender.com/api/challenges/${c.id}`, {
+      fetch(`${BASE_URL}/api/challenges/${c.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ progress: 0, isCompleted: false }),
@@ -576,17 +598,24 @@ const handleCheck = (index) => {
 
     // 2. Tell the backend to officially lock it as completed
     try {
-      await fetch(`http://localhost:5000/api/challenges/${challenge.id}`, {
+      // await fetch(`https://healup-backend-2-0.onrender.com/api/challenges/${challenge.id}`, {
+      await fetch(`${BASE_URL}/api/challenges/${challenge.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isCompleted: true }),
       });
+
+      setTimeout(() => {
+      localStorage.setItem("notif_refresh", Date.now());
+        if (window.refreshNotifications) {
+          window.refreshNotifications();
+        }
+      }, 200);
     } catch (error) {
       console.error("Failed to mark weekly challenge complete");
     }
 
-    // 🌟 3. THE REWARD LOGIC 🌟
-    // Use parseReward to safely extract XP and Coins from the string just like Daily Challenges do!
+   
     // 🌟 3. THE REWARD LOGIC 🌟
     // Use parseReward to safely extract XP, but force coins to 0 for Weekly challenges!
     const { xp } = parseReward(challenge.reward);
