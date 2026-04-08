@@ -1821,10 +1821,14 @@ const Dashboard = ({ avatarSelections, avatarName, bars = { hp:65, energy:80, di
   });
   const [metricsReady, setMetricsReady] = useState(() => Boolean(getStoredUserId() && readMetricsCache(getStoredUserId(), activeDevice)));
   
-  const [showConsent, setShowConsent] = useState(true);
+  const [showConsent, setShowConsent] = useState(() => {
+  // checks if they already accepted it during this browser session
+  return !sessionStorage.getItem('healup_terms_seen');
+});
 
 
 const handleConsentAccept = () => {
+  sessionStorage.setItem('healup_terms_seen', 'true');
   setShowConsent(false);
 };
 
@@ -1876,25 +1880,22 @@ const handleConsentDecline = () => {
   }, [activeDevice]);
 
   const handleLogout = () => {
-    // Add the confirmation check here
     const confirmLogout = window.confirm("Are you sure you want to log out?");
     
     if (confirmLogout) {
-      // Clear all session data
       localStorage.removeItem('user');
       localStorage.removeItem(PROGRAM_STORAGE_KEY);
       
-      // Clear metrics cache for this specific user
+      // 👉 ADD THIS LINE: Reset the terms flag for the next session
+      sessionStorage.removeItem('healup_terms_seen');
+
       const userId = getStoredUserId();
       if (userId) {
         localStorage.removeItem(`healup_metrics_cache_${userId}_apple`);
         localStorage.removeItem(`healup_metrics_cache_${userId}_google`);
       }
 
-      // Send back to login page
       navigate('/login');
-      
-      // Force a reload to ensure all states are reset
       window.location.reload();
     }
   };
