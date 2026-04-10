@@ -89,12 +89,15 @@ const formatMetrics = (metrics) => {
 };
 
 const getRiskScore = (p) => {
-  if (!p) return 0;
+  if (!p || !p.data || p.data.length === 0) return 0;
+  
   const l = p.data[p.data.length - 1];
   let s = 0;
-  if (l.hr > 85) s += 3; else if (l.hr > 75) s += 1;
-  if (l.sleep < 6) s += 3; else if (l.sleep < 7) s += 1;
-  if (l.stress > 70) s += 3; else if (l.stress > 50) s += 1;
+  
+  // Use optional chaining (?.) and default values (|| 0)
+  if ((l?.hr || 0) > 85) s += 3; else if ((l?.hr || 0) > 75) s += 1;
+  if ((l?.sleep || 8) < 6) s += 3; else if ((l?.sleep || 8) < 7) s += 1;
+  if ((l?.stress || 0) > 70) s += 3; else if ((l?.stress || 0) > 50) s += 1;
   return s;
 };
 
@@ -566,7 +569,11 @@ const handleSend = async () => {
   const highCount     = patients.filter(p => { const s = getRiskScore(p); return s >= 4 && s < 7; }).length;
   const stableCount   = patients.length - criticalCount - highCount;
 
+
   const filtered = patients.filter(p => {
+    // Add a check here to ensure p.data exists before calculating risk
+    if (!p.data || p.data.length === 0) return filter === 'all'; 
+        
     const s = getRiskScore(p);
     if (filter === 'critical') return s >= 7;
     if (filter === 'high')     return s >= 4 && s < 7;
@@ -638,9 +645,21 @@ const handleSend = async () => {
       {/* ── Patient cards ── */}
       <div className="doc-patient-list">
         {filtered.map((patient) => {
+          // CRITICAL FIX: If data failed to load, don't try to calculate averages
           if (!patient.data || patient.data.length === 0) {
-            return null;
+            return (
+              <div key={patient._id} className="doc-patient-card" style={{ opacity: 0.6 }}>
+                <div className="doc-card-header">
+                  <span className="doc-patient-name">{patient.name}</span>
+                  <span className="doc-risk-badge">OFFLINE</span>
+                </div>
+                <p style={{ color: T.textMute, padding: '20px', textAlign: 'center' }}>
+                  Waiting for data... (Check CORS settings)
+                </p>
+              </div>
+            );
           }
+          
           const allowedRaw = patient.sharedBiomarkers?.length
             ? patient.sharedBiomarkers
             : ["heartRate", "sleep", "stress", "calories", "steps"];
