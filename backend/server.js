@@ -13,29 +13,30 @@ const app = express();
 const server = http.createServer(app);
 
 // ==================== CORS Configuration ====================
-// This handles the string from your Render Environment Variables
-const allowedOrigins = (process.env.CORS_ORIGINS || '')
-  .split(',')
-  .map(origin => origin.trim())
-  .filter(Boolean);
+
+const allowedOrigins = [
+  'https://healup-1.onrender.com', // Add your frontend URL explicitly
+  'http://localhost:3000'
+];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps)
+    // 1. Allow requests with no origin (like mobile apps or Postman)
     if (!origin) return callback(null, true);
-    
-    const isExplicitlyAllowed = allowedOrigins.includes(origin);
-    const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1');
 
-    if (isExplicitlyAllowed || isLocal) {
-      return callback(null, true);
+    // 2. Check if the origin is in our hardcoded list or the env variable
+    const envOrigins = (process.env.CORS_ORIGINS || '').split(',').map(o => o.trim());
+    
+    if (allowedOrigins.includes(origin) || envOrigins.includes(origin) || origin.includes('localhost')) {
+      callback(null, true);
     } else {
       console.error(`CORS Blocked for: ${origin}`);
-      return callback(new Error('Not allowed by CORS'));
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"] // Added for extra safety
 }));
 
 app.use(express.json());
