@@ -446,12 +446,13 @@ function ModalChart({ metricKey, label, gradId, type, data }) {
 export default function DoctorDashboard() {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
   const [sent, setSent] = useState(false);
   const [filter, setFilter] = useState('all');
   const [patients, setPatients] = useState([]);
 
   const userJson = localStorage.getItem('user');
-  const currentUser = userJson ? JSON.parse(userJson) : null;
+  
   const biomarkerMap = {
     heartRate: "hr",
     sleep: "sleep",
@@ -460,77 +461,56 @@ export default function DoctorDashboard() {
     steps: "steps",
   };
 
-  useEffect(() => {
-  if (!currentUser?.id) return;
+  const currentUser = React.useMemo(() => {
+    const json = localStorage.getItem('user');
+    return json ? JSON.parse(json) : null;
+  }, []);
 
-  const fetchPatients = async () => {
-    try {
-      const doctorId = currentUser.id;
-      if (!doctorId) return;
+useEffect(() => {
+    const doctorId = currentUser?.id || currentUser?._id;
+    if (!doctorId) return;
 
-      const res = await fetch(
-        `${BASE_URL}/api/users/doctor/patients?doctorId=${doctorId}`
-      );
+    let isMounted = true; // Prevents updating state if component unmounts
 
-      const data = await res.json();
+    const fetchPatients = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`${BASE_URL}/api/users/doctor/patients?doctorId=${doctorId}`);
+        const data = await res.json();
 
-      if (!Array.isArray(data)) {
-        console.error("Expected an array of patients but got:", data);
-        return;
-      }
+        if (!isMounted || !Array.isArray(data)) return;
 
-      const patientsWithData = await Promise.all(
-        data.map(async (p) => {
-          try {
-            const metricsRes = await fetch(
-              `${BASE_URL}/api/metrics/weekly/${p._id}`
-            );
-
-            if (!metricsRes.ok) {
-              console.error("Metrics fetch failed:", metricsRes.status);
+        const patientsWithData = await Promise.all(
+          data.map(async (p) => {
+            try {
+              const metricsRes = await fetch(`${BASE_URL}/api/metrics/weekly/${p._id}`);
+              const resData = await metricsRes.json();
               return {
                 ...p,
                 name: p.fullName,
                 avatar: p.fullName?.[0] || "P",
                 avatarColor: ["#3b82f6", "#6366f1"],
-                data: [],
+                data: formatMetrics(resData.metrics || []),
               };
+            } catch {
+              return { ...p, name: p.fullName, avatar: "P", avatarColor: ["#334155", "#1e293b"], data: [] };
             }
+          })
+        );
 
-            const resData = await metricsRes.json();
-            const formatted = formatMetrics(resData.metrics);
+        if (isMounted) {
+          setPatients(patientsWithData);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+        if (isMounted) setLoading(false);
+      }
+    };
 
-            return {
-              ...p,
-              name: p.fullName,
-              avatar: p.fullName?.[0] || "P",
-              avatarColor: ["#3b82f6", "#6366f1"],
-              data: formatted,
-            };
-
-          } catch (err) {
-            console.error("Error fetching metrics for patient:", p._id, err);
-
-            return {
-              ...p,
-              name: p.fullName,
-              avatar: p.fullName?.[0] || "P",
-              avatarColor: ["#3b82f6", "#6366f1"],
-              data: [],
-            };
-          }
-        })
-      );
-
-      setPatients(patientsWithData);
-
-    } catch (err) {
-      console.error("Failed to fetch patients:", err);
-    }
-  };
-
-  fetchPatients();
-}, [currentUser]);
+    fetchPatients();
+    return () => { isMounted = false; }; // Cleanup
+  }, [currentUser?.id, currentUser?._id]); // Stable dependencies
 
 const handleSend = async () => {
   if (!message.trim() || !selectedPatient) return;
